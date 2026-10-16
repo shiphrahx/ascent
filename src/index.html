@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>&#127880;</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; }
+  body { cursor: grab; user-select: none; -webkit-user-select: none; touch-action: none; }
+  body.dragging { cursor: grabbing; }
+  canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #veil { position: fixed; inset: 0; background: #0b1020; pointer-events: none; opacity: 0; transition: opacity 2.4s ease; }
+  #veil.on { opacity: 1; }
+  #loader {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    background: radial-gradient(ellipse at 50% 60%, #1c2440 0%, #0b1020 70%);
+    transition: opacity 1.6s ease; z-index: 5;
+  }
+  #loader.gone { opacity: 0; pointer-events: none; }
+  #loader svg { width: min(22vmin, 160px); height: auto; overflow: visible; }
+  #loader .env { fill: none; stroke: #d9c7a6; stroke-opacity: .35; stroke-width: 2; }
+  #loader .fill { fill: url(#glow); }
+  #loader .flame { fill: #ffb45a; animation: flick .18s infinite alternate; transform-origin: 50px 118px; }
+  @keyframes flick { from { opacity: .55; transform: scaleY(.8); } to { opacity: 1; transform: scaleY(1.15); } }
+  #loader .bob { animation: bob 3.2s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="veil"></div>
+<div id="loader">
+  <svg viewBox="0 0 100 140" aria-hidden="true">
+    <defs>
+      <radialGradient id="glow" cx="50%" cy="85%" r="80%">
+        <stop offset="0" stop-color="#ffd38a"/>
+        <stop offset=".45" stop-color="#e8743f"/>
+        <stop offset="1" stop-color="#7a2e3a"/>
+      </radialGradient>
+      <clipPath id="envClip">
+        <path d="M50 4 C76 4 92 24 92 46 C92 66 76 84 62 98 L58 106 L42 106 L38 98 C24 84 8 66 8 46 C8 24 24 4 50 4 Z"/>
+      </clipPath>
+    </defs>
+    <g class="bob">
+      <g clip-path="url(#envClip)">
+        <rect id="loadFill" class="fill" x="0" y="106" width="100" height="0"/>
+      </g>
+      <path class="env" d="M50 4 C76 4 92 24 92 46 C92 66 76 84 62 98 L58 106 L42 106 L38 98 C24 84 8 66 8 46 C8 24 24 4 50 4 Z"/>
+      <path class="env" d="M50 4 C38 20 34 60 42 106 M50 4 C62 20 66 60 58 106 M50 4 L50 106"/>
+      <path class="flame" d="M50 108 C46 112 47 116 50 120 C53 116 54 112 50 108 Z"/>
+      <path class="env" d="M42 106 L44 124 M58 106 L56 124"/>
+      <rect x="43" y="124" width="14" height="10" rx="1.5" fill="#8a6440" stroke="#d9c7a6" stroke-opacity=".4"/>
+    </g>
+  </svg>
+</div>
+<script>
+/*__APP__*/
+</script>
+</body>
+</html>

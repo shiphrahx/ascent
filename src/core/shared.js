@@ -1,0 +1,77 @@
+// Global uniforms shared by reference across every material, plus world constants.
+import * as THREE from 'three';
+
+export const WORLD = {
+  core: { minX: -2560, minZ: -1280, sizeX: 5120, sizeZ: 2560, resX: 2048, resZ: 1024 },
+  outer: { minX: -40960, minZ: -40960, sizeX: 81920, sizeZ: 81920, resX: 1024, resZ: 1024 },
+  fogTop: 62,
+  riverY: 4.0,
+};
+
+const v3 = () => new THREE.Vector3();
+const c3 = () => new THREE.Color();
+
+export const U = {
+  uTime: { value: 0 },
+  uSunDir: { value: v3() },
+  uMoonDir: { value: v3() },
+  uKeyDir: { value: new THREE.Vector3(0, 1, 0) },
+  uKeyColor: { value: c3() },
+  uKeyElev: { value: 0 },
+  uKeyIsSun: { value: 1 },
+  uSunColor: { value: c3() },
+  uSkyAmb: { value: c3() },
+  uGroundAmb: { value: c3() },
+  uSkyLUT: { value: null },
+  uHaze: { value: 1 },
+  uValleyFog: { value: 0 },
+  uFogTop: { value: WORLD.fogTop },
+  uSnow: { value: 0 },
+  uFrost: { value: 0 },
+  uWet: { value: 0 },
+  uStorm: { value: 0 },
+  uNight: { value: 0 },
+  uCloud: { value: 0.3 },
+  uWindDir: { value: new THREE.Vector2(1, 0) },
+  uWindStrength: { value: 1 },
+  uGustOffset: { value: new THREE.Vector2() },
+  uShadow0: { value: null },
+  uShadow1: { value: null },
+  uShadowM0: { value: new THREE.Matrix4() },
+  uShadowM1: { value: new THREE.Matrix4() },
+  uShadow2: { value: null },
+  uShadowM2: { value: new THREE.Matrix4() },
+  uShadowK: { value: new THREE.Vector3(1, 1, 1) },
+  uShadowWT: { value: new THREE.Vector3(0.1, 1, 4) },
+  uShadowTexel: { value: new THREE.Vector2(1 / 2048, 1 / 2048) },
+  uTerrShadow: { value: null },
+  uTerrShadowOuter: { value: null },
+  uHeightCore: { value: null },
+  uHeightOuter: { value: null },
+  uNormCore: { value: null },
+  uNormOuter: { value: null },
+  uAttrCore: { value: null },
+  uCoreBounds: { value: new THREE.Vector4(WORLD.core.minX, WORLD.core.minZ, WORLD.core.sizeX, WORLD.core.sizeZ) },
+  uOuterBounds: { value: new THREE.Vector4(WORLD.outer.minX, WORLD.outer.minZ, WORLD.outer.sizeX, WORLD.outer.sizeZ) },
+  uNoise2D: { value: null },
+  uNoise3D: { value: null },
+  uCloudOffset: { value: new THREE.Vector2() },
+  uCloudBase: { value: 1500 },
+  uCloudTop: { value: 2600 },
+  uClipY: { value: -1e9 },
+  uDipK: { value: 0.0026 },
+  uExposure: { value: 1 },
+  uPillars: { value: 0 },
+  uDiamond: { value: 0 },
+  uSunDogs: { value: 0 },
+  uMoonVis: { value: 0 },
+  uSunVis: { value: 0 },
+};
+
+export const G = {
+  renderer: null,
+  scene: null,
+  camera: null,
+  sky: null,
+  pass: 'main', // 'main' | 'shadow' | 'reflect'
+};
