@@ -10,6 +10,7 @@ const D = Math.PI / 180;
 export const HANG = 5.0;          // mouth to basket floor
 const T_EQ = 52, B_RATE = 5.2, COOL = 0.021, VENT_RATE = 7.5;
 const LIFT_K = 0.034, DRAG_K = 0.045;
+const MAN_B = 18, MAN_V = 24;
 
 export class Flight {
   constructor(data, rocks, wind) {
@@ -143,9 +144,20 @@ export class Flight {
       if (this.modeT > 1.5) this.x = Math.min(this.x + dt * 1.2, 1.2);
     } else if (this.mode === 'flying') {
       if (manual) {
-        this.burn = input.burn ? 1 : 0; this.vent = input.vent ? 1 : 0; this.burnHold = 0;
+        this.burnHold = 0;
+        if (input.burn || input.vent) {
+          this.burn = input.burn ? 1 : 0; this.vent = input.vent ? 1 : 0;
+          this.holdAlt = null;
+        } else {
+          // keys released: level off and hold this height, short burner blips as needed
+          if (this.holdAlt == null) this.holdAlt = p.y + v.y * 0.7;
+          const dvy = Math.max(-2, Math.min(2, (this.holdAlt - p.y) * 0.6));
+          const needX = dvy * Math.abs(dvy) * DRAG_K / LIFT_K + (dvy - v.y) * 10;
+          this.burn = needX > this.x + 1.5 ? 1 : 0;
+          this.vent = needX < this.x - 3 ? 1 : 0;
+        }
         this.targetAlt = p.y;
-      } else this.autopilot(dt, t);
+      } else { this.holdAlt = null; this.autopilot(dt, t); }
     } else if (this.mode === 'landing') {
       // ease down onto the field
       const g = this.groundAt(p.x, p.z) + HANG;
@@ -165,14 +177,20 @@ export class Flight {
     }
     if (this.forceBurn) this.burn = 1;
     // --- thermodynamics ---
-    this.x += (B_RATE * this.burn - COOL * (this.x + T_EQ) + COOL * T_EQ * 0.0 - VENT_RATE * this.vent) * dt;
+    // hand control answers quickly: a held burner or vent works the air several times harder
+    const handRates = manual && this.mode === 'flying';
+    this.x += ((handRates ? MAN_B : B_RATE) * this.burn - COOL * (this.x + T_EQ) - (handRates ? MAN_V : VENT_RATE) * this.vent) * dt;
+    if (handRates && !this.burn && !this.vent) this.x += COOL * T_EQ * dt; // the pilot's blips hold the heat
+    this._surge = handRates ? (this.burn ? 0.55 : this.vent ? -0.55 : 0) : 0;
+    // cap hand-flown climb and sink at about 4.5 m/s so it stops cleanly when you let go
+    if (handRates) this.x = Math.max(-27, Math.min(27, this.x));
     // neutral heat loss is offset on average; model as cooling toward -T_EQ*COOL balance
     this.x += COOL * T_EQ * dt * 0.0;
     this.x = Math.max(-30, Math.min(45, this.x));
     // --- forces ---
     const w = this.wind.at(p.x, p.y + 8, p.z, this._w);
     this.gust = this.wind.gust(p.x, p.z);
-    let ay = LIFT_K * this.x - DRAG_K * v.y * Math.abs(v.y) + w.y * 0.3;
+    let ay = LIFT_K * this.x - DRAG_K * v.y * Math.abs(v.y) + w.y * 0.3 + (this._surge || 0);
     // horizontal: carried by the air with a few seconds of lag
     const tau = this.grounded ? 0.5 : 5.5;
     let ax = (w.x - v.x) / tau, az = (w.z - v.z) / tau;
@@ -236,7 +254,7 @@ export class Flight {
 
     // --- rotation: slow drift plus the rotation vent ---
     const turn = (input.left ? 1 : 0) - (input.right ? 1 : 0);
-    this.yawRate += (turn * 0.25 + Math.sin(t * 0.05) * 0.01 - this.yawRate * 0.35) * dt;
+    this.yawRate += (turn * 0.9 + Math.sin(t * 0.05) * 0.01 - this.yawRate * (turn ? 1.4 : 0.6)) * dt;
     this.yaw += this.yawRate * dt;
 
     // --- basket swing: pendulum driven by horizontal acceleration and gusts ---
