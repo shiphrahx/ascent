@@ -12,6 +12,7 @@ import { Wind } from './world/wind.js';
 import { Pipeline } from './core/pipeline.js';
 import { Probe } from './world/probe.js';
 import { Volumetrics } from './fx/volumetrics.js';
+import { Rocks } from './world/rocks.js';
 
 const canvas = document.getElementById('view');
 const loadFill = document.getElementById('loadFill');
@@ -57,6 +58,10 @@ async function boot() {
   scene.add(dome.mesh);
   const terrain = new Terrain(data);
   scene.add(terrain.group);
+  const rocks = new Rocks(data);
+  scene.add(rocks.group);
+  G.rocks = rocks;
+  setProgress(0.68); await tick();
   const tshadow = new TerrainShadow(renderer);
   const shadows = new Shadows(renderer);
   const wind = new Wind(U.uNoise2D.value);
@@ -131,6 +136,7 @@ async function boot() {
     focus.copy(camera.position);
     viewC.copy(camera.position);
     farC.copy(camera.position);
+    rocks.update(camera);
     shadows.render(scene, focus, viewC, farC);
     terrain.update(camera);
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
