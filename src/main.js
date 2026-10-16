@@ -17,6 +17,7 @@ import { defineFacades, sculpt, Landmarks } from './world/landmarks.js';
 import { Village } from './world/village.js';
 import { River } from './world/river.js';
 import { Vegetation } from './world/vegetation.js';
+import { Particles } from './fx/particles.js';
 import { Hero } from './balloon/hero.js';
 import { Fleet } from './balloon/fleet.js';
 import { Crew } from './balloon/crew.js';
@@ -79,6 +80,8 @@ async function boot() {
   const river = new River(scene, renderer);
   const veg = new Vegetation(scene, data, rocks, village);
   G.veg = veg;
+  const parts = new Particles(scene, data, village);
+  G.parts = parts;
   G.rocks = rocks;
   setProgress(0.68); await tick();
   const hero = new Hero(scene, data, rocks, null);
@@ -101,6 +104,7 @@ async function boot() {
   const vol = new Volumetrics(renderer);
   pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
   pipe.hooks.volumetrics = rt => vol.render(rt, camera);
+  pipe.hooks.transparent = true;
   let exposure = 1;
   setProgress(0.7); await tick();
 
@@ -170,6 +174,33 @@ async function boot() {
     hero.update(dt, time, input, st);
     cams.update(dt, time);
     fleet.update(dt, time, camera);
+    parts.update(dt, st, wind);
+    // cold breath from the crew on each exhale
+    if (hero.crew) for (const P of hero.crew.people) {
+      P.puffT = (P.puffT || 0) - dt;
+      if (P.exhale > 0.55 && P.puffT <= 0 && P.mouthWorld) {
+        P.puffT = 0.16;
+        const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(hero.basket.quaternion);
+        parts.puff(P.mouthWorld, fwd.multiplyScalar(0.35).add(new THREE.Vector3(hero.flight.v.x * 0.0, 0.05, 0)), 1);
+      }
+    }
+    // heat shimmer above the burner
+    {
+      const u = pipe.post.comp.uniforms;
+      const fl = hero.flameI;
+      if (fl > 0.02 && cams.mode !== 1 || fl > 0.02) {
+        const a = new THREE.Vector3().copy(hero.burnerWorld).add(new THREE.Vector3(0, -0.6, 0));
+        const b = a.clone().add(new THREE.Vector3(0, 2.4, 0));
+        const pa = a.clone().project(camera), pb = b.clone().project(camera);
+        if (pa.z < 1 && pa.z > -1) {
+          const sa = new THREE.Vector2(pa.x * 0.5 + 0.5, pa.y * 0.5 + 0.5), sb = new THREE.Vector2(pb.x * 0.5 + 0.5, pb.y * 0.5 + 0.5);
+          const dir = sb.clone().sub(sa); dir.x *= camera.aspect;
+          const len = dir.length();
+          u.uHeat.value[0].set(sa.x, sa.y, fl * Math.min(1, len * 6), Math.max(0.01, len));
+          u.uHeatUp.value[0].copy(dir.normalize());
+        } else u.uHeat.value[0].z = 0;
+      } else u.uHeat.value[0].z = 0;
+    }
 
     dome.update(sky, camera);
     probe.update(st.snow);

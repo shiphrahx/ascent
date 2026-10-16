@@ -18,7 +18,7 @@ export class Cameras {
     // chase orbit
     this.yaw = 2.6; this.pitch = 0.1; this.dist = 52; this.distT = 52; this.drift = 0;
     // first person look
-    this.fpYaw = Math.PI / 2; this.fpPitch = -0.3;
+    this.fpYaw = 0.45; this.fpPitch = -0.22;
     // cinematic
     this.shot = null; this.shotT = 0; this.shotIdx = 0;
     this.blend = 1; this.fromPos = new THREE.Vector3(); this.fromQuat = new THREE.Quaternion();

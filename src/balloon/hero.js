@@ -89,7 +89,7 @@ export class Hero {
     this.burnerWorld.copy(this.rig.burners[0]).lerp(this.rig.burners[1], 0.5).applyMatrix4(this.basket.matrixWorld);
     this.burnerWorld.y += 1.2;
     eu.uBurnerPos.value.copy(this.burnerWorld);
-    eu.uFlameI.value = 7;
+    eu.uFlameI.value = 3.2;
     // local light for basket and crew: flame plus pilot lights
     const pu = this.propMat.uniforms;
     pu.uLocalLightPos.value.copy(this.burnerWorld);
