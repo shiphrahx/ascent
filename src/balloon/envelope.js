@@ -316,7 +316,7 @@ void main(){
     col = shadeSurf(sf, P, V, sh);
     // sunlight passing through two layers of fabric toward the viewer
     float through = sat(-ndl) * mix(0.25, 1., back * back) ;
-    col += uKeyColor * fab * fab * through * thin * 1.25 * keyHorizon(P) * cloudShadow(P);
+    col += uKeyColor * fab * fab * through * thin * 0.95 * keyHorizon(P) * cloudShadow(P);
     // glow of the burner through the fabric
     col += flame * fab * thin * bfall * 1.6 * (0.4 + 0.6 * (1. - s));
   } else {

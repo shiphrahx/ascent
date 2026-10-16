@@ -60,7 +60,7 @@ export const U = {
   uCloudBase: { value: 1500 },
   uCloudTop: { value: 2600 },
   uClipY: { value: -1e9 },
-  uDipK: { value: 0.0026 },
+  uDipK: { value: 0.0015 },
   uExposure: { value: 1 },
   uPillars: { value: 0 },
   uDiamond: { value: 0 },

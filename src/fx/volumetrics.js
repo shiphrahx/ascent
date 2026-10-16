@@ -36,10 +36,12 @@ float fogDensity(vec3 p){
   float top = uFogTop - 40. * (1. - uValleyFog);
   vec3 q = p / 140. + vec3(uTime * 0.012, uTime * 0.004, uTime * 0.008);
   float n = texture(uNoise3D, q).r * 0.65 + texture(uNoise3D, q * 3.1).g * 0.35;
-  float surf = top + (n - 0.5) * 22.;
-  float h = (surf - p.y) / 16.;
-  float d = smoothstep(-0.3, 1.0, h);
-  return d * (0.55 + 0.6 * n) * uValleyFog * sqrt(uValleyFog);
+  // big slow billows on the surface of the fog sea
+  float b = texture(uNoise3D, p / 520. + vec3(uTime * 0.004, 0., uTime * 0.003)).a;
+  float surf = top + (n - 0.5) * 16. + (b - 0.5) * 26.;
+  float h = (surf - p.y) / 7.;
+  float d = smoothstep(-0.2, 1.0, h);
+  return d * (0.5 + 0.7 * n) * uValleyFog * sqrt(uValleyFog);
 }
 float cloudCover(vec2 xz){ return cloudDensity2D(xz); }
 float cloudDensity(vec3 p){
@@ -68,8 +70,10 @@ void main(){
   vec3 L = uKeyDir;
   float mu = dot(dir, L);
   float phaseFog = mix(hgPhase(mu, 0.55), hgPhase(mu, -0.15), 0.35) * 12.566;
-  vec3 ambUp = ambCube(vec3(0, 1, 0));
-  vec3 ambSide = ambCube(-dir);
+  // fog down in the valleys only sees the deep blue zenith, not the glowing horizon
+  vec3 zen = skyLut(vec3(0., 1., 0.)) * 0.53 * 3.14159 * 0.55;
+  vec3 ambUp = mix(zen, ambCube(vec3(0, 1, 0)), 0.35);
+  vec3 ambSide = mix(zen, ambCube(-dir), 0.35);
   vec3 scat = vec3(0);
   float T = 1.;
 
@@ -92,7 +96,7 @@ void main(){
       vec3 sq = p / 90. + vec3(uTime * 0.06, -uTime * 0.04, uTime * 0.05) * uWindStrength;
       air *= 0.6 + 0.8 * texture(uNoise3D, sq).r;
     }
-    float sigma = fog * 0.022 + air;
+    float sigma = fog * 0.017 + air;
     if (sigma < 1e-7) continue;
     // shafts only matter near the camera or inside the fog; skip the shadow maps elsewhere
     float sh = keyHorizon(p) * terrainShadow(p) * cloudShadow(p);
