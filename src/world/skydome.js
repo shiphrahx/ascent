@@ -193,6 +193,22 @@ void main(){
   col += vec3(0.55, 0.65, 0.9) * pow(max(cm, 0.), 600.) * 0.05 * uMoonVis * (1. - uStorm) * horizonExt;
   col += vec3(0.55, 0.65, 0.9) * pow(max(cm, 0.), 40.) * 0.004 * uMoonVis * (1. - uStorm);
 
+  // twilight: Earth's shadow as a blue band opposite the sun, the pink Belt of Venus above it
+  {
+    float dep = -asin(clamp(uSunDir.y, -1., 1.));
+    float twi = smoothstep(-0.02, 0.01, dep) * smoothstep(0.13, 0.06, dep) * (1. - uStorm);
+    if (twi > 0.) {
+      vec3 anti = normalize(vec3(-uSunDir.x, 0., -uSunDir.z));
+      float facing = pow(max(dot(normalize(vec3(d.x, 0., d.z) + 1e-4), anti), 0.), 1.6);
+      float el = asin(clamp(d.y, -1., 1.));
+      float top = max(dep, 0.) * 1.15 + 0.012;
+      float earth = smoothstep(top + 0.012, top - 0.02, el) * smoothstep(-0.02, 0.01, el);
+      float belt = smoothstep(top - 0.005, top + 0.03, el) * smoothstep(top + 0.24, top + 0.05, el);
+      float L = dot(col, vec3(0.3, 0.6, 0.1));
+      col = mix(col, vec3(L) * vec3(0.42, 0.52, 0.95), earth * facing * twi * 0.75);
+      col += vec3(1.0, 0.48, 0.58) * L * belt * facing * twi * 0.9;
+    }
+  }
   // ice-crystal optics on cold mornings
   if (uSunDogs > 0.001) col += halo22(d) * uSunColor * 0.25 * horizonExt;
 

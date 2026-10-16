@@ -21,6 +21,7 @@ uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
+uniform float uGlowComp;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
@@ -102,7 +103,7 @@ float cascadeShadowFast(vec3 P){
   return r;
 }
 float cloudDensity2D(vec2 xz){
-  vec2 uv = (xz + uCloudOffset) / 9000.;
+  vec2 uv = (xz + uCloudOffset) / 12000.;
   float a = textureLod(uNoise2D, uv, 0.).r;
   float b = textureLod(uNoise2D, uv * 3.1 + 0.3, 0.).g;
   float A = (a * 0.7 + b * 0.3 - 0.5) * 2.6;

@@ -164,11 +164,15 @@ export class Sky {
     // --- key light ---
     transmittance(sunAlt, this.sunColor, 1 + s.storm * 2);
     const sunVis = smooth(-6.5 * DEG, 0.4 * DEG, sunAlt);
-    const moonVis = smooth(-1 * DEG, 6 * DEG, moonAlt) * (1 - smooth(-9 * DEG, -5 * DEG, sunAlt));
+    const moonUp = smooth(-1 * DEG, 6 * DEG, moonAlt);
+    const moonVis = moonUp * smooth(-2 * DEG, -6 * DEG, sunAlt);
     s.night = 1 - smooth(-9 * DEG, -1 * DEG, sunAlt);
     const stormDim = 1 - s.storm * 0.86;
     const cloudDim = 1 - Math.max(0, s.cloud - 0.5) * 0.9;
-    if (sunAlt > -6.6 * DEG) {
+    // whichever of sun and moon is brighter is the key; they cross over in the blue hour
+    const sunKey = (this.sunColor.r * 0.3 + this.sunColor.g * 0.6 + this.sunColor.b * 0.1) * 3.4 * sunVis;
+    const moonKey = 0.045 * moonVis * 0.65;
+    if (sunKey >= moonKey) {
       this.keyDir.copy(this.sunDir);
       // keep a sliver above horizon for shadow projection
       if (this.keyDir.y < 0.02) { this.keyDir.y = 0.02; this.keyDir.normalize(); }

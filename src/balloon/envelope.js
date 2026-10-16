@@ -309,7 +309,8 @@ void main(){
   vec3 toB = uBurnerPos - P;
 #endif
   float bd = length(toB);
-  vec3 flame = vec3(1.0, 0.55, 0.22) * burn * uFlameI;
+  // night exposures would blow the glow out to white; keep it saturated like a photograph would
+  vec3 flame = vec3(1.0, 0.48, 0.16) * burn * uFlameI * uGlowComp;
   float bfall = 1. / (1. + bd * bd * 0.012);
   if (!inside) {
     Surf sf; sf.albedo = alb; sf.N = N; sf.rough = 0.55; sf.spec = 0.35; sf.ao = 1.; sf.wrap = 0.25; sf.sss = 0.;

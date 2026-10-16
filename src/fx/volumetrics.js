@@ -52,7 +52,7 @@ float cloudDensity(vec3 p){
   if (cov <= 0.02) return 0.;
   // flat bases, billowing rounded tops; thicker cover reaches higher
   float hg = smoothstep(0., 0.07, h) * smoothstep(min(1., 0.35 + 0.75 * cov), 0.2, h);
-  vec3 q = (p + vec3(uCloudOffset.x, 0., uCloudOffset.y)) / 2400.;
+  vec3 q = (p + vec3(uCloudOffset.x, 0., uCloudOffset.y)) / 3300.;
   float n = textureLod(uNoise3D, q, 0.).r * 0.75 + textureLod(uNoise3D, q * 2.1 + 0.3, 0.).a * 0.25;
   float d = sat((n * hg - (1. - cov)) / max(cov, 0.1));
   if (d > 0.) {

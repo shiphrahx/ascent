@@ -62,6 +62,7 @@ export const U = {
   uClipY: { value: -1e9 },
   uDipK: { value: 0.0015 },
   uExposure: { value: 1 },
+  uGlowComp: { value: 1 },
   uPillars: { value: 0 },
   uDiamond: { value: 0 },
   uSunDogs: { value: 0 },

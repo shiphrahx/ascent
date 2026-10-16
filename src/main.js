@@ -254,11 +254,12 @@ async function boot() {
     {
       // auto exposure from sky irradiance and the key light; nights stay darker than days
       const up = probe.up, k = sky.keyColor;
-      const B = (0.2126 * up.r + 0.7152 * up.g + 0.0722 * up.b) + (0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b) * 0.3;
+      const B = (0.2126 * up.r + 0.7152 * up.g + 0.0722 * up.b) + (0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b) * 0.3 * Math.min(1, Math.max(0.15, sky.keyDir.y * 4 + 0.15));
       const e = st.sunElev * 180 / Math.PI;
       const nightDim = 1 - 0.7 * Math.min(1, Math.max(0, (-e - 2) / 12));
       const target = st.grade.exp * 0.55 * nightDim / Math.pow(Math.max(B, 1e-5), 0.74);
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
+      U.uGlowComp.value = 1 / (1 + 0.14 * exposure);
     }
     tshadow.update(window.__dbg.frames < 2);
     // cascades: basket detail, the area the camera looks at, wide for far balloons
