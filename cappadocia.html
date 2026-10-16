@@ -22878,7 +22878,7 @@ void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
   });
 
   // src/glsl/common.js
-  var DECL, NOISE, TERRAIN, SHADOW, LIGHT, SHADOW_F, VCOMMON, COMMON, ROCK;
+  var DECL, NOISE, TERRAIN, SHADOW, LIGHT, SHADOW_F, VCOMMON, COMMON, WIND, ROCK;
   var init_common = __esm({
     "src/glsl/common.js"() {
       DECL = /* glsl */
@@ -23094,6 +23094,17 @@ float keyShadow(vec3 P, vec3 N){
 `;
       VCOMMON = DECL + NOISE + TERRAIN + SHADOW + LIGHT;
       COMMON = VCOMMON + SHADOW_F;
+      WIND = /* glsl */
+      `
+float gustAt(vec2 xz){
+  vec2 uv = (xz - uGustOffset) / 420.;
+  float g = texture(uNoise2D, uv).r * 0.7 + texture(uNoise2D, uv * 2.7 + 0.37).g * 0.3;
+  return smoothstep(0.38, 0.8, g);
+}
+vec2 windAt(vec2 xz){
+  return uWindDir * uWindStrength * (0.55 + 1.1 * gustAt(xz));
+}
+`;
       ROCK = /* glsl */
       `
 // banded volcanic tuff: cream, ochre, rose, rust, with thin dark ash seams
@@ -23429,10 +23440,10 @@ void main(){
           pts: catmull([[170, -1350], [230, -700], [300, -300], [240, 0], [262, 160], [330, 500], [280, 900], [250, 1350]]),
           floorHalf: 190,
           wallL: 330,
-          wallR: 110,
+          wallR: 230,
           floor0: 5.6,
           floor1: 5.6,
-          steps: 3,
+          steps: 2,
           rose: 0,
           chimneys: 0
         },
@@ -26651,6 +26662,189 @@ void main(){
     }
   });
 
+  // src/world/river.js
+  var VERT4, FRAG6, River;
+  var init_river = __esm({
+    "src/world/river.js"() {
+      init_three_module();
+      init_shared();
+      init_common();
+      init_fsq();
+      init_layout();
+      VERT4 = /* glsl */
+      `
+${VCOMMON}
+attribute vec2 aFlow;   // flow direction (xz)
+attribute vec2 aRiver;  // x: across -1..1, y: distance along
+varying vec3 vWorld;
+varying vec2 vFlow, vRiver;
+void main(){
+  vec4 wp = modelMatrix * vec4(position, 1.);
+  vWorld = wp.xyz; vFlow = aFlow; vRiver = aRiver;
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}
+`;
+      FRAG6 = /* glsl */
+      `
+${COMMON}
+${WIND}
+uniform sampler2D tReflect;
+uniform mat4 uTexMat;
+uniform float uIce;
+varying vec3 vWorld;
+varying vec2 vFlow, vRiver;
+vec2 flowN(vec2 p, float spd, float sc){
+  vec2 f = normalize(vFlow + 1e-4);
+  vec2 side = vec2(-f.y, f.x);
+  vec2 q = vec2(dot(p, side), dot(p, f));
+  float t = uTime * spd;
+  vec2 a = texture(uNoise2D, (q + vec2(0., -t)) / sc).rg - 0.5;
+  vec2 b = texture(uNoise2D, (q * 1.7 + vec2(3.1, -t * 1.6)) / sc).gr - 0.5;
+  vec2 n = a + b * 0.6;
+  return n.x * side + n.y * f;
+}
+void main(){
+  vec3 P = vWorld;
+  vec3 V = normalize(cameraPosition - P);
+  float dist = length(cameraPosition - P);
+  // ripples: running with the current, plus wind-stirred catspaws in gusts
+  vec2 n = flowN(P.xz, 0.9, 7.) * 0.22 + flowN(P.xz, 1.6, 2.2) * 0.12;
+  float gust = gustAt(P.xz);
+  n += (texture(uNoise2D, (P.xz - uGustOffset * 1.3) / 3.).rg - 0.5) * gust * 0.5 * uWindStrength;
+  n *= mix(1., 0.35, smoothstep(80., 600., dist));
+  vec3 N = normalize(vec3(n.x, 1., n.y));
+  // ice along the banks on cold days: ragged edge, cracks, a frosty skin
+  float across = abs(vRiver.x);
+  float edgeN = texture(uNoise2D, P.xz / 6.).r * 0.25 + texture(uNoise2D, P.xz / 1.7).g * 0.12;
+  float ice = smoothstep(0.62, 0.7, across + edgeN - (1. - uIce) * 0.45) * step(0.01, uIce);
+  // reflection
+  vec4 rc = uTexMat * vec4(P, 1.);
+  vec2 ruv = rc.xy / rc.w + N.xz * 0.035;
+  vec3 refl = texture(tReflect, ruv).rgb;
+  float cosT = max(dot(N, V), 0.);
+  float F = 0.02 + 0.98 * pow(1. - cosT, 5.);
+  // the bed: depth from the terrain, absorbed toward green-blue
+  float depth = max(0., P.y - heightAt(P.xz));
+  vec3 bed = mix(vec3(0.34, 0.30, 0.24), vec3(0.45, 0.40, 0.33), texture(uNoise2D, P.xz / 2.).r);
+  bed *= 0.75 + 0.35 * texture(uNoise2D, P.xz * 1.3).b;
+  vec3 absorb = exp(-depth * vec3(0.9, 0.45, 0.32) * 1.4);
+  Surf sb; sb.albedo = bed; sb.N = vec3(0, 1, 0); sb.rough = 1.; sb.spec = 0.; sb.ao = 1.; sb.wrap = 0.; sb.sss = 0.;
+  vec3 bedLit = shadeSurf(sb, P, V, keyShadow(P, vec3(0, 1, 0))) * absorb;
+  vec3 scatter = ambCube(vec3(0, 1, 0)) * vec3(0.05, 0.08, 0.08) * (1. - absorb.g);
+  vec3 col = mix(bedLit + scatter, refl, F);
+  // sun glint
+  vec3 H = normalize(uKeyDir + V);
+  float gl = pow(max(dot(N, H), 0.), 600.) * 60. + pow(max(dot(N, H), 0.), 80.) * 0.6;
+  col += uKeyColor * gl * keyShadow(P, vec3(0, 1, 0)) * (1. - ice);
+  // ice: translucent pale blue sheet with dark cracks
+  if (ice > 0.) {
+    vec2 cp = P.xz * 0.9;
+    float cr = texture(uNoise2D, cp / 4.).b;
+    float crack = smoothstep(0.86, 0.95, cr);
+    vec3 iceC = mix(vec3(0.72, 0.8, 0.86), vec3(0.88, 0.92, 0.96), texture(uNoise2D, cp).r);
+    iceC *= 1. - crack * 0.45;
+    Surf si; si.albedo = iceC; si.N = normalize(vec3(n.x * 0.1, 1., n.y * 0.1)); si.rough = 0.25; si.spec = 0.9; si.ao = 1.; si.wrap = 0.2; si.sss = 0.2;
+    vec3 icol = shadeSurf(si, P, V, keyShadow(P, vec3(0, 1, 0)));
+    icol = mix(icol, refl, 0.12 + 0.2 * F);
+    col = mix(col, icol, ice * 0.92);
+  }
+  // snow resting on the ice
+  col = mix(col, vec3(0.9, 0.93, 0.97) * (ambCube(vec3(0,1,0)) + uKeyColor * max(uKeyDir.y, 0.)) , ice * uSnow * 0.8);
+  col = applyHaze(col, P);
+  gl_FragColor = vec4(col, 1.);
+}
+`;
+      River = class {
+        constructor(scene2, renderer) {
+          this.renderer = renderer;
+          const pos = [], flow = [], riv = [], idx = [];
+          let along = 0;
+          const W = 13;
+          for (let i = 0; i < RIVER.length; i++) {
+            const a = RIVER[Math.max(0, i - 1)], b = RIVER[Math.min(RIVER.length - 1, i + 1)];
+            const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1;
+            const fx = dx / l, fz = dz / l;
+            if (i > 0) along += Math.hypot(RIVER[i][0] - RIVER[i - 1][0], RIVER[i][1] - RIVER[i - 1][1]);
+            for (let k = 0; k <= 8; k++) {
+              const s = -1 + k / 4;
+              pos.push(RIVER[i][0] - fz * s * W, WORLD.riverY, RIVER[i][1] + fx * s * W);
+              flow.push(fx, fz);
+              riv.push(s, along);
+            }
+          }
+          for (let i = 0; i < RIVER.length - 1; i++) for (let k = 0; k < 8; k++) {
+            const a = i * 9 + k, b = a + 1, c = a + 9, d = c + 1;
+            idx.push(a, b, c, b, d, c);
+          }
+          const g = new BufferGeometry();
+          g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          g.setAttribute("aFlow", new Float32BufferAttribute(flow, 2));
+          g.setAttribute("aRiver", new Float32BufferAttribute(riv, 2));
+          g.setIndex(idx);
+          g.computeBoundingBox();
+          g.computeBoundingSphere();
+          this.box = g.boundingBox.clone().expandByScalar(5);
+          this.mat = new ShaderMaterial({
+            uniforms: Object.assign({}, U, { tReflect: { value: null }, uTexMat: { value: new Matrix4() }, uIce: { value: 1 } }),
+            vertexShader: VERT4,
+            fragmentShader: FRAG6
+          });
+          this.mesh = new Mesh(g, this.mat);
+          this.mesh.frustumCulled = false;
+          scene2.add(this.mesh);
+          this.rcam = new PerspectiveCamera();
+          this.rcam.layers.set(2);
+          this.rt = null;
+          this._v = new Vector3();
+          this._t = new Vector3();
+          this._r = new Matrix4();
+          this._f = new Frustum();
+          this._m = new Matrix4();
+        }
+        setSize(W, H) {
+          if (this.rt) this.rt.dispose();
+          this.rt = makeRT(Math.max(2, Math.floor(W / 2)), Math.max(2, Math.floor(H / 2)), { depth: true });
+          this.mat.uniforms.tReflect.value = this.rt.texture;
+        }
+        // mirrored camera render; skipped when the river is out of view
+        render(scene2, camera, st) {
+          this._m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+          this._f.setFromProjectionMatrix(this._m);
+          this.visible = this._f.intersectsBox(this.box);
+          this.mesh.visible = this.visible;
+          this.mat.uniforms.uIce.value = Math.min(1, st.frost * 0.9 + st.snow * 0.6 + st.night * 0.5 + 0.15);
+          if (!this.visible) return;
+          const y = WORLD.riverY;
+          const cam2 = camera, rc = this.rcam;
+          this._v.copy(cam2.position);
+          this._v.y = 2 * y - this._v.y;
+          this._r.extractRotation(cam2.matrixWorld);
+          this._t.set(0, 0, -1).applyMatrix4(this._r).add(cam2.position);
+          this._t.y = 2 * y - this._t.y;
+          rc.position.copy(this._v);
+          rc.up.set(0, 1, 0).applyMatrix4(this._r);
+          rc.up.y = -rc.up.y;
+          rc.lookAt(this._t);
+          rc.near = cam2.near;
+          rc.far = cam2.far;
+          rc.projectionMatrix.copy(cam2.projectionMatrix);
+          rc.projectionMatrixInverse.copy(cam2.projectionMatrixInverse);
+          rc.updateMatrixWorld();
+          const tm = this.mat.uniforms.uTexMat.value;
+          tm.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
+          tm.multiply(rc.projectionMatrix).multiply(rc.matrixWorldInverse);
+          const r = this.renderer;
+          U.uClipY.value = y - 0.1;
+          r.setRenderTarget(this.rt);
+          r.setClearColor(0, 1);
+          r.clear(true, true, false);
+          r.render(scene2, rc);
+          U.uClipY.value = -1e9;
+        }
+      };
+    }
+  });
+
   // src/balloon/envelope.js
   function profileAt(s) {
     const n = PROF.length - 1;
@@ -26760,8 +26954,8 @@ void main(){
   }
   function envelopeMaterial(fleet) {
     return makeMaterial({
-      vertex: VERT4,
-      fragment: FRAG6,
+      vertex: VERT5,
+      fragment: FRAG7,
       defines: fleet ? { FLEET: 1 } : {},
       side: DoubleSide,
       uniforms: {
@@ -26782,7 +26976,7 @@ void main(){
       }
     });
   }
-  var ENV, PROF, PALETTES, PALETTE_TEX, VERT4, FRAG6;
+  var ENV, PROF, PALETTES, PALETTE_TEX, VERT5, FRAG7;
   var init_envelope = __esm({
     "src/balloon/envelope.js"() {
       init_three_module();
@@ -26811,7 +27005,7 @@ void main(){
         [[0.7, 0.4, 0.85], [0.3, 0.7, 0.95], [0.95, 0.9, 0.4], [0.95, 0.45, 0.45], [0.95, 0.95, 0.95]]
       ];
       PALETTE_TEX = paletteTexture();
-      VERT4 = /* glsl */
+      VERT5 = /* glsl */
       `
 ${VCOMMON}
 attribute vec2 aGU;
@@ -26893,7 +27087,7 @@ void main(){
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
 `;
-      FRAG6 = /* glsl */
+      FRAG7 = /* glsl */
       `
 ${COMMON}
 uniform sampler2D uPal;
@@ -27234,8 +27428,8 @@ void main(){
   function flameMaterial(fleet = false) {
     return new ShaderMaterial({
       uniforms: Object.assign({}, U, { uI: { value: 0 }, uLen: { value: 3.2 }, uWid: { value: 0.3 }, uSeed: { value: Math.random() * 10 }, uBend: { value: new Vector3() }, uBright: { value: 1 } }),
-      vertexShader: VERT5,
-      fragmentShader: FRAG7,
+      vertexShader: VERT6,
+      fragmentShader: FRAG8,
       defines: fleet ? { FLEET: 1 } : {},
       transparent: true,
       depthWrite: false,
@@ -27254,14 +27448,14 @@ void main(){
     mesh2.renderOrder = 10;
     return mesh2;
   }
-  var FLAME_GEO, VERT5, FRAG7;
+  var FLAME_GEO, VERT6, FRAG8;
   var init_flame = __esm({
     "src/fx/flame.js"() {
       init_three_module();
       init_common();
       init_shared();
       FLAME_GEO = flameGeo();
-      VERT5 = /* glsl */
+      VERT6 = /* glsl */
       `
 ${VCOMMON}
 uniform float uI, uLen, uWid, uSeed;
@@ -27297,7 +27491,7 @@ void main(){
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
 `;
-      FRAG7 = /* glsl */
+      FRAG8 = /* glsl */
       `
 ${VCOMMON}
 uniform float uBright;
@@ -29042,6 +29236,7 @@ void main(){
       init_rocks();
       init_landmarks();
       init_village();
+      init_river();
       init_hero();
       init_fleet();
       init_crew();
@@ -29101,6 +29296,7 @@ void main(){
         rocks.addCollider(landmarks.castle);
         const village = new Village(scene2, data, rocks);
         G.village = village;
+        const river = new River(scene2, renderer);
         G.rocks = rocks;
         setProgress(0.68);
         await tick2();
@@ -29124,7 +29320,10 @@ void main(){
         const pipe = new Pipeline(renderer);
         const probe = new Probe(renderer);
         const vol = new Volumetrics(renderer);
-        pipe.onResize = (W, H) => vol.setSize(W, H);
+        pipe.onResize = (W, H) => {
+          vol.setSize(W, H);
+          river.setSize(W, H);
+        };
         pipe.hooks.volumetrics = (rt) => vol.render(rt, camera);
         let exposure = 1;
         setProgress(0.7);
@@ -29254,6 +29453,7 @@ void main(){
           rocks.update(camera);
           shadows.render(scene2, focus, viewC, farC);
           terrain.update(camera);
+          river.render(scene2, camera, st);
           pipe.render(scene2, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
           window.__dbg.frames++;
           requestAnimationFrame(frame);

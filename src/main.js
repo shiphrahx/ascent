@@ -15,6 +15,7 @@ import { Volumetrics } from './fx/volumetrics.js';
 import { Rocks } from './world/rocks.js';
 import { defineFacades, sculpt, Landmarks } from './world/landmarks.js';
 import { Village } from './world/village.js';
+import { River } from './world/river.js';
 import { Hero } from './balloon/hero.js';
 import { Fleet } from './balloon/fleet.js';
 import { Crew } from './balloon/crew.js';
@@ -74,6 +75,7 @@ async function boot() {
   rocks.addCollider(landmarks.castle);
   const village = new Village(scene, data, rocks);
   G.village = village;
+  const river = new River(scene, renderer);
   G.rocks = rocks;
   setProgress(0.68); await tick();
   const hero = new Hero(scene, data, rocks, null);
@@ -94,7 +96,7 @@ async function boot() {
   const pipe = new Pipeline(renderer);
   const probe = new Probe(renderer);
   const vol = new Volumetrics(renderer);
-  pipe.onResize = (W, H) => vol.setSize(W, H);
+  pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
   pipe.hooks.volumetrics = rt => vol.render(rt, camera);
   let exposure = 1;
   setProgress(0.7); await tick();
@@ -185,6 +187,7 @@ async function boot() {
     rocks.update(camera);
     shadows.render(scene, focus, viewC, farC);
     terrain.update(camera);
+    river.render(scene, camera, st);
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
     window.__dbg.frames++;
     requestAnimationFrame(frame);

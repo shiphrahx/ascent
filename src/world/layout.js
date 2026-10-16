@@ -24,7 +24,7 @@ export const VALLEYS = [
   { id: 'pigeon', pts: catmull([[-940, -60], [-780, 25], [-640, 100], [-500, 92], [-390, 40], [-290, 70], [-170, 210], [-80, 600], [-60, 1300]]),
     floorHalf: 34, wallL: 52, wallR: 52, floor0: 12, floor1: 8, steps: 5, rose: 0.1, chimneys: 0.35 },
   { id: 'river', pts: catmull([[170, -1350], [230, -700], [300, -300], [240, 0], [262, 160], [330, 500], [280, 900], [250, 1350]]),
-    floorHalf: 190, wallL: 330, wallR: 110, floor0: 5.6, floor1: 5.6, steps: 3, rose: 0.0, chimneys: 0 },
+    floorHalf: 190, wallL: 330, wallR: 230, floor0: 5.6, floor1: 5.6, steps: 2, rose: 0.0, chimneys: 0 },
   { id: 'rose', pts: catmull([[1100, -1350], [1150, -700], [1120, -300], [1180, 100], [1140, 500], [1200, 1350]]),
     floorHalf: 32, wallL: 140, wallR: 140, floor0: 22, floor1: 22, steps: 4, rose: 1.0, chimneys: 0.25, fins: 1 },
   { id: 'south', pts: catmull([[-1150, 60], [-1200, 400], [-1100, 800], [-1180, 1350]]),
