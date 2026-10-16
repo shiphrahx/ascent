@@ -109,7 +109,7 @@ export function buildCrown() {
 
 export const PALETTES = [
   // linear-ish colours, 5 per palette; picked to read well backlit and night-glowing
-  [[0.62, 0.05, 0.06], [0.95, 0.62, 0.10], [0.05, 0.30, 0.42], [0.92, 0.86, 0.72], [0.30, 0.04, 0.18]],   // hero: crimson, saffron, teal, cream, plum
+  [[0.50, 0.05, 0.06], [0.90, 0.56, 0.09], [0.04, 0.27, 0.38], [0.88, 0.82, 0.68], [0.25, 0.04, 0.15]],   // hero: crimson, saffron, teal, cream, plum
   [[0.85, 0.20, 0.04], [0.95, 0.75, 0.18], [0.80, 0.08, 0.10], [0.98, 0.92, 0.70], [0.55, 0.10, 0.04]],
   [[0.04, 0.18, 0.55], [0.85, 0.85, 0.88], [0.80, 0.10, 0.12], [0.06, 0.45, 0.70], [0.95, 0.75, 0.15]],
   [[0.10, 0.45, 0.20], [0.95, 0.85, 0.30], [0.90, 0.40, 0.08], [0.05, 0.22, 0.12], [0.96, 0.95, 0.85]],
@@ -239,13 +239,16 @@ int patternIndex(float pat, float g, float u, float s){
   float gf = g;
   if (pat < 0.5) {
     // hero: saffron crown, chevron band, alternating gores below, plum mouth
-    if (s > 0.86) return 1;
+    // hero: saffron crown, cream chevron band, deep jewel gores, plum mouth
+    if (s > 0.87) return 1;
     float chev = abs(u - 0.5) * 0.10;
-    if (s > 0.62 + chev && s < 0.70 + chev) return 3;
-    if (s > 0.70 + chev) return (gi % 2 == 0) ? 0 : 2;
-    if (s < 0.14) return 4;
-    if (s > 0.55 + chev) return 1;
-    return (gi % 4 == 0) ? 2 : ((gi % 2 == 0) ? 0 : 3);
+    if (s > 0.63 + chev && s < 0.69 + chev) return 3;
+    if (s > 0.69 + chev) return (gi % 2 == 0) ? 0 : 2;
+    if (s < 0.13) return 4;
+    if (s > 0.56 + chev) return 1;
+    if (s > 0.535 + chev) return 3;
+    int k = gi % 3;
+    return k == 0 ? 0 : (k == 1 ? 2 : 4);
   }
   if (pat < 1.5) return gi % 2 == 0 ? 0 : 1;                                   // alternating gores
   if (pat < 2.5) return int(mod(floor(s * 9.), 4.));                           // horizontal bands

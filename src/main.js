@@ -151,6 +151,7 @@ async function boot() {
     else if (dbg.at === 'birds') cams.fixed = (cam) => { const f = facades[1]; cam.position.set(f.x + f.nx * 120, f.floorY + 50, f.z + f.nz * 120); cam.lookAt(f.x + f.nx * 50, f.floorY + 40, f.z + f.nz * 50); };
     else if (dbg.at === 'castle') cams.fixed = (cam) => { const c = landmarks.castle; cam.position.set(c.x + 160, c.y + 60, c.z + 120); cam.lookAt(c.x, c.y + 25, c.z); };
   }
+  if (dbg.bcam) { const v = dbg.bcam.split(',').map(Number); cams.fixed = (cam) => { const b = hero.basket; cam.position.set(v[0], v[1], v[2]).applyMatrix4(b.matrixWorld); cam.lookAt(new THREE.Vector3(0, 1.3, 0).applyMatrix4(b.matrixWorld)); cam.near = 0.1; cam.updateProjectionMatrix(); }; }
   if (fixedCam) cams.fixed = (cam) => { cam.position.fromArray(fixedCam); cam.lookAt(new THREE.Vector3().fromArray(fixedLook || [0, 0, 0])); };
   // fast-forward the flight for testing: sim=seconds
   if (dbg.sim) {
