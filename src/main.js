@@ -256,7 +256,7 @@ async function boot() {
       const up = probe.up, k = sky.keyColor;
       const B = (0.2126 * up.r + 0.7152 * up.g + 0.0722 * up.b) + (0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b) * 0.3;
       const e = st.sunElev * 180 / Math.PI;
-      const nightDim = 1 - 0.8 * Math.min(1, Math.max(0, (-e - 2) / 12));
+      const nightDim = 1 - 0.7 * Math.min(1, Math.max(0, (-e - 2) / 12));
       const target = st.grade.exp * 0.55 * nightDim / Math.pow(Math.max(B, 1e-5), 0.74);
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
     }

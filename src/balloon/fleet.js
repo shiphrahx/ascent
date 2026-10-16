@@ -92,7 +92,7 @@ export class Fleet {
 
     // meshes
     this.envMat = envelopeMaterial(true);
-    this.envMat.uniforms.uFlameI.value = 3.2;
+    this.envMat.uniforms.uFlameI.value = 1.1;
     this.lods = [0, 1, 2].map(l => {
       const geo = envWithSkirt(l);
       const bal = new THREE.InstancedBufferAttribute(new Float32Array(N * 4), 4); bal.setUsage(THREE.DynamicDrawUsage);

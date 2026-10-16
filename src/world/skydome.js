@@ -65,7 +65,7 @@ void main(){
   vec3 grey = vec3(0.62, 0.66, 0.72) * (0.08 + 0.92 * sunUp) * (0.55 + 0.45 * smoothstep(-0.1, 0.6, d.y)) * (0.8 + 0.25 * pow(max(mu, 0.), 4.)) * 1.15;
   grey += vec3(0.008, 0.012, 0.02) * uMoonI * 200.;
   col = mix(col, grey, uStormL);
-  col += vec3(0.0010, 0.0016, 0.0032) * (0.4 + 0.6 * d.y);
+  col += vec3(0.0026, 0.0040, 0.0085) * (0.5 + 0.5 * d.y);
   gl_FragColor = vec4(col, 1.);
 }
 `;
@@ -225,7 +225,7 @@ export class SkyDome {
     const u = this.lutMat.uniforms;
     u.uSun.value.copy(sky.sunDir); u.uMoon.value.copy(sky.moonDir);
     u.uSunI.value = 20;
-    u.uMoonI.value = 0.13 * sky.state.moonVis + 0.012;
+    u.uMoonI.value = 0.26 * sky.state.moonVis + 0.02;
     u.uStormL.value = Math.min(1, sky.state.storm * 1.05);
     u.uHazeL.value = sky.state.haze;
     renderFS(this.renderer, this.lutMat, this.lut);
