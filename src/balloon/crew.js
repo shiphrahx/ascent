@@ -25,66 +25,76 @@ function buildPerson(o) {
   const parts = [];
   const add = (g, mat, col, bone) => parts.push(tag(g, mat, col, null, bone));
   const coat = o.coat, coat2 = o.coat2, skin = o.skin;
-  // pelvis: coat skirt over the hips, trousers
-  add(lathe([[0.0, -0.3], [0.17, -0.3], [0.19, -0.12], [0.18, 0.05], [0.16, 0.12], [0.0, 0.12]], 18, 1, 0.78), 9, coat, B.PELVIS);
-  // chest: padded coat body, shoulders, collar, scarf
-  add(lathe([[0.0, 0.0], [0.165, 0.0], [0.18, 0.12], [0.19, 0.3], [0.17, 0.42], [0.11, 0.49], [0.0, 0.5]], 20, 1.08, 0.72), 9, coat, B.CHEST);
-  const zip = new THREE.BoxGeometry(0.012, 0.42, 0.01); zip.translate(0, 0.22, 0.135); add(zip, 2, [1, 1, 1], B.CHEST);
-  const scarf = new THREE.TorusGeometry(0.085, 0.04, 8, 16); scarf.rotateX(Math.PI / 2); scarf.translate(0, 0.5, 0.0); add(scarf, 14, o.scarf, B.CHEST);
-  const tail = new THREE.BoxGeometry(0.06, 0.22, 0.03); tail.translate(0.05, 0.38, 0.11); tail.rotateZ(0.05); add(tail, 14, o.scarf, B.CHEST);
-  // head: skull, face, nose, ears, eyes, hat
-  add(ell(0.092, 0.115, 0.1), 10, skin, B.HEAD);
-  const nose = new THREE.ConeGeometry(0.018, 0.04, 8); nose.rotateX(Math.PI / 2); nose.translate(0, -0.005, 0.105); add(nose, 10, skin, B.HEAD);
+  // pelvis: coat skirt over the hips with a hem, trousers below
+  add(lathe([[0.0, -0.3], [0.165, -0.3], [0.175, -0.26], [0.172, -0.1], [0.16, 0.05], [0.148, 0.12], [0.0, 0.12]], 22, 1, 0.74), 9, coat, B.PELVIS);
+  const hem = new THREE.TorusGeometry(0.168, 0.012, 6, 24); hem.rotateX(Math.PI / 2); hem.scale(1, 1, 0.74); hem.translate(0, -0.29, 0); add(hem, 9, coat2, B.PELVIS);
+  // chest: quilted coat body tapering to the shoulders, a standing collar and a scarf
+  add(lathe([[0.0, 0.0], [0.15, 0.0], [0.163, 0.1], [0.172, 0.24], [0.165, 0.36], [0.13, 0.43], [0.075, 0.47], [0.0, 0.475]], 22, 1.12, 0.7), 9, coat, B.CHEST);
+  for (let k = 0; k < 4; k++) { const q = new THREE.TorusGeometry(0.168, 0.006, 4, 24); q.rotateX(Math.PI / 2); q.scale(1.12, 1, 0.7); q.translate(0, 0.07 + k * 0.08, 0); add(q, 9, coat2, B.CHEST); }
+  const zip = new THREE.BoxGeometry(0.01, 0.4, 0.01); zip.translate(0, 0.22, 0.118); add(zip, 2, [1, 1, 1], B.CHEST);
+  const collar = new THREE.CylinderGeometry(0.068, 0.078, 0.07, 16, 1, true); collar.translate(0, 0.49, 0); add(collar, 9, coat, B.CHEST);
+  const scarf = new THREE.TorusGeometry(0.07, 0.026, 8, 18); scarf.rotateX(Math.PI / 2); scarf.translate(0, 0.47, 0.005); add(scarf, 14, o.scarf, B.CHEST);
+  const tail = new THREE.BoxGeometry(0.055, 0.2, 0.022); tail.translate(0.045, 0.36, 0.115); tail.rotateZ(0.04); add(tail, 14, o.scarf, B.CHEST);
+  for (const s of [-1, 1]) { const pk = new THREE.BoxGeometry(0.08, 0.06, 0.02); pk.translate(s * 0.09, 0.05, 0.112); add(pk, 9, coat2, B.CHEST); }
+  // head: cranium, jaw and chin, nose, ears, eyes, brows, mouth
+  add(ell(0.083, 0.098, 0.09), 10, skin, B.HEAD);
+  add(ell(0.066, 0.05, 0.072, 0, -0.055, 0.018), 10, skin, B.HEAD);
+  const nose = new THREE.ConeGeometry(0.014, 0.036, 8); nose.rotateX(Math.PI / 2 - 0.25); nose.translate(0, -0.012, 0.094); add(nose, 10, skin.map(c => c * 0.95), B.HEAD);
   for (const s of [-1, 1]) {
-    const ear = ell(0.015, 0.03, 0.02, 8, 6); ear.translate(s * 0.092, 0.0, 0.0); add(ear, 10, skin, B.HEAD);
-    const eye = ell(0.012, 0.009, 0.006, 8, 6); eye.translate(s * 0.034, 0.022, 0.092); add(eye, 13, [0.03, 0.025, 0.02], B.HEAD);
-    const brow = new THREE.BoxGeometry(0.035, 0.008, 0.01); brow.translate(s * 0.034, 0.043, 0.094); add(brow, 11, o.hair, B.HEAD);
+    const ear = ell(0.012, 0.025, 0.017, 8, 6); ear.translate(s * 0.083, -0.005, -0.005); add(ear, 10, skin.map(c => c * 0.92), B.HEAD);
+    const white = ell(0.013, 0.008, 0.006, 8, 6); white.translate(s * 0.03, 0.015, 0.08); add(white, 10, [0.85, 0.83, 0.8], B.HEAD);
+    const iris = ell(0.006, 0.006, 0.004, 6, 4); iris.translate(s * 0.03, 0.015, 0.0855); add(iris, 13, [0.04, 0.03, 0.025], B.HEAD);
+    const brow = new THREE.BoxGeometry(0.03, 0.006, 0.008); brow.rotateZ(s * -0.12); brow.translate(s * 0.03, 0.035, 0.084); add(brow, 11, o.hair, B.HEAD);
+    const cheek = ell(0.02, 0.014, 0.01, 8, 6); cheek.translate(s * 0.045, -0.03, 0.07); add(cheek, 10, [skin[0] * 1.08, skin[1] * 0.9, skin[2] * 0.85], B.HEAD);
   }
-  const mouth = new THREE.BoxGeometry(0.04, 0.006, 0.008); mouth.translate(0, -0.05, 0.094); add(mouth, 10, skin.map(c => c * 0.6), B.HEAD);
+  const mouth = new THREE.BoxGeometry(0.03, 0.005, 0.006); mouth.translate(0, -0.05, 0.085); add(mouth, 10, skin.map(c => c * 0.55), B.HEAD);
+  if (o.beard) { const bd = ell(0.06, 0.04, 0.05, 0, -0.07, 0.04); add(bd, 11, o.hair, B.HEAD); }
+  if (o.hairBack) { const hb = ell(0.084, 0.085, 0.07, 10, 8); hb.translate(0, -0.03, -0.035); add(hb, 11, o.hair, B.HEAD); }
   if (o.hat === 'beanie') {
-    const h = new THREE.SphereGeometry(0.102, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55); h.translate(0, 0.02, -0.005); add(h, 14, o.hatCol, B.HEAD);
-    const cuff = new THREE.TorusGeometry(0.098, 0.018, 6, 20); cuff.rotateX(Math.PI / 2); cuff.translate(0, 0.035, -0.005); add(cuff, 14, o.hatCol.map(c => c * 0.8), B.HEAD);
-    const pom = ell(0.035, 0.035, 0.035, 10, 8); pom.translate(0, 0.125, -0.01); add(pom, 11, o.scarf, B.HEAD);
+    const h = new THREE.SphereGeometry(0.091, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.52); h.scale(1, 1.08, 1.02); h.translate(0, 0.012, -0.004); add(h, 14, o.hatCol, B.HEAD);
+    const cuff = new THREE.TorusGeometry(0.088, 0.014, 6, 22); cuff.rotateX(Math.PI / 2); cuff.translate(0, 0.022, -0.004); add(cuff, 14, o.hatCol.map(c => c * 0.8), B.HEAD);
+    const pom = ell(0.027, 0.027, 0.027, 10, 8); pom.translate(0, 0.112, -0.008); add(pom, 11, o.scarf, B.HEAD);
   } else if (o.hat === 'cap') {
-    const h = new THREE.SphereGeometry(0.1, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5); h.translate(0, 0.03, 0); add(h, 9, o.hatCol, B.HEAD);
-    const brim = new THREE.CylinderGeometry(0.07, 0.07, 0.01, 12, 1, false, -Math.PI / 2, Math.PI); brim.scale(1, 1, 1.2); brim.translate(0, 0.035, 0.07); add(brim, 9, o.hatCol, B.HEAD);
+    const h = new THREE.SphereGeometry(0.089, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5); h.translate(0, 0.022, 0); add(h, 9, o.hatCol, B.HEAD);
+    const brim = new THREE.CylinderGeometry(0.06, 0.06, 0.008, 14, 1, false, -Math.PI / 2, Math.PI); brim.scale(1, 1, 1.25); brim.translate(0, 0.024, 0.062); add(brim, 9, o.hatCol, B.HEAD);
   } else {
-    // fur trapper hat
-    const h = new THREE.SphereGeometry(0.11, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55); h.translate(0, 0.02, 0); add(h, 11, o.hatCol, B.HEAD);
-    for (const s of [-1, 1]) { const f = ell(0.03, 0.07, 0.06, 8, 6); f.translate(s * 0.095, -0.03, 0); add(f, 11, o.hatCol, B.HEAD); }
+    // fur trapper hat with ear flaps
+    const h = new THREE.SphereGeometry(0.095, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55); h.translate(0, 0.016, 0); add(h, 11, o.hatCol, B.HEAD);
+    const rim = new THREE.TorusGeometry(0.092, 0.02, 6, 22); rim.rotateX(Math.PI / 2); rim.translate(0, 0.02, 0); add(rim, 11, o.hatCol.map(c => c * 1.2), B.HEAD);
+    for (const s of [-1, 1]) { const f = ell(0.022, 0.055, 0.045, 8, 6); f.translate(s * 0.088, -0.03, -0.005); add(f, 11, o.hatCol.map(c => c * 1.2), B.HEAD); }
   }
-  if (o.hairBack) { const hb = ell(0.088, 0.09, 0.07, 10, 8); hb.translate(0, -0.03, -0.05); add(hb, 11, o.hair, B.HEAD); }
-  const neck = limb(0.045, 0.05, 0.1, 10); neck.translate(0, -0.05, 0); add(neck, 10, skin, B.HEAD);
-  // arms: sleeves, cuffs, gloves
+  const neck = limb(0.042, 0.046, 0.1, 10); neck.translate(0, -0.06, -0.008); add(neck, 10, skin, B.HEAD);
+  // arms: shoulder caps, sleeves with a crease at the elbow, ribbed cuffs, mittens with thumbs
   for (const [ua, fa, hd, s] of [[B.LUA, B.LFA, B.LH, -1], [B.RUA, B.RFA, B.RH, 1]]) {
-    add(ell(0.075, 0.07, 0.07), 9, coat, ua);
-    add(limb(0.062, 0.052, o.ua), 9, coat, ua);
-    add(ell(0.05, 0.05, 0.05), 9, coat, fa);
-    add(limb(0.05, 0.045, o.fa), 9, coat, fa);
-    const cuff = limb(0.05, 0.05, 0.04); cuff.translate(0, -o.fa + 0.03, 0); add(cuff, 9, coat2, fa);
-    // mitten: palm faces -z in bind pose, fingers along -y
-    const m = ell(0.045, 0.075, 0.03, 10, 8); m.translate(0, -0.07, 0); add(m, 12, o.glove, hd);
-    const th = ell(0.016, 0.035, 0.016, 6, 6); th.rotateZ(s * 0.6); th.translate(s * 0.04, -0.035, 0.012); add(th, 12, o.glove, hd);
+    add(ell(0.06, 0.058, 0.058), 9, coat, ua);
+    add(limb(0.054, 0.047, o.ua), 9, coat, ua);
+    add(ell(0.046, 0.046, 0.046), 9, coat, fa);
+    add(limb(0.045, 0.04, o.fa), 9, coat, fa);
+    const cuff = limb(0.042, 0.042, 0.035); cuff.translate(0, -o.fa + 0.03, 0); add(cuff, 14, coat2, fa);
+    const m = ell(0.038, 0.068, 0.026, 10, 8); m.translate(0, -0.065, 0); add(m, 12, o.glove, hd);
+    const th = ell(0.013, 0.03, 0.013, 6, 6); th.rotateZ(s * 0.6); th.translate(s * 0.034, -0.032, 0.01); add(th, 12, o.glove, hd);
   }
   // legs (mostly hidden by the basket wall, visible from inside)
   for (const [th, sh] of [[B.LTH, B.LSH], [B.RTH, B.RSH]]) {
-    add(limb(0.085, 0.065, 0.44), 9, o.trousers, th);
-    add(limb(0.06, 0.05, 0.42), 9, o.trousers, sh);
-    const boot = ell(0.055, 0.05, 0.12, 10, 8); boot.translate(0, -0.44, 0.04); add(boot, 12, [0.08, 0.06, 0.05], sh);
+    add(limb(0.078, 0.06, 0.44), 9, o.trousers, th);
+    add(limb(0.056, 0.047, 0.42), 9, o.trousers, sh);
+    const boot = ell(0.05, 0.05, 0.115, 10, 8); boot.translate(0, -0.44, 0.04); add(boot, 12, [0.08, 0.06, 0.05], sh);
+    const shaft = limb(0.055, 0.052, 0.14); shaft.translate(0, -0.3, 0); add(shaft, 12, [0.1, 0.07, 0.05], sh);
   }
   if (o.camera) {
-    const body = new THREE.BoxGeometry(0.12, 0.08, 0.06); add(body, 13, [0.06, 0.06, 0.07], B.CAM);
-    const lens = new THREE.CylinderGeometry(0.03, 0.03, 0.07, 14); lens.rotateX(Math.PI / 2); lens.translate(0.01, 0, 0.06); add(lens, 13, [0.03, 0.03, 0.03], B.CAM);
-    const ring = new THREE.TorusGeometry(0.031, 0.004, 6, 16); ring.translate(0.01, 0, 0.095); add(ring, 2, [1, 1, 1], B.CAM);
+    const body = new THREE.BoxGeometry(0.12, 0.075, 0.06); add(body, 13, [0.06, 0.06, 0.07], B.CAM);
+    const grip = new THREE.BoxGeometry(0.03, 0.07, 0.065); grip.translate(0.05, 0, 0.005); add(grip, 13, [0.03, 0.03, 0.03], B.CAM);
+    const lens = new THREE.CylinderGeometry(0.03, 0.032, 0.07, 16); lens.rotateX(Math.PI / 2); lens.translate(-0.01, 0, 0.06); add(lens, 13, [0.03, 0.03, 0.03], B.CAM);
+    const ring = new THREE.TorusGeometry(0.031, 0.004, 6, 16); ring.translate(-0.01, 0, 0.095); add(ring, 2, [1, 1, 1], B.CAM);
   }
   return merge(parts);
 }
 
 const PEOPLE = [
-  { name: 'pilot', coat: [0.05, 0.07, 0.12], coat2: [0.1, 0.1, 0.1], scarf: [0.55, 0.08, 0.06], skin: [0.62, 0.43, 0.32], hair: [0.12, 0.08, 0.05], hat: 'cap', hatCol: [0.08, 0.08, 0.09], glove: [0.12, 0.09, 0.07], trousers: [0.12, 0.12, 0.13], ua: 0.3, fa: 0.28, h: 1.0, camera: false, hairBack: true },
-  { name: 'p1', coat: [0.55, 0.06, 0.06], coat2: [0.2, 0.03, 0.03], scarf: [0.85, 0.8, 0.7], skin: [0.75, 0.55, 0.45], hair: [0.35, 0.2, 0.1], hat: 'beanie', hatCol: [0.85, 0.82, 0.75], glove: [0.25, 0.12, 0.08], trousers: [0.08, 0.08, 0.12], ua: 0.28, fa: 0.26, h: 0.95, camera: true, hairBack: true },
-  { name: 'p2', coat: [0.07, 0.18, 0.36], coat2: [0.04, 0.08, 0.16], scarf: [0.9, 0.6, 0.12], skin: [0.45, 0.3, 0.22], hair: [0.05, 0.04, 0.03], hat: 'trapper', hatCol: [0.35, 0.25, 0.16], glove: [0.05, 0.05, 0.06], trousers: [0.2, 0.18, 0.15], ua: 0.3, fa: 0.28, h: 1.0, camera: false, hairBack: false },
-  { name: 'p3', coat: [0.72, 0.52, 0.12], coat2: [0.35, 0.22, 0.05], scarf: [0.12, 0.3, 0.25], skin: [0.8, 0.62, 0.52], hair: [0.6, 0.45, 0.25], hat: 'beanie', hatCol: [0.1, 0.3, 0.28], glove: [0.4, 0.3, 0.2], trousers: [0.1, 0.1, 0.1], ua: 0.27, fa: 0.25, h: 0.93, camera: true, hairBack: true },
+  { name: 'pilot', beard: true, coat: [0.05, 0.07, 0.12], coat2: [0.1, 0.1, 0.1], scarf: [0.55, 0.08, 0.06], skin: [0.62, 0.43, 0.32], hair: [0.12, 0.08, 0.05], hat: 'cap', hatCol: [0.08, 0.08, 0.09], glove: [0.12, 0.09, 0.07], trousers: [0.12, 0.12, 0.13], ua: 0.3, fa: 0.28, h: 1.0, camera: false, hairBack: true },
+  { name: 'p1', coat: [0.42, 0.06, 0.07], coat2: [0.2, 0.03, 0.03], scarf: [0.85, 0.8, 0.7], skin: [0.75, 0.55, 0.45], hair: [0.35, 0.2, 0.1], hat: 'beanie', hatCol: [0.85, 0.82, 0.75], glove: [0.25, 0.12, 0.08], trousers: [0.08, 0.08, 0.12], ua: 0.28, fa: 0.26, h: 0.95, camera: true, hairBack: true },
+  { name: 'p2', coat: [0.08, 0.16, 0.3], coat2: [0.04, 0.08, 0.16], scarf: [0.9, 0.6, 0.12], skin: [0.45, 0.3, 0.22], hair: [0.05, 0.04, 0.03], hat: 'trapper', hatCol: [0.35, 0.25, 0.16], glove: [0.05, 0.05, 0.06], trousers: [0.2, 0.18, 0.15], ua: 0.3, fa: 0.28, h: 1.0, camera: false, hairBack: false },
+  { name: 'p3', coat: [0.6, 0.43, 0.13], coat2: [0.35, 0.22, 0.05], scarf: [0.12, 0.3, 0.25], skin: [0.8, 0.62, 0.52], hair: [0.6, 0.45, 0.25], hat: 'beanie', hatCol: [0.1, 0.3, 0.28], glove: [0.4, 0.3, 0.2], trousers: [0.1, 0.1, 0.1], ua: 0.27, fa: 0.25, h: 0.93, camera: true, hairBack: true },
   { name: 'p4', coat: [0.12, 0.28, 0.14], coat2: [0.05, 0.12, 0.06], scarf: [0.6, 0.12, 0.3], skin: [0.58, 0.4, 0.3], hair: [0.2, 0.12, 0.06], hat: 'beanie', hatCol: [0.55, 0.1, 0.12], glove: [0.15, 0.1, 0.08], trousers: [0.15, 0.13, 0.12], ua: 0.29, fa: 0.27, h: 0.98, camera: false, hairBack: false },
 ];
 

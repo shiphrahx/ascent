@@ -81,8 +81,8 @@ void main(){
     alb = mix(alb, vec3(0.75, 0.68, 0.55), stitch * 0.6);
     rough = 0.6; spec = 0.25;
   } else if (m == 2.) {
-    alb = vec3(0.62, 0.62, 0.64) * (0.9 + 0.1 * texture(uNoise2D, vObj.xy * 4.).r);
-    rough = 0.28; spec = 1.2;
+    alb = vec3(0.30, 0.31, 0.33) * (0.85 + 0.2 * texture(uNoise2D, vObj.xy * 4.).r);
+    rough = 0.22; spec = 1.6;
   } else if (m == 3.) {
     // quilted cylinder cover: diamond stitch pattern
     float a = atan(vObj.z - vCol.z * 0., vObj.x) ;
@@ -166,7 +166,7 @@ void main(){
   // burner light
   vec3 tl = uLocalLightPos - P;
   float d2 = dot(tl, tl);
-  col += alb * uLocalLightCol * (max(dot(N, tl * inversesqrt(d2)), 0.) * 0.8 + 0.2) / (1. + d2 * 0.5);
+  col += alb * uLocalLightCol * (max(dot(N, tl * inversesqrt(d2)), 0.) * 0.8 + 0.2) / (1. + d2 * 1.5);
   col += emit;
   col = applyHaze(col, P);
   gl_FragColor = vec4(col, 1.);

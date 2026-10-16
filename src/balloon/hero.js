@@ -105,7 +105,7 @@ export class Hero {
     // local light for basket and crew: flame plus pilot lights
     const pu = this.propMat.uniforms;
     pu.uLocalLightPos.value.copy(this.burnerWorld);
-    pu.uLocalLightCol.value.setRGB(1.0, 0.55, 0.22).multiplyScalar(this.flameI * 6 + 0.25);
+    pu.uLocalLightCol.value.setRGB(1.0, 0.55, 0.22).multiplyScalar((this.flameI * 1.6 + 0.06) * U.uGlowComp.value);
 
     // flying wires
     const mouthR = ENV.mouthR;

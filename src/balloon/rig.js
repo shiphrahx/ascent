@@ -134,7 +134,7 @@ export function buildRig(coverColor = [0.36, 0.06, 0.08], uprightColor = [0.06, 
     parts.push(tag(cyl(0.008, 0.008, 0.08, 6, bx + 0.09, B.frameY + 0.45, 0.04), 7));
   }
   // manifold block and blast valve handles hanging toward the pilot (+z side)
-  const block = new THREE.BoxGeometry(0.62, 0.07, 0.16); block.translate(0, B.frameY - 0.03, 0);
+  const block = new THREE.BoxGeometry(0.5, 0.05, 0.1); block.translate(0, B.frameY - 0.02, 0);
   parts.push(tag(block, 2));
   const handles2 = [];
   for (const bx of [-0.19, 0.19]) {

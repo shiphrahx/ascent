@@ -153,6 +153,7 @@ export class Flight {
     } else if (this.mode === 'landed') {
       this.burn = 0; this.vent = 1;
     }
+    if (this.forceBurn) this.burn = 1;
     // --- thermodynamics ---
     this.x += (B_RATE * this.burn - COOL * (this.x + T_EQ) + COOL * T_EQ * 0.0 - VENT_RATE * this.vent) * dt;
     // neutral heat loss is offset on average; model as cooling toward -T_EQ*COOL balance

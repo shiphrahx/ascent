@@ -135,6 +135,9 @@ async function boot() {
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
+  if (dbg.fp) { const [a, b] = dbg.fp.split(',').map(Number); cams.fpYaw = a; cams.fpPitch = b; }
+  if (dbg.burn) hero.flight.forceBurn = true;
+  if (dbg.orbit) { const [y, p, d] = dbg.orbit.split(',').map(Number); cams.yaw = y; cams.pitch = p; cams.dist = cams.distT = d; cams.input.drag.idle = -1e9; }
   if (dbg.at) {
     const f = { church: facades[0], dove1: facades[1], dove2: facades[2] }[dbg.at];
     const dist = parseFloat(dbg.d || 45), up = parseFloat(dbg.up || 12);
