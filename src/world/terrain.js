@@ -85,6 +85,18 @@ void main(){
   float ledge = smoothstep(0.0, 0.08, fract(b)) * (1. - smoothstep(0.08, 0.2, fract(b)));
   N = normalize(N + gN + grain * (1. - steep) + vec3(0, ledge * 0.9 * steep, 0));
 
+  // beyond the core the plateau is farmed too: the same patchwork, made up procedurally
+  float farM = 1. - coreMask(P.xz);
+  vec2 fpP = vec2(dot(P.xz, vec2(0.95, 0.31)) / 130., dot(P.xz, vec2(-0.31, 0.95)) / 85.);
+  if (farM > 0.) {
+    vec2 fpO = vec2(dot(P.xz, vec2(0.95, 0.31)) / 170., dot(P.xz, vec2(-0.31, 0.95)) / 110.);
+    float hs = hash12(floor(fpO) + 17.);
+    float sT = hs < 0.32 ? 0.72 : hs < 0.62 ? 0.42 : hs < 0.8 ? 0.36 : 0.15;
+    float fieldsHere = farM * (1. - smoothstep(350., 700., P.y));
+    soilT = mix(soilT, sT, fieldsHere);
+    at.a = mix(at.a, fract(hs * 7.3), fieldsHere);
+    fpP = mix(fpP, fpO, farM);
+  }
   // --- albedo ---
   float var = nz.r;
   vec3 rock = tuffColor(P.y, rose, P.xz, var);
@@ -105,6 +117,20 @@ void main(){
   soil = mix(soil, dryGrass, smoothstep(0.3, 0.42, soilT) * (1. - smoothstep(0.62, 0.7, soilT)));
   soil = mix(soil, plowed, smoothstep(0.66, 0.72, soilT) * (1. - smoothstep(0.9, 0.98, soilT)));
   soil = mix(soil, vineSoil, smoothstep(0.92, 0.98, soilT));
+  // field margins: darker strips of stubble and stones along every plot edge
+  vec2 ff = abs(fract(fpP) - 0.5);
+  float edgeW = 0.012 + dist * 0.000012;
+  float margin = (1. - smoothstep(0.5 - edgeW * 1.6, 0.5 - edgeW * 0.6, max(ff.x, ff.y))) ;
+  soil *= 1. - 0.22 * (1. - margin) * smoothstep(0.3, 0.4, soilT);
+  // scrubby dark cushions in patches on the uncultivated ground
+  float scrub = smoothstep(0.55, 0.75, texture(uNoise2D, P.xz / 46.).g) * (1. - smoothstep(0.3, 0.4, soilT) * 0.7);
+  soil = mix(soil, vec3(0.27, 0.26, 0.18) * (0.8 + 0.4 * nz2.r), scrub * 0.55);
+  // dirt tracks winding across the plateau and valley floors
+  float rn = texture(uNoise2D, P.xz / 2900. + 0.21).r - 0.5;
+  float rn2 = texture(uNoise2D, P.xz / 1700. + 0.63).g - 0.5;
+  float rw = fwidth(rn) * 1.2 + 0.0008;
+  float road = max(1. - smoothstep(rw * 0.5, rw * 1.5, abs(rn)), 1. - smoothstep(rw * 0.5, rw * 1.5, abs(rn2)) * 0.8);
+  soil = mix(soil, vec3(0.70, 0.62, 0.50) * (0.9 + 0.2 * nz2.g), road * 0.75);
   float soilAmt = flat_ * smoothstep(0.1, 0.25, soilT + 0.12 * (1. - slope));
   // plateau tops get patchy dry grass over pale tuff
   soilAmt = max(soilAmt, flat_ * smoothstep(0.55, 0.75, texture(uNoise2D, P.xz / 70.).r) * 0.85);
@@ -119,7 +145,7 @@ void main(){
   float wetBank = smoothstep(0.0, 0.5, water);
 
   // volcano and far ranges: darker andesite, snowfields
-  float far = 1. - coreMask(P.xz);
+  float far = farM;
   vec3 andes = mix(vec3(0.48, 0.42, 0.40), vec3(0.62, 0.55, 0.50), nz.r);
   alb = mix(alb, mix(andes, alb, smoothstep(600., 200., P.y)), far * smoothstep(250., 700., P.y));
 

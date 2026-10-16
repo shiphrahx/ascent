@@ -102,10 +102,10 @@ void main(){
   float rise = 1.6 * age / (1. + age * 0.12);
   vec3 p = e + vec3(w.x, 0., w.y) * age * 0.85 + vec3(0., rise, 0.);
   p += vec3(sin(age * 0.9 + aP.w * 30.), 0., cos(age * 0.7 + aP.w * 20.)) * age * 0.18;
-  float sz = (0.5 + age * 0.55) * aQ.y;
+  float sz = (0.4 + age * 0.45) * aQ.y;
   vec3 wp = p + (camRight() * position.x + camUp() * position.y) * sz;
   vUv = uv;
-  vA = smoothstep(0., 0.08, k) * (1. - smoothstep(0.45, 1., k)) * uAmt * 0.55;
+  vA = smoothstep(0., 0.12, k) * (1. - smoothstep(0.35, 1., k)) * uAmt * 0.32;
   vC = (uKeyColor * keyHorizon(p) * terrainShadow(p) * 0.55 + ambCube(vec3(0,1,0)) * 1.1) * vec3(0.82, 0.82, 0.86);
   vC = applyHaze(vC, p);
   gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.);

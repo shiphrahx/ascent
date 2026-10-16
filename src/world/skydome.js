@@ -99,8 +99,8 @@ vec3 halo22(vec3 d){
   for (int s = -1; s <= 1; s += 2) {
     float x = abs(dl) - dAz;
     if (float(s) * dl < 0.) continue;
-    float v = gauss(de, 0.022);
-    dogs += vec3(gauss(x + 0.004, 0.010), gauss(x - 0.002, 0.012), gauss(x - 0.010, 0.016)) * v * 2.2;
+    float v = gauss(de, 0.026);
+    dogs += vec3(gauss(x + 0.004, 0.009), gauss(x - 0.003, 0.011), gauss(x - 0.011, 0.016)) * v * 3.5;
     dogs += vec3(0.8, 0.85, 1.0) * gauss(x - 0.05, 0.05) * gauss(de, 0.01) * 0.35 * step(0., x);
   }
   // faint parhelic circle
@@ -212,7 +212,7 @@ void main(){
     }
   }
   // ice-crystal optics on cold mornings
-  if (uSunDogs > 0.001) col += halo22(d) * uSunColor * 0.25 * horizonExt;
+  if (uSunDogs > 0.001) col += halo22(d) * uSunColor * 0.9 * horizonExt;
 
   gl_FragColor = vec4(col, 1.);
 }
