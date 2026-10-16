@@ -177,7 +177,7 @@ export class Sky {
     } else {
       this.keyDir.copy(this.moonDir);
       if (this.keyDir.y < 0.05) { this.keyDir.y = 0.05; this.keyDir.normalize(); }
-      this.keyColor.copy(this.moonColor).multiplyScalar(0.16 * moonVis * stormDim * cloudDim);
+      this.keyColor.copy(this.moonColor).multiplyScalar(0.045 * moonVis * stormDim * cloudDim);
       s.keyIsSun = 0; s.keyElev = moonAlt;
     }
 
@@ -203,7 +203,7 @@ export class Sky {
     const look = sampleKeys(h, KEYS);
     // exposure compensates for the huge range between noon and moonlight
     const brightness = Math.max(1e-4, this.keyColor.r * 0.3 + this.keyColor.g * 0.6 + this.keyColor.b * 0.1) * 0.25 + (sk.r + sk.g + sk.b) / 3;
-    s.exposure = look.exp * Math.min(9.0, 0.95 / Math.pow(brightness, 0.82));
+    s.exposure = look.exp * Math.min(7.0, 0.62 / Math.pow(brightness, 0.8));
     s.grade = look;
     // storm grade pulls everything to soft cool grey
     if (st > 0) {

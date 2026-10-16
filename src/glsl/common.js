@@ -5,7 +5,7 @@ uniform float uTime;
 uniform vec3 uSunDir, uMoonDir, uKeyDir;
 uniform vec3 uKeyColor, uSunColor, uSkyAmb, uGroundAmb;
 uniform float uKeyElev, uKeyIsSun;
-uniform sampler2D uSkyLUT;
+uniform sampler2D uSkyLUT, uAmbCube;
 uniform float uHaze, uValleyFog, uFogTop, uSnow, uFrost, uWet, uStorm, uNight, uCloud;
 uniform vec2 uWindDir, uGustOffset;
 uniform float uWindStrength;
@@ -120,6 +120,13 @@ vec3 skyLut(vec3 d){
   float v = sqrt(asin(min(el, 1.)) / 1.5707963);
   return texture(uSkyLUT, vec2(az / 6.2831853, v)).rgb;
 }
+vec3 ambCube(vec3 n){
+  vec3 n2 = n * n;
+  vec3 x = texelFetch(uAmbCube, ivec2(n.x > 0. ? 0 : 1, 0), 0).rgb;
+  vec3 y = texelFetch(uAmbCube, ivec2(n.y > 0. ? 2 : 3, 0), 0).rgb;
+  vec3 z = texelFetch(uAmbCube, ivec2(n.z > 0. ? 4 : 5, 0), 0).rgb;
+  return x * n2.x + y * n2.y + z * n2.z;
+}
 float hgPhase(float c, float g){ float g2 = g*g; return (1. - g2) / (12.566 * pow(1. + g2 - 2.*g*c, 1.5)); }
 
 // Aerial perspective: exponential height haze lit by the sky in the view direction.
@@ -129,7 +136,7 @@ vec3 applyHaze(vec3 col, vec3 P){
   float dist = length(dv);
   vec3 dir = dv / max(dist, 1e-3);
   float H = 1500.;
-  float rho0 = uHaze / 15000.;
+  float rho0 = uHaze / 32000.;
   float k = dv.y / H;
   float f = abs(k) > 1e-3 ? (1. - exp(-k)) / k : 1.;
   float od = rho0 * exp(-(C.y + 40.) / H) * dist * f;
@@ -150,12 +157,7 @@ vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   vec3 key = uKeyColor * diff * shadow;
   // translucency / subsurface through thin things lit from behind
   key += uKeyColor * s.sss * pow(sat(dot(-V, L)), 3.) * (0.35 + 0.65 * shadow) * 0.6;
-  float up = s.N.y * 0.5 + 0.5;
-  vec3 amb = mix(uGroundAmb, uSkyAmb, up);
-  // the sky is brighter toward the key light: soft directional fill
-  amb += uSkyAmb * 0.35 * max(0., dot(s.N, normalize(vec3(L.x, 0.25, L.z))));
-  // warm bounce from lit ground into faces turned down/sideways
-  amb += uKeyColor * 0.05 * sat(0.6 - s.N.y) * uKeyIsSun;
+  vec3 amb = ambCube(s.N);
   vec3 col = s.albedo * (key + amb * s.ao);
   // specular
   vec3 H = normalize(L + V);

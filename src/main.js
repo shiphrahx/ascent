@@ -10,6 +10,7 @@ import { TerrainShadow } from './world/terrainShadow.js';
 import { Shadows } from './world/shadows.js';
 import { Wind } from './world/wind.js';
 import { Pipeline } from './core/pipeline.js';
+import { Probe } from './world/probe.js';
 
 const canvas = document.getElementById('view');
 const loadFill = document.getElementById('loadFill');
@@ -60,6 +61,8 @@ async function boot() {
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   const pipe = new Pipeline(renderer);
+  const probe = new Probe(renderer);
+  let exposure = 1;
   setProgress(0.7); await tick();
 
   let pr = Math.min(window.devicePixelRatio || 1, 2);
@@ -109,13 +112,23 @@ async function boot() {
     camera.updateMatrixWorld();
 
     dome.update(sky, camera);
+    probe.update(st.snow);
+    {
+      // auto exposure from sky irradiance and the key light; nights stay darker than days
+      const up = probe.up, k = sky.keyColor;
+      const B = (0.2126 * up.r + 0.7152 * up.g + 0.0722 * up.b) + (0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b) * 0.35 * Math.max(0.25, sky.keyDir.y);
+      const e = st.sunElev * 180 / Math.PI;
+      const nightDim = 1 - 0.72 * Math.min(1, Math.max(0, (-e - 2) / 12));
+      const target = st.grade.exp * 0.55 * nightDim / Math.pow(Math.max(B, 1e-5), 0.74);
+      exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
+    }
     tshadow.update(window.__dbg.frames < 2);
     focus.copy(camera.position);
     viewC.copy(camera.position);
     farC.copy(camera.position);
     shadows.render(scene, focus, viewC, farC);
     terrain.update(camera);
-    pipe.render(scene, camera, { exposure: st.exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
+    pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
     window.__dbg.frames++;
     requestAnimationFrame(frame);
   }

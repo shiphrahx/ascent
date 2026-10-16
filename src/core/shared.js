@@ -23,6 +23,7 @@ export const U = {
   uSkyAmb: { value: c3() },
   uGroundAmb: { value: c3() },
   uSkyLUT: { value: null },
+  uAmbCube: { value: null },
   uHaze: { value: 1 },
   uValleyFog: { value: 0 },
   uFogTop: { value: WORLD.fogTop },
