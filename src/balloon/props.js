@@ -151,7 +151,7 @@ void main(){
     alb = mix(vec3(0.20, 0.12, 0.07), vec3(0.30, 0.19, 0.11), smoothstep(0.1, 0.3, plank) * texture(uNoise2D, vObj.xy * vec2(2., 0.3)).r) * vCol;
   } else if (m == 18.) {
     // windows: dark glass by day, warm lamplight after dusk in most houses
-    alb = vec3(0.03, 0.035, 0.04); rough = 0.15; spec = 1.2;
+    alb = vec3(0.03, 0.035, 0.04); rough = 0.3; spec = 0.35;
     float lit = step(0.32, fract(vSeed * 13.7 + floor(vObj.x * 3. + vObj.z * 3.) * 0.31)) * smoothstep(0.3, 0.75, uNight);
     float flick = 0.9 + 0.1 * sin(uTime * 5. + vSeed * 40.);
     emit = vec3(1.0, 0.55, 0.22) * lit * flick * 2.6;
