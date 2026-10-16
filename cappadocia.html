@@ -27603,6 +27603,454 @@ void main(){
     }
   });
 
+  // src/life/birds.js
+  function birdGeo() {
+    const pos = [], wing = [], span = [], col = [], idx = [];
+    const add = (p, w, s, c) => {
+      pos.push(...p);
+      wing.push(w);
+      span.push(s);
+      col.push(c);
+      return pos.length / 3 - 1;
+    };
+    const ring = [];
+    const zs = [-0.55, -0.35, 0, 0.3, 0.48, 0.58];
+    const rs = [0.02, 0.09, 0.13, 0.11, 0.07, 0.03];
+    for (let j = 0; j < zs.length; j++) {
+      const r = [];
+      for (let i = 0; i < 8; i++) {
+        const a = i / 8 * Math.PI * 2;
+        r.push(add([Math.cos(a) * rs[j], Math.sin(a) * rs[j] * 0.85 + (j === 4 ? 0.04 : 0), zs[j]], 0, 0, 0));
+      }
+      ring.push(r);
+    }
+    for (let j = 0; j < zs.length - 1; j++) for (let i = 0; i < 8; i++) {
+      const a = ring[j][i], b = ring[j][(i + 1) % 8], c = ring[j + 1][i], d = ring[j + 1][(i + 1) % 8];
+      idx.push(a, c, b, b, c, d);
+    }
+    const t0 = add([-0.12, 0, -0.45], 0, 0, 1), t1 = add([0.12, 0, -0.45], 0, 0, 1), t2 = add([0.2, 0, -0.85], 0, 0.2, 1), t3 = add([-0.2, 0, -0.85], 0, 0.2, 1);
+    idx.push(t0, t1, t2, t0, t2, t3);
+    for (const s of [-1, 1]) {
+      const r0 = add([s * 0.08, 0.03, 0.18], s, 0, 1), r1 = add([s * 0.08, 0.03, -0.18], s, 0, 1);
+      const m0 = add([s * 0.55, 0.05, 0.15], s, 0.5, 1), m1 = add([s * 0.55, 0.05, -0.25], s, 0.5, 1);
+      const tp0 = add([s * 1, 0.04, -0.05], s, 1, 2), tp1 = add([s * 0.95, 0.04, -0.35], s, 1, 2);
+      if (s > 0) idx.push(r0, m0, r1, r1, m0, m1, m0, tp0, m1, m1, tp0, tp1);
+      else idx.push(r0, r1, m0, r1, m1, m0, m0, m1, tp0, m1, tp1, tp0);
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+    g.setAttribute("aWing", new Float32BufferAttribute(wing, 1));
+    g.setAttribute("aSpan", new Float32BufferAttribute(span, 1));
+    g.setAttribute("aPart", new Float32BufferAttribute(col, 1));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+  var VERT6, FRAG9, Birds;
+  var init_birds = __esm({
+    "src/life/birds.js"() {
+      init_three_module();
+      init_common();
+      init_mat();
+      init_noise();
+      VERT6 = /* glsl */
+      `
+${VCOMMON}
+attribute float aWing, aSpan, aPart;
+attribute vec4 aBird;   // phase, flap rate, flap amplitude, kind
+varying vec3 vWorld, vN;
+varying float vPart, vKind;
+#ifdef DEPTH_PASS
+varying float vDepthAlpha;
+#endif
+void main(){
+  vec3 p = position;
+  float ang = sin(uTime * aBird.y + aBird.x) * aBird.z + 0.12 * (aBird.w > 0.5 ? 1.6 : 1.);
+  // fold and flap about the shoulder, more toward the tip
+  if (aWing != 0.) {
+    float a = ang * (0.6 + 0.6 * aSpan);
+    float cs = cos(a), sn = sin(a);
+    float x = abs(p.x);
+    p.y += x * sn;
+    p.x = sign(p.x) * x * cs;
+  }
+  vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.);
+  vWorld = wp.xyz;
+  vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal);
+  vPart = aPart; vKind = aBird.w;
+#ifdef DEPTH_PASS
+  vDepthAlpha = 1.;
+#endif
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}
+`;
+      FRAG9 = /* glsl */
+      `
+${COMMON}
+varying vec3 vWorld, vN;
+varying float vPart, vKind;
+void main(){
+  vec3 P = vWorld;
+  if (P.y < uClipY) discard;
+  vec3 V = normalize(cameraPosition - P);
+  vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N;
+  vec3 alb;
+  if (vKind < 0.5) alb = vPart < 0.5 ? vec3(0.42, 0.44, 0.50) : (vPart < 1.5 ? vec3(0.55, 0.57, 0.62) : vec3(0.18, 0.18, 0.2));
+  else alb = vPart < 0.5 ? vec3(0.28, 0.18, 0.10) : (vPart < 1.5 ? vec3(0.32, 0.21, 0.12) : vec3(0.12, 0.09, 0.07));
+  Surf s; s.albedo = alb; s.N = N; s.rough = 0.8; s.spec = 0.1; s.ao = 1.; s.wrap = 0.4; s.sss = 0.3;
+  vec3 col = shadeSurf(s, P, V, keyShadow(P, N));
+  col = applyHaze(col, P);
+  gl_FragColor = vec4(col, 1.);
+}
+`;
+      Birds = class {
+        constructor(scene2, data, facades, hero) {
+          this.data = data;
+          this.hero = hero;
+          const rng = mulberry32(808);
+          this.rng = rng;
+          const geo2 = birdGeo();
+          const N = 3 * 36 + 2;
+          this.attr = new InstancedBufferAttribute(new Float32Array(N * 4), 4);
+          geo2.setAttribute("aBird", this.attr);
+          this.mesh = new InstancedMesh(geo2, makeMaterial({ vertex: VERT6, fragment: FRAG9, side: DoubleSide }), N);
+          this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+          this.mesh.frustumCulled = false;
+          this.mesh.layers.enable(2);
+          addCaster(this.mesh);
+          scene2.add(this.mesh);
+          const homes = facades.map((f) => ({ x: f.x + f.nx * 2, y: f.floorY + f.H * 0.45, z: f.z + f.nz * 2, nx: f.nx, nz: f.nz, tx: f.tx, tz: f.tz }));
+          this.flocks = [1, 2, 0].map((k, i) => ({
+            home: homes[k],
+            state: "rest",
+            t: rng() * 20 + i * 12,
+            dur: 20,
+            c: new Vector3(),
+            ang: rng() * 6.28,
+            r: 70,
+            alt: 40,
+            speed: 13,
+            birds: Array.from({ length: 36 }, () => ({ p: new Vector3(), v: new Vector3(), off: new Vector3((rng() - 0.5) * 16, (rng() - 0.5) * 6, (rng() - 0.5) * 16), ph: rng() * 6.28, rest: new Vector3() }))
+          }));
+          for (const F of this.flocks) {
+            const h = F.home;
+            F.birds.forEach((b, i) => {
+              const a = (i / 36 - 0.5) * 30;
+              const x = h.x + h.tx * a - h.nx * (12 + rng() * 6), z = h.z + h.tz * a - h.nz * (12 + rng() * 6);
+              b.rest.set(x, this.data.height(x, z) + 0.12, z);
+              b.p.copy(b.rest);
+            });
+          }
+          this.eagles = [0, 1].map((i) => ({ p: new Vector3(), ang: i * 3.1, r: 55 + i * 22, w: 0, flap: 0, flapT: rng() * 10, dalt: i * 14 - 6, c: new Vector3() }));
+          this._m = new Matrix4();
+          this._q = new Quaternion();
+          this._s = new Vector3(1, 1, 1);
+          this._look = new Matrix4();
+          this._up = new Vector3(0, 1, 0);
+        }
+        update(dt, t) {
+          const hero = this.hero;
+          const hp = hero.flight.p;
+          let k = 0;
+          for (const F of this.flocks) {
+            F.t += dt;
+            const h = F.home;
+            const near = Math.hypot(hp.x - h.x, hp.z - h.z) < 220;
+            if (F.state === "rest" && (F.t > F.dur || near && F.t > 6)) {
+              F.state = "fly";
+              F.t = 0;
+              F.dur = 35 + this.rng() * 30;
+              F.ang = Math.atan2(h.nz, h.nx);
+              F.c.set(h.x + h.nx * 60, 0, h.z + h.nz * 60);
+            } else if (F.state === "fly" && F.t > F.dur) {
+              F.state = "return";
+              F.t = 0;
+            } else if (F.state === "return" && F.t > 14) {
+              F.state = "rest";
+              F.t = 0;
+              F.dur = 25 + this.rng() * 40;
+            }
+            F.ang += dt * F.speed / F.r * (F.state === "fly" ? 1 : 0.7);
+            const ground = this.data.height(F.c.x, F.c.z);
+            const lead = new Vector3(F.c.x + Math.cos(F.ang) * F.r, Math.max(ground, h.y) + F.alt + 12 * Math.sin(F.t * 0.4), F.c.z + Math.sin(F.ang) * F.r * 0.7);
+            for (const b of F.birds) {
+              let target;
+              if (F.state === "rest") target = b.rest;
+              else if (F.state === "return") target = F.t > 8 ? b.rest : lead.clone().add(b.off).lerp(b.rest, F.t / 8);
+              else target = lead.clone().add(b.off.clone().applyAxisAngle(this._up, F.ang));
+              const dv = target.clone().sub(b.p);
+              const dist = dv.length();
+              if (F.state === "rest" && dist < 0.5) {
+                b.p.copy(b.rest);
+                b.v.set(0, 0, 0);
+              } else {
+                const want = dv.normalize().multiplyScalar(Math.min(F.speed * 1.2, dist * 1.5));
+                b.v.lerp(want, Math.min(1, dt * 2.2));
+                b.v.x += Math.sin(t * 2 + b.ph) * 0.6 * dt;
+                b.v.y += Math.cos(t * 1.7 + b.ph) * 0.4 * dt;
+                b.p.addScaledVector(b.v, dt);
+              }
+              const flying = b.v.lengthSq() > 0.5;
+              this.orient(b.p, flying ? b.v : new Vector3(Math.cos(b.ph), 0, Math.sin(b.ph)), flying ? 0.38 : 0.38, b.v);
+              this.mesh.setMatrixAt(k, this._m);
+              this.attr.setXYZW(k, b.ph, 17 + b.ph % 3, flying ? 0.75 : 0, 0);
+              k++;
+            }
+          }
+          for (const E of this.eagles) {
+            const side = new Vector3(-hero.flight.v.z, 0, hero.flight.v.x).normalize();
+            const centre = hp.clone().addScaledVector(side, 90).add(new Vector3(0, 8 + E.dalt, 0));
+            E.c.lerp(centre, Math.min(1, dt * 0.08));
+            if (E.c.lengthSq() === 0) E.c.copy(centre);
+            E.ang += dt * 10 / E.r;
+            const g = this.data.height(E.c.x, E.c.z);
+            E.p.set(E.c.x + Math.cos(E.ang) * E.r, Math.max(E.c.y, g + 40) + 3 * Math.sin(t * 0.2 + E.r), E.c.z + Math.sin(E.ang) * E.r);
+            E.flapT -= dt;
+            if (E.flapT < 0) {
+              E.flap = 2.2;
+              E.flapT = 8 + this.rng() * 10;
+            }
+            E.flap = Math.max(0, E.flap - dt);
+            const vel = new Vector3(-Math.sin(E.ang), 0, Math.cos(E.ang));
+            this.orient(E.p, vel, 1.1, vel, 0.35);
+            this.mesh.setMatrixAt(k, this._m);
+            this.attr.setXYZW(k, E.r, 4.5, E.flap > 0 ? 0.55 : 0, 1);
+            k++;
+          }
+          this.mesh.count = k;
+          this.mesh.instanceMatrix.needsUpdate = true;
+          this.attr.needsUpdate = true;
+        }
+        orient(p, dir, scale, vel, bank = 0) {
+          const f = dir.clone().normalize();
+          if (!(f.lengthSq() > 0.5)) f.set(1, 0, 0);
+          const x = new Vector3().crossVectors(this._up, f).normalize();
+          const y = new Vector3().crossVectors(f, x).normalize();
+          if (bank) {
+            x.applyAxisAngle(f, bank);
+            y.applyAxisAngle(f, bank);
+          }
+          this._look.makeBasis(x, y, f);
+          this._q.setFromRotationMatrix(this._look);
+          this._m.compose(p, this._q, this._s.set(scale, scale, scale));
+        }
+      };
+    }
+  });
+
+  // src/life/horses.js
+  function horseGeo(coat, dark) {
+    const P = [];
+    const add = (g, m, c, b) => P.push(tag(g, m, c, null, b));
+    add(ell(0.27, 0.33, 0.72, 0, 0, 0), 10, coat, BN.BODY);
+    add(ell(0.26, 0.34, 0.3, 0, 0.04, 0.5), 10, coat, BN.BODY);
+    add(ell(0.28, 0.32, 0.32, 0, 0.05, -0.5), 10, coat, BN.BODY);
+    add(ell(0.23, 0.2, 0.55, 0, -0.14, 0), 10, coat, BN.BODY);
+    add(taper(0.17, 0.1, 0.78, 1), 10, coat, BN.NECK);
+    const mane = new BoxGeometry(0.05, 0.8, 0.16);
+    mane.translate(0, 0.38, -0.1);
+    add(mane, 11, dark, BN.NECK);
+    add(ell(0.1, 0.27, 0.13, 0, 0.22, 0.02), 10, coat, BN.HEAD);
+    add(ell(0.085, 0.1, 0.1, 0, 0.45, 0.02), 10, coat.map((c) => c * 0.8), BN.HEAD);
+    for (const s of [-1, 1]) {
+      const ear = new ConeGeometry(0.035, 0.12, 6);
+      ear.rotateX(-0.3);
+      ear.translate(s * 0.06, 0, -0.1);
+      add(ear, 10, coat, BN.HEAD);
+      const eye = ell(0.02, 0.025, 0.02, s * 0.095, 0.16, 0.05, 8);
+      add(eye, 13, [0.02, 0.02, 0.02], BN.HEAD);
+    }
+    const forelock = new BoxGeometry(0.1, 0.12, 0.04);
+    forelock.translate(0, 0.04, 0.1);
+    add(forelock, 11, dark, BN.HEAD);
+    add(taper(0.06, 0.1, 0.75, -1, 8), 11, dark, BN.TAIL);
+    for (const [u, l] of [[BN.FLU, BN.FLL], [BN.FRU, BN.FRL], [BN.BLU, BN.BLL], [BN.BRU, BN.BRL]]) {
+      add(taper(0.1, 0.065, 0.5, -1), 10, coat, u);
+      add(taper(0.05, 0.04, 0.5, -1), 10, dark.map((c, i) => c * 0.5 + coat[i] * 0.5), l);
+      const hoof = new CylinderGeometry(0.05, 0.06, 0.08, 10);
+      hoof.translate(0, -0.52, 0.01);
+      add(hoof, 12, [0.06, 0.05, 0.04], l);
+    }
+    return merge(P);
+  }
+  var BN, ell, taper, COATS, Horses;
+  var init_horses = __esm({
+    "src/life/horses.js"() {
+      init_three_module();
+      init_props();
+      init_mat();
+      init_noise();
+      init_layout();
+      init_shared();
+      BN = { BODY: 0, NECK: 1, HEAD: 2, TAIL: 3, FLU: 4, FLL: 5, FRU: 6, FRL: 7, BLU: 8, BLL: 9, BRU: 10, BRL: 11 };
+      ell = (rx, ry, rz, x = 0, y = 0, z = 0, seg = 14) => {
+        const g = new SphereGeometry(1, seg, 10);
+        g.scale(rx, ry, rz);
+        g.translate(x, y, z);
+        return g;
+      };
+      taper = (r0, r1, len, dir = 1, seg = 10) => {
+        const g = new CylinderGeometry(dir > 0 ? r1 : r0, dir > 0 ? r0 : r1, len, seg, 2);
+        g.translate(0, dir * len / 2, 0);
+        return g;
+      };
+      COATS = [
+        [[0.36, 0.18, 0.08], [0.05, 0.04, 0.03]],
+        [[0.5, 0.26, 0.11], [0.35, 0.16, 0.07]],
+        [[0.55, 0.54, 0.52], [0.25, 0.24, 0.23]],
+        [[0.07, 0.06, 0.06], [0.03, 0.03, 0.03]],
+        [[0.6, 0.45, 0.28], [0.12, 0.09, 0.06]],
+        [[0.36, 0.18, 0.08], [0.05, 0.04, 0.03]],
+        [[0.72, 0.68, 0.62], [0.5, 0.48, 0.45]]
+      ];
+      Horses = class {
+        constructor(scene2, data, rocks) {
+          this.data = data;
+          this.rocks = rocks;
+          const rng = mulberry32(42);
+          this.rng = rng;
+          this.home = new Vector2(SITES.horses.x, SITES.horses.z);
+          this.list = COATS.map(([coat, dark], i) => {
+            const mat = propMaterial(true);
+            const mesh2 = new Mesh(horseGeo(coat, dark), mat);
+            mesh2.frustumCulled = false;
+            mesh2.layers.enable(2);
+            addCaster(mesh2);
+            scene2.add(mesh2);
+            const a = rng() * Math.PI * 2, r = rng() * 30;
+            return {
+              mesh: mesh2,
+              mat,
+              p: new Vector2(this.home.x + Math.cos(a) * r, this.home.y + Math.sin(a) * r),
+              head: rng() * Math.PI * 2,
+              speed: 0,
+              target: 0,
+              state: "graze",
+              t: rng() * 8,
+              dur: 5 + rng() * 8,
+              phase: rng() * 10,
+              neck: 2,
+              headA: 1,
+              tail: 0,
+              s: 0.95 + rng() * 0.12,
+              noseWorld: new Vector3(),
+              puffT: rng() * 3
+            };
+          });
+          this.alarm = 0;
+          this.flee = new Vector2();
+          this._m = new Matrix4();
+          this._q = new Quaternion();
+          this._v = new Vector3();
+        }
+        riverD(x, z) {
+          const C = WORLD.core, d = this.data;
+          return d.riverD[Math.floor((z - C.minZ) / d.cell) * d.nx + Math.floor((x - C.minX) / d.cell)];
+        }
+        update(dt, t, hero, parts) {
+          const hp = hero.flight.p;
+          const dh = Math.hypot(hp.x - this.home.x, hp.z - this.home.y);
+          const agl = hp.y - this.data.height(hp.x, hp.z);
+          if (dh < 170 && agl < 75 && (this.alarm <= 0 || hero.flameI > 0.5)) {
+            this.alarm = 9 + this.rng() * 4;
+            this.flee.set(this.home.x - hp.x, this.home.y - hp.z).normalize();
+          }
+          this.alarm -= dt;
+          for (const H of this.list) {
+            H.t += dt;
+            if (this.alarm > 0) {
+              H.state = "run";
+            } else if (H.state === "run") {
+              H.state = "walk";
+              H.t = 0;
+              H.dur = 4;
+            } else if (H.t > H.dur) {
+              H.t = 0;
+              H.dur = 4 + this.rng() * 9;
+              H.state = this.rng() < 0.6 ? "graze" : "walk";
+              H.target = H.head + (this.rng() - 0.5) * 2;
+            }
+            let spd = 0;
+            if (H.state === "run") {
+              spd = 8.5 + H.phase % 1.5;
+              const fa = Math.atan2(this.flee.y, this.flee.x) + Math.sin(H.phase) * 0.3;
+              H.target = fa;
+            } else if (H.state === "walk") spd = 1.3;
+            else spd = this.rng() < 2e-3 ? 0.6 : 0;
+            const toHome = this._v.set(this.home.x - H.p.x, 0, this.home.y - H.p.y);
+            if (toHome.length() > 150) H.target = Math.atan2(toHome.z, toHome.x);
+            if (this.riverD(H.p.x, H.p.y) < 30) {
+              const a = H.head + Math.PI * 0.5;
+              H.target = a;
+            }
+            for (const O of this.list) if (O !== H) {
+              const dx = H.p.x - O.p.x, dz = H.p.y - O.p.y, d = Math.hypot(dx, dz);
+              if (d < 2.6 && d > 0.01) {
+                H.p.x += dx / d * (2.6 - d) * dt * 2;
+                H.p.y += dz / d * (2.6 - d) * dt * 2;
+              }
+            }
+            let dA = H.target - H.head;
+            dA = Math.atan2(Math.sin(dA), Math.cos(dA));
+            H.head += dA * Math.min(1, dt * (H.state === "run" ? 2.5 : 0.8));
+            H.speed += (spd - H.speed) * Math.min(1, dt * 2.5);
+            H.p.x += Math.cos(H.head) * H.speed * dt;
+            H.p.y += Math.sin(H.head) * H.speed * dt;
+            this.pose(H, dt, t);
+            H.puffT -= dt;
+            if (parts && H.puffT < 0) {
+              H.puffT = H.state === "run" ? 0.45 : 2.2 + this.rng();
+              parts.puff(H.noseWorld, new Vector3(Math.cos(H.head), -0.1, Math.sin(H.head)).multiplyScalar(0.5), 1.6);
+            }
+          }
+        }
+        pose(H, dt, t) {
+          const M = H.mat.uniforms.uBones.value;
+          const y = this.data.height(H.p.x, H.p.y);
+          const n = this.data.normal(H.p.x, H.p.y);
+          const run = H.state === "run" ? 1 : 0;
+          const gaitF = H.speed > 0.2 ? run ? 2.6 : 1.4 : 0;
+          H.phase += dt * gaitF * Math.PI * 2 * (run ? 1 : 0.6);
+          const ph = H.phase;
+          const neckT = H.state === "graze" && H.speed < 0.3 ? 2.15 + 0.08 * Math.sin(t * 0.7 + H.phase) : run ? 0.95 : 0.7;
+          H.neck += (neckT - H.neck) * Math.min(1, dt * 2);
+          const headT = H.state === "graze" ? 0.55 + 0.1 * Math.sin(t * 2.3 + H.phase) : 1.35;
+          H.headA += (headT - H.headA) * Math.min(1, dt * 2);
+          H.tail = 0.25 * Math.sin(t * 1.3 + H.phase * 0.3) + run * 0.5;
+          const s = H.s;
+          const root = new Matrix4().compose(
+            new Vector3(H.p.x, y, H.p.y),
+            new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -H.head + Math.PI / 2).premultiply(new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), n.clone().lerp(new Vector3(0, 1, 0), 0.5).normalize())),
+            new Vector3(s, s, s)
+          );
+          const bob = run ? Math.abs(Math.sin(ph)) * 0.08 : H.speed > 0.2 ? Math.abs(Math.sin(ph)) * 0.02 : 0;
+          const L = (pos, rx, rz = 0) => new Matrix4().compose(pos, new Quaternion().setFromEuler(new Euler(rx, 0, rz)), new Vector3(1, 1, 1));
+          const body = L(new Vector3(0, 1.22 + bob, 0), run ? Math.sin(ph * 2) * 0.05 : 0);
+          M[BN.BODY].multiplyMatrices(root, body);
+          const neck = new Matrix4().multiplyMatrices(body, L(new Vector3(0, 0.18, 0.62), H.neck));
+          M[BN.NECK].multiplyMatrices(root, neck);
+          const head = new Matrix4().multiplyMatrices(neck, L(new Vector3(0, 0.78, 0), H.headA));
+          M[BN.HEAD].multiplyMatrices(root, head);
+          H.noseWorld.set(0, 0.5, 0.06).applyMatrix4(M[BN.HEAD]);
+          M[BN.TAIL].multiplyMatrices(root, new Matrix4().multiplyMatrices(body, L(new Vector3(0, 0.15, -0.8), 0.35 + H.tail * 0.5, Math.sin(t * 1.1 + H.phase) * 0.2)));
+          const offs = run ? [0, 0.12, 0.55, 0.67] : [0, 0.5, 0.75, 0.25];
+          const legs = [[BN.FLU, BN.FLL, 0.16, 0.48], [BN.FRU, BN.FRL, -0.16, 0.48], [BN.BLU, BN.BLL, 0.17, -0.52], [BN.BRU, BN.BRL, -0.17, -0.52]];
+          const moving = Math.min(1, H.speed / 1);
+          legs.forEach(([u, l, x, z], i) => {
+            const a = ph + offs[i] * Math.PI * 2;
+            const amp = (run ? 0.6 : 0.32) * moving;
+            const hip = Math.sin(a) * amp;
+            const knee = Math.max(0, Math.cos(a)) * (run ? 1.1 : 0.6) * moving * (z > 0 ? 1 : -0.7);
+            const up = new Matrix4().multiplyMatrices(body, L(new Vector3(x, -0.12, z), hip));
+            M[u].multiplyMatrices(root, up);
+            const low = new Matrix4().multiplyMatrices(up, L(new Vector3(0, -0.5, 0), knee));
+            M[l].multiplyMatrices(root, low);
+          });
+        }
+      };
+    }
+  });
+
   // src/balloon/envelope.js
   function profileAt(s) {
     const n = PROF.length - 1;
@@ -27712,8 +28160,8 @@ void main(){
   }
   function envelopeMaterial(fleet) {
     return makeMaterial({
-      vertex: VERT6,
-      fragment: FRAG9,
+      vertex: VERT7,
+      fragment: FRAG10,
       defines: fleet ? { FLEET: 1 } : {},
       side: DoubleSide,
       uniforms: {
@@ -27734,7 +28182,7 @@ void main(){
       }
     });
   }
-  var ENV, PROF, PALETTES, PALETTE_TEX, VERT6, FRAG9;
+  var ENV, PROF, PALETTES, PALETTE_TEX, VERT7, FRAG10;
   var init_envelope = __esm({
     "src/balloon/envelope.js"() {
       init_three_module();
@@ -27763,7 +28211,7 @@ void main(){
         [[0.7, 0.4, 0.85], [0.3, 0.7, 0.95], [0.95, 0.9, 0.4], [0.95, 0.45, 0.45], [0.95, 0.95, 0.95]]
       ];
       PALETTE_TEX = paletteTexture();
-      VERT6 = /* glsl */
+      VERT7 = /* glsl */
       `
 ${VCOMMON}
 attribute vec2 aGU;
@@ -27845,7 +28293,7 @@ void main(){
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
 `;
-      FRAG9 = /* glsl */
+      FRAG10 = /* glsl */
       `
 ${COMMON}
 uniform sampler2D uPal;
@@ -28186,8 +28634,8 @@ void main(){
   function flameMaterial(fleet = false) {
     return new ShaderMaterial({
       uniforms: Object.assign({}, U, { uI: { value: 0 }, uLen: { value: 3.2 }, uWid: { value: 0.3 }, uSeed: { value: Math.random() * 10 }, uBend: { value: new Vector3() }, uBright: { value: 1 } }),
-      vertexShader: VERT7,
-      fragmentShader: FRAG10,
+      vertexShader: VERT8,
+      fragmentShader: FRAG11,
       defines: fleet ? { FLEET: 1 } : {},
       transparent: true,
       depthWrite: false,
@@ -28206,14 +28654,14 @@ void main(){
     mesh2.renderOrder = 10;
     return mesh2;
   }
-  var FLAME_GEO, VERT7, FRAG10;
+  var FLAME_GEO, VERT8, FRAG11;
   var init_flame = __esm({
     "src/fx/flame.js"() {
       init_three_module();
       init_common();
       init_shared();
       FLAME_GEO = flameGeo();
-      VERT7 = /* glsl */
+      VERT8 = /* glsl */
       `
 ${VCOMMON}
 uniform float uI, uLen, uWid, uSeed;
@@ -28249,7 +28697,7 @@ void main(){
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
 `;
-      FRAG10 = /* glsl */
+      FRAG11 = /* glsl */
       `
 ${VCOMMON}
 uniform float uBright;
@@ -29149,7 +29597,7 @@ void main(){
   });
 
   // src/balloon/crew.js
-  function ell(rx, ry, rz, seg = 14, rows = 10) {
+  function ell2(rx, ry, rz, seg = 14, rows = 10) {
     const g = new SphereGeometry(1, seg, rows);
     g.scale(rx, ry, rz);
     return g;
@@ -29182,16 +29630,16 @@ void main(){
     tail.translate(0.05, 0.38, 0.11);
     tail.rotateZ(0.05);
     add(tail, 14, o.scarf, B.CHEST);
-    add(ell(0.092, 0.115, 0.1), 10, skin, B.HEAD);
+    add(ell2(0.092, 0.115, 0.1), 10, skin, B.HEAD);
     const nose = new ConeGeometry(0.018, 0.04, 8);
     nose.rotateX(Math.PI / 2);
     nose.translate(0, -5e-3, 0.105);
     add(nose, 10, skin, B.HEAD);
     for (const s of [-1, 1]) {
-      const ear = ell(0.015, 0.03, 0.02, 8, 6);
+      const ear = ell2(0.015, 0.03, 0.02, 8, 6);
       ear.translate(s * 0.092, 0, 0);
       add(ear, 10, skin, B.HEAD);
-      const eye = ell(0.012, 9e-3, 6e-3, 8, 6);
+      const eye = ell2(0.012, 9e-3, 6e-3, 8, 6);
       eye.translate(s * 0.034, 0.022, 0.092);
       add(eye, 13, [0.03, 0.025, 0.02], B.HEAD);
       const brow = new BoxGeometry(0.035, 8e-3, 0.01);
@@ -29209,7 +29657,7 @@ void main(){
       cuff.rotateX(Math.PI / 2);
       cuff.translate(0, 0.035, -5e-3);
       add(cuff, 14, o.hatCol.map((c) => c * 0.8), B.HEAD);
-      const pom = ell(0.035, 0.035, 0.035, 10, 8);
+      const pom = ell2(0.035, 0.035, 0.035, 10, 8);
       pom.translate(0, 0.125, -0.01);
       add(pom, 11, o.scarf, B.HEAD);
     } else if (o.hat === "cap") {
@@ -29225,13 +29673,13 @@ void main(){
       h.translate(0, 0.02, 0);
       add(h, 11, o.hatCol, B.HEAD);
       for (const s of [-1, 1]) {
-        const f = ell(0.03, 0.07, 0.06, 8, 6);
+        const f = ell2(0.03, 0.07, 0.06, 8, 6);
         f.translate(s * 0.095, -0.03, 0);
         add(f, 11, o.hatCol, B.HEAD);
       }
     }
     if (o.hairBack) {
-      const hb = ell(0.088, 0.09, 0.07, 10, 8);
+      const hb = ell2(0.088, 0.09, 0.07, 10, 8);
       hb.translate(0, -0.03, -0.05);
       add(hb, 11, o.hair, B.HEAD);
     }
@@ -29239,17 +29687,17 @@ void main(){
     neck.translate(0, -0.05, 0);
     add(neck, 10, skin, B.HEAD);
     for (const [ua, fa, hd, s] of [[B.LUA, B.LFA, B.LH, -1], [B.RUA, B.RFA, B.RH, 1]]) {
-      add(ell(0.075, 0.07, 0.07), 9, coat, ua);
+      add(ell2(0.075, 0.07, 0.07), 9, coat, ua);
       add(limb(0.062, 0.052, o.ua), 9, coat, ua);
-      add(ell(0.05, 0.05, 0.05), 9, coat, fa);
+      add(ell2(0.05, 0.05, 0.05), 9, coat, fa);
       add(limb(0.05, 0.045, o.fa), 9, coat, fa);
       const cuff = limb(0.05, 0.05, 0.04);
       cuff.translate(0, -o.fa + 0.03, 0);
       add(cuff, 9, coat2, fa);
-      const m = ell(0.045, 0.075, 0.03, 10, 8);
+      const m = ell2(0.045, 0.075, 0.03, 10, 8);
       m.translate(0, -0.07, 0);
       add(m, 12, o.glove, hd);
-      const th = ell(0.016, 0.035, 0.016, 6, 6);
+      const th = ell2(0.016, 0.035, 0.016, 6, 6);
       th.rotateZ(s * 0.6);
       th.translate(s * 0.04, -0.035, 0.012);
       add(th, 12, o.glove, hd);
@@ -29257,7 +29705,7 @@ void main(){
     for (const [th, sh] of [[B.LTH, B.LSH], [B.RTH, B.RSH]]) {
       add(limb(0.085, 0.065, 0.44), 9, o.trousers, th);
       add(limb(0.06, 0.05, 0.42), 9, o.trousers, sh);
-      const boot = ell(0.055, 0.05, 0.12, 10, 8);
+      const boot = ell2(0.055, 0.05, 0.12, 10, 8);
       boot.translate(0, -0.44, 0.04);
       add(boot, 12, [0.08, 0.06, 0.05], sh);
     }
@@ -29998,6 +30446,8 @@ void main(){
       init_river();
       init_vegetation();
       init_particles();
+      init_birds();
+      init_horses();
       init_hero();
       init_fleet();
       init_crew();
@@ -30062,12 +30512,14 @@ void main(){
         G.veg = veg;
         const parts = new Particles(scene2, data, village);
         G.parts = parts;
+        const horses = new Horses(scene2, data, rocks);
         G.rocks = rocks;
         setProgress(0.68);
         await tick2();
         const hero = new Hero(scene2, data, rocks, null);
         G.hero = hero;
         new Crew(hero);
+        const birds = new Birds(scene2, data, facades, hero);
         const tshadow = new TerrainShadow(renderer);
         const shadows = new Shadows(renderer);
         const wind = new Wind(U.uNoise2D.value);
@@ -30139,6 +30591,16 @@ void main(){
           else if (dbg.at === "vines") cams.fixed = (cam2) => {
             cam2.position.set(780, data.height(780, -60) + 25, -60);
             cam2.lookAt(680, data.height(680, -150), -150);
+          };
+          else if (dbg.at === "horses") cams.fixed = (cam2) => {
+            const h = horses.list[0].p;
+            cam2.position.set(h.x + 18, data.height(h.x + 18, h.y + 10) + 3, h.y + 10);
+            cam2.lookAt(h.x, data.height(h.x, h.y) + 1, h.y);
+          };
+          else if (dbg.at === "birds") cams.fixed = (cam2) => {
+            const f2 = facades[1];
+            cam2.position.set(f2.x + f2.nx * 120, f2.floorY + 50, f2.z + f2.nz * 120);
+            cam2.lookAt(f2.x + f2.nx * 50, f2.floorY + 40, f2.z + f2.nz * 50);
           };
           else if (dbg.at === "castle") cams.fixed = (cam2) => {
             const c = landmarks.castle;
@@ -30213,6 +30675,8 @@ void main(){
           cams.update(dt, time);
           fleet.update(dt, time, camera);
           parts.update(dt, st, wind);
+          birds.update(dt, time);
+          horses.update(dt, time, hero, parts);
           if (hero.crew) for (const P of hero.crew.people) {
             P.puffT = (P.puffT || 0) - dt;
             if (P.exhale > 0.55 && P.puffT <= 0 && P.mouthWorld) {

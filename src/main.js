@@ -18,6 +18,8 @@ import { Village } from './world/village.js';
 import { River } from './world/river.js';
 import { Vegetation } from './world/vegetation.js';
 import { Particles } from './fx/particles.js';
+import { Birds } from './life/birds.js';
+import { Horses } from './life/horses.js';
 import { Hero } from './balloon/hero.js';
 import { Fleet } from './balloon/fleet.js';
 import { Crew } from './balloon/crew.js';
@@ -82,11 +84,13 @@ async function boot() {
   G.veg = veg;
   const parts = new Particles(scene, data, village);
   G.parts = parts;
+  const horses = new Horses(scene, data, rocks);
   G.rocks = rocks;
   setProgress(0.68); await tick();
   const hero = new Hero(scene, data, rocks, null);
   G.hero = hero;
   new Crew(hero);
+  const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer);
   const shadows = new Shadows(renderer);
   const wind = new Wind(U.uNoise2D.value);
@@ -133,6 +137,8 @@ async function boot() {
     else if (dbg.at === 'orchard') cams.fixed = (cam) => { const o = { x: 560, z: 230 }; cam.position.set(o.x + 90, data.height(o.x + 90, o.z + 60) + 14, o.z + 60); cam.lookAt(o.x, data.height(o.x, o.z) + 2, o.z); };
     else if (dbg.at === 'poplars') cams.fixed = (cam) => { cam.position.set(300, 14, 330); cam.lookAt(270, 10, 200); };
     else if (dbg.at === 'vines') cams.fixed = (cam) => { cam.position.set(780, data.height(780, -60) + 25, -60); cam.lookAt(680, data.height(680, -150), -150); };
+    else if (dbg.at === 'horses') cams.fixed = (cam) => { const h = horses.list[0].p; cam.position.set(h.x + 18, data.height(h.x + 18, h.y + 10) + 3, h.y + 10); cam.lookAt(h.x, data.height(h.x, h.y) + 1, h.y); };
+    else if (dbg.at === 'birds') cams.fixed = (cam) => { const f = facades[1]; cam.position.set(f.x + f.nx * 120, f.floorY + 50, f.z + f.nz * 120); cam.lookAt(f.x + f.nx * 50, f.floorY + 40, f.z + f.nz * 50); };
     else if (dbg.at === 'castle') cams.fixed = (cam) => { const c = landmarks.castle; cam.position.set(c.x + 160, c.y + 60, c.z + 120); cam.lookAt(c.x, c.y + 25, c.z); };
   }
   if (fixedCam) cams.fixed = (cam) => { cam.position.fromArray(fixedCam); cam.lookAt(new THREE.Vector3().fromArray(fixedLook || [0, 0, 0])); };
@@ -175,6 +181,8 @@ async function boot() {
     cams.update(dt, time);
     fleet.update(dt, time, camera);
     parts.update(dt, st, wind);
+    birds.update(dt, time);
+    horses.update(dt, time, hero, parts);
     // cold breath from the crew on each exhale
     if (hero.crew) for (const P of hero.crew.people) {
       P.puffT = (P.puffT || 0) - dt;
