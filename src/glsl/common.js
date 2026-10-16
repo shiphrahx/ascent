@@ -84,26 +84,32 @@ float keyHorizon(vec3 P){
 }
 float terrainShadow(vec3 P){
   float m = coreMask(P.xz);
-  if (m > 0.5) { float hs = texture(uTerrShadow, coreUV(P.xz)).r; return smoothstep(hs - 3.0, hs + 0.5, P.y); }
-  float hs = texture(uTerrShadowOuter, outerUV(P.xz)).r;
-  return smoothstep(hs - 90., hs + 10., P.y);
+  float hc = texture(uTerrShadow, coreUV(P.xz)).r;
+  float ho = texture(uTerrShadowOuter, outerUV(P.xz)).r;
+  float r = m > 0.5 ? smoothstep(hc - 3.0, hc + 0.5, P.y) : smoothstep(ho - 90., ho + 10., P.y);
+  return r;
 }
 // cheaper single-tap version for volumetrics and particles
 float cascadeShadowFast(vec3 P){
-  vec4 sc = uShadowM0 * vec4(P, 1.); vec3 c = sc.xyz / sc.w * 0.5 + 0.5;
-  if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997)))) return step(c.z - uShadowK.x * 0.3, texture(uShadow0, c.xy).r);
-  sc = uShadowM1 * vec4(P, 1.); c = sc.xyz / sc.w * 0.5 + 0.5;
-  if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997)))) return step(c.z - uShadowK.y * 1.5, texture(uShadow1, c.xy).r);
-  sc = uShadowM2 * vec4(P, 1.); c = sc.xyz / sc.w * 0.5 + 0.5;
-  if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997)))) return step(c.z - uShadowK.z * 4., texture(uShadow2, c.xy).r);
-  return 1.;
+  float r = 1.;
+  vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  vec3 c1 = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  vec3 c2 = (uShadowM2 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  float s0 = step(c0.z - uShadowK.x * 0.3, textureLod(uShadow0, c0.xy, 0.).r);
+  float s1 = step(c1.z - uShadowK.y * 1.5, textureLod(uShadow1, c1.xy, 0.).r);
+  float s2 = step(c2.z - uShadowK.z * 4., textureLod(uShadow2, c2.xy, 0.).r);
+  bool in0 = all(greaterThan(c0.xy, vec2(0.003))) && all(lessThan(c0.xy, vec2(0.997))) && c0.z < 1.;
+  bool in1 = all(greaterThan(c1.xy, vec2(0.003))) && all(lessThan(c1.xy, vec2(0.997))) && c1.z < 1.;
+  bool in2 = all(greaterThan(c2.xy, vec2(0.003))) && all(lessThan(c2.xy, vec2(0.997))) && c2.z < 1.;
+  r = in0 ? s0 : (in1 ? s1 : (in2 ? s2 : 1.));
+  return r;
 }
 float cloudDensity2D(vec2 xz){
   vec2 uv = (xz + uCloudOffset) / 9000.;
-  float a = texture(uNoise2D, uv).r;
-  float b = texture(uNoise2D, uv * 3.1 + 0.3).g;
-  float cov = mix(0.15, 0.95, uCloud);
-  return sat((a * 0.75 + b * 0.25 - (1. - cov)) / max(0.05, 1. - (1. - cov)) );
+  float a = textureLod(uNoise2D, uv, 0.).r;
+  float b = textureLod(uNoise2D, uv * 3.1 + 0.3, 0.).g;
+  float A = (a * 0.7 + b * 0.3 - 0.5) * 2.6;
+  return sat(uCloud + A * 0.55);
 }
 float cloudShadow(vec3 P){
   float t = (uCloudBase + 300. - P.y) / max(uKeyDir.y, 0.08);

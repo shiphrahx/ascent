@@ -225,7 +225,7 @@ export class SkyDome {
     const u = this.lutMat.uniforms;
     u.uSun.value.copy(sky.sunDir); u.uMoon.value.copy(sky.moonDir);
     u.uSunI.value = 20;
-    u.uMoonI.value = 0.24 * sky.state.moonVis + 0.02;
+    u.uMoonI.value = 0.13 * sky.state.moonVis + 0.012;
     u.uStormL.value = Math.min(1, sky.state.storm * 1.05);
     u.uHazeL.value = sky.state.haze;
     renderFS(this.renderer, this.lutMat, this.lut);

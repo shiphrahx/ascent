@@ -11,6 +11,7 @@ import { Shadows } from './world/shadows.js';
 import { Wind } from './world/wind.js';
 import { Pipeline } from './core/pipeline.js';
 import { Probe } from './world/probe.js';
+import { Volumetrics } from './fx/volumetrics.js';
 
 const canvas = document.getElementById('view');
 const loadFill = document.getElementById('loadFill');
@@ -62,6 +63,9 @@ async function boot() {
   G.wind = wind;
   const pipe = new Pipeline(renderer);
   const probe = new Probe(renderer);
+  const vol = new Volumetrics(renderer);
+  pipe.onResize = (W, H) => vol.setSize(W, H);
+  pipe.hooks.volumetrics = rt => vol.render(rt, camera);
   let exposure = 1;
   setProgress(0.7); await tick();
 
@@ -104,6 +108,7 @@ async function boot() {
     U.uCloud.value = st.cloud; U.uPillars.value = st.pillars; U.uDiamond.value = st.diamondDust;
     U.uSunDogs.value = st.sunDogs; U.uMoonVis.value = st.moonVis; U.uSunVis.value = st.sunVis;
     U.uCloudOffset.value.x += dt * 9; U.uCloudOffset.value.y -= dt * 3;
+    U.uCloudBase.value = 1500 - 520 * st.storm; U.uCloudTop.value = 2600 - 250 * st.storm;
 
     if (fixedCam) {
       camera.position.fromArray(fixedCam);
@@ -118,7 +123,7 @@ async function boot() {
       const up = probe.up, k = sky.keyColor;
       const B = (0.2126 * up.r + 0.7152 * up.g + 0.0722 * up.b) + (0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b) * 0.35 * Math.max(0.25, sky.keyDir.y);
       const e = st.sunElev * 180 / Math.PI;
-      const nightDim = 1 - 0.72 * Math.min(1, Math.max(0, (-e - 2) / 12));
+      const nightDim = 1 - 0.8 * Math.min(1, Math.max(0, (-e - 2) / 12));
       const target = st.grade.exp * 0.55 * nightDim / Math.pow(Math.max(B, 1e-5), 0.74);
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
     }
