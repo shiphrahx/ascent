@@ -13,6 +13,7 @@ import { Pipeline } from './core/pipeline.js';
 import { Probe } from './world/probe.js';
 import { Volumetrics } from './fx/volumetrics.js';
 import { Rocks } from './world/rocks.js';
+import { defineFacades, sculpt, Landmarks } from './world/landmarks.js';
 import { Hero } from './balloon/hero.js';
 import { Fleet } from './balloon/fleet.js';
 import { Crew } from './balloon/crew.js';
@@ -51,6 +52,9 @@ async function boot() {
   const data = new TerrainData();
   await data.generate(p => setProgress(0.1 + p * 0.55));
   G.terrainData = data;
+  const facades = defineFacades();
+  sculpt(data, facades);
+  data.buildTextures();
 
   const scene = new THREE.Scene();
   G.scene = scene;
@@ -63,8 +67,10 @@ async function boot() {
   scene.add(dome.mesh);
   const terrain = new Terrain(data);
   scene.add(terrain.group);
-  const rocks = new Rocks(data);
+  const rocks = new Rocks(data, facades);
   scene.add(rocks.group);
+  const landmarks = new Landmarks(scene, data, facades);
+  rocks.addCollider(landmarks.castle);
   G.rocks = rocks;
   setProgress(0.68); await tick();
   const hero = new Hero(scene, data, rocks, null);
@@ -106,6 +112,12 @@ async function boot() {
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
+  if (dbg.at) {
+    const f = { church: facades[0], dove1: facades[1], dove2: facades[2] }[dbg.at];
+    const dist = parseFloat(dbg.d || 45), up = parseFloat(dbg.up || 12);
+    if (f) cams.fixed = (cam) => { cam.position.set(f.x + f.nx * dist + f.tx * dist * 0.3, f.floorY + up, f.z + f.nz * dist + f.tz * dist * 0.3); cam.lookAt(f.x, f.floorY + f.H * 0.4, f.z); };
+    else if (dbg.at === 'castle') cams.fixed = (cam) => { const c = landmarks.castle; cam.position.set(c.x + 160, c.y + 60, c.z + 120); cam.lookAt(c.x, c.y + 25, c.z); };
+  }
   if (fixedCam) cams.fixed = (cam) => { cam.position.fromArray(fixedCam); cam.lookAt(new THREE.Vector3().fromArray(fixedLook || [0, 0, 0])); };
   // fast-forward the flight for testing: sim=seconds
   if (dbg.sim) {

@@ -269,19 +269,31 @@ function dwelling(rng, lod) {
 const VERT = /* glsl */`
 ${VCOMMON}
 attribute float aMat, aAO;
-attribute vec4 aInst;
 varying vec3 vWorld, vN;
 varying float vMat, vAO;
-varying vec4 vInst;
+varying vec4 vInst, vPaint;
 varying float vLocalY;
+#ifdef FACADE
+attribute vec4 aPaint;
+#else
+attribute vec4 aInst;
+#endif
 #ifdef DEPTH_PASS
 varying float vDepthAlpha;
 #endif
 void main(){
+#ifdef FACADE
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  vN = normalize(mat3(modelMatrix) * normal);
+  vInst = vec4(0.37, 0., 0., 0.); vPaint = aPaint;
+  vLocalY = 10.;
+#else
   vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
-  vWorld = wp.xyz;
   vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal);
-  vMat = aMat; vAO = aAO; vInst = aInst; vLocalY = position.y;
+  vInst = aInst; vPaint = vec4(0.); vLocalY = position.y;
+#endif
+  vWorld = wp.xyz;
+  vMat = aMat; vAO = aAO;
 #ifdef DEPTH_PASS
   vDepthAlpha = 1.;
 #endif
@@ -294,7 +306,7 @@ ${COMMON}
 ${ROCK}
 varying vec3 vWorld, vN;
 varying float vMat, vAO;
-varying vec4 vInst;
+varying vec4 vInst, vPaint;
 varying float vLocalY;
 void main(){
   vec3 P = vWorld;
@@ -336,6 +348,8 @@ void main(){
     alb = tuffColor(P.y, rose, P.xz, nz.r) * 0.32;
     ao *= 0.6;
   }
+  // lime-wash and red ochre bands painted around the pigeon holes
+  alb = mix(alb, vPaint.rgb * (0.85 + 0.2 * nz.r), vPaint.a);
   // snow on upward faces: cap tops, ledges, steps
   float up = smoothstep(0.45, 0.8, N.y);
   float snow = uSnow * up * smoothstep(0.3, 0.6, nz.g + uSnow * 0.5);
@@ -363,9 +377,12 @@ void main(){
 }
 `;
 
+export { VERT as ROCK_VERT, FRAG as ROCK_FRAG, lathe, toGeometry, rills, sphereBlob };
+
 export class Rocks {
-  constructor(data) {
+  constructor(data, facades = []) {
     this.data = data;
+    this.facades = facades;
     const rng = mulberry32(7);
     this.mat = makeMaterial({ vertex: VERT, fragment: FRAG });
     // variants: [builder, count]
@@ -409,6 +426,7 @@ export class Rocks {
       [SITES.castle.x, SITES.castle.z, 380], [SITES.vineyard.x, SITES.vineyard.z, SITES.vineyard.r],
       [SITES.orchard.x, SITES.orchard.z, SITES.orchard.r + 20], [SITES.horses.x, SITES.horses.z, 170],
       [SITES.church.x, SITES.church.z, 45], [SITES.dovecote.x, SITES.dovecote.z, 30],
+      ...this.facades.map(f => [f.x + f.nx * 8, f.z + f.nz * 8, f.W / 2 + 16]),
     ];
     this.instances = [];
     const cell = 15;
@@ -457,6 +475,11 @@ export class Rocks {
     }
   }
 
+  addCollider(c) {
+    const o = { x: c.x, z: c.z, y: c.y, h: c.h, rb: c.r + 6, rt: c.r * 0.35, s: 1, sy: 1, v: null };
+    this.instances.push(o);
+    this.buildGrid();
+  }
   buildGrid() {
     // spatial hash for collision queries
     this.grid = new Map();

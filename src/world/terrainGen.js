@@ -226,7 +226,6 @@ export class TerrainData {
       if ((j & 63) === 0) { progress(0.68 + 0.22 * j / onz); await tick(); }
     }
     this.HO = HO; this.onx = onx; this.onz = onz; this.ocell = ocell;
-    this.buildTextures();
     progress(0.95);
   }
 
