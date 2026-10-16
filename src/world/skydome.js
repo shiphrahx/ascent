@@ -143,10 +143,10 @@ void main(){
       vec3 h = hash33(cell + float(L) * 71.);
       vec3 sp = 0.15 + h * 0.7;
       float dd = length(f - sp);
-      float m = pow(hash13(cell + 7.7 + float(L)), L == 0 ? 14. : 22.);
+      float m = pow(hash13(cell + 7.7 + float(L)), L == 0 ? 8. : 13.);
       float tw = 0.75 + 0.25 * sin(uTime * (2. + 5. * h.z) + h.x * 40.);
       vec3 tint = mix(vec3(1.0, 0.82, 0.65), vec3(0.72, 0.84, 1.0), h.y);
-      sc += tint * m * smoothstep(0.11, 0.0, dd) * tw * (L == 0 ? 24. : 12.);
+      sc += tint * m * smoothstep(0.1 + 0.12 * m, 0.0, dd) * tw * (L == 0 ? 60. : 26.);
     }
     float b = dot(d, uGalPole);
     float band = gauss(b, 0.20);
@@ -154,8 +154,10 @@ void main(){
     float neb = vnoise3(q * 2.) * 0.6 + vnoise3(q * 5.) * 0.3 + vnoise3(q * 11.) * 0.1;
     float dust = smoothstep(0.45, 0.7, vnoise3(q * 3.3 + 2.)) * gauss(b - 0.03, 0.06);
     vec3 mw = mix(vec3(0.55, 0.62, 0.85), vec3(0.95, 0.85, 0.7), gauss(dot(d, normalize(vec3(-0.3, 0.2, 0.9))), 0.6));
-    sc += mw * band * neb * (1. - dust * 0.85) * 0.09;
-    col += sc * starVis * 0.0012;
+    sc += mw * band * neb * (1. - dust * 0.85) * 1.1;
+    // the moon washes out the faint ones
+    float wash = 1. - 0.55 * uMoonVis * smoothstep(-0.2, 0.8, dot(d, uMoonDir));
+    col += sc * starVis * 0.016 * wash;
   }
 
   // sun disc with limb darkening
@@ -172,7 +174,7 @@ void main(){
   // moon: lit hemisphere, maria and craters
   vec3 md = uMoonDir;
   float cm = dot(d, md);
-  float mr = 0.0165;
+  float mr = 0.024;
   float rm = sqrt(max(0., 2. * (1. - cm))) / mr;
   if (rm < 1.05 && md.y > -0.05) {
     vec3 right = normalize(cross(md, vec3(0, 1, 0)));
@@ -185,7 +187,7 @@ void main(){
     float maria = smoothstep(0.45, 0.62, vnoise(sph * 2.2 + 3.) * 0.7 + vnoise(sph * 5.) * 0.3);
     float alb = 0.75 - maria * 0.32 + craters(sph * 0.9) * 0.45 + (vnoise(sph * 24.) - 0.5) * 0.08;
     float edge = smoothstep(1.0, 0.96, rm);
-    vec3 mc = vec3(1.0, 0.97, 0.92) * alb * lit * 2.2 * (0.3 + 0.7 * horizonExt);
+    vec3 mc = vec3(1.0, 0.97, 0.92) * alb * lit * 0.3 * (0.3 + 0.7 * horizonExt);
     mc += vec3(0.02, 0.025, 0.04) * (1. - lit); // earthshine
     col = mix(col, mc + col * 0.3, edge * (1. - uStorm));
   }
