@@ -15,6 +15,7 @@ import { Volumetrics } from './fx/volumetrics.js';
 import { Rocks } from './world/rocks.js';
 import { Hero } from './balloon/hero.js';
 import { Fleet } from './balloon/fleet.js';
+import { Crew } from './balloon/crew.js';
 import { Input } from './core/input.js';
 import { Cameras } from './core/cameras.js';
 
@@ -68,6 +69,7 @@ async function boot() {
   setProgress(0.68); await tick();
   const hero = new Hero(scene, data, rocks, null);
   G.hero = hero;
+  new Crew(hero);
   const tshadow = new TerrainShadow(renderer);
   const shadows = new Shadows(renderer);
   const wind = new Wind(U.uNoise2D.value);

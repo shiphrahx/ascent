@@ -138,13 +138,13 @@ export function buildRig(coverColor = [0.36, 0.06, 0.08], uprightColor = [0.06, 
   parts.push(tag(block, 2));
   const handles2 = [];
   for (const bx of [-0.19, 0.19]) {
-    parts.push(tag(segment(new THREE.Vector3(bx, B.frameY - 0.05, 0.07), new THREE.Vector3(bx, B.frameY - 0.22, 0.2), 0.012, 6), 2));
-    const grip = new THREE.CylinderGeometry(0.02, 0.02, 0.13, 10); grip.rotateZ(Math.PI / 2); grip.translate(bx, B.frameY - 0.24, 0.21);
+    parts.push(tag(segment(new THREE.Vector3(bx, B.frameY - 0.05, 0.07), new THREE.Vector3(bx, B.frameY - 0.42, 0.31), 0.012, 6), 2));
+    const grip = new THREE.CylinderGeometry(0.02, 0.02, 0.13, 10); grip.rotateZ(Math.PI / 2); grip.translate(bx, B.frameY - 0.44, 0.32);
     parts.push(tag(grip, 4));
-    handles2.push(new THREE.Vector3(bx, B.frameY - 0.24, 0.21));
+    handles2.push(new THREE.Vector3(bx, B.frameY - 0.44, 0.32));
   }
   // fuel cylinders in the pilot compartment
-  const cyls = [[0.2, 0.4], [-0.2, 0.4], [0.22, -0.38], [-0.22, -0.38]];
+  const cyls = [[0.2, -0.41], [-0.2, -0.41]];
   for (const [x, z] of cyls) {
     parts.push(tag(cyl(0.18, 0.18, 0.8, 22, x, 0.04, z), 3, coverColor, (px, py, pz) => [Math.atan2(pz - z, px - x) / (Math.PI * 2), py]));
     // padded top roll
@@ -158,8 +158,8 @@ export function buildRig(coverColor = [0.36, 0.06, 0.08], uprightColor = [0.06, 
   }
   // hoses from the front cylinders up the uprights to the manifold
   const hoses = [
-    [[0.2, 0.98, 0.4], [0.35, 1.05, 0.48], [0.62, 1.3, 0.48], [0.56, 1.9, 0.42], [0.42, B.frameY - 0.02, 0.3], [0.2, B.frameY - 0.04, 0.06]],
-    [[-0.2, 0.98, 0.4], [-0.35, 1.05, 0.48], [-0.62, 1.3, 0.48], [-0.56, 1.9, 0.42], [-0.42, B.frameY - 0.02, 0.3], [-0.2, B.frameY - 0.04, 0.06]],
+    [[0.2, 0.98, -0.41], [0.33, 1.06, -0.5], [0.6, 1.3, -0.5], [0.56, 1.9, -0.42], [0.42, B.frameY - 0.02, -0.3], [0.2, B.frameY - 0.04, -0.06]],
+    [[-0.2, 0.98, -0.41], [-0.33, 1.06, -0.5], [-0.6, 1.3, -0.5], [-0.56, 1.9, -0.42], [-0.42, B.frameY - 0.02, -0.3], [-0.2, B.frameY - 0.04, -0.06]],
   ];
   for (const h of hoses) parts.push(tag(tube(h, 0.017, 48, 8), 4));
   // karabiners at the frame corners where the flying wires attach

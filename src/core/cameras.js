@@ -18,7 +18,7 @@ export class Cameras {
     // chase orbit
     this.yaw = 2.6; this.pitch = 0.1; this.dist = 52; this.distT = 52; this.drift = 0;
     // first person look
-    this.fpYaw = 0; this.fpPitch = -0.05;
+    this.fpYaw = Math.PI / 2; this.fpPitch = -0.3;
     // cinematic
     this.shot = null; this.shotT = 0; this.shotIdx = 0;
     this.blend = 1; this.fromPos = new THREE.Vector3(); this.fromQuat = new THREE.Quaternion();
@@ -120,6 +120,7 @@ export class Cameras {
   // --- modes ---
   update(dt, t) {
     const H = this.hero, F = H.flight;
+    if (H.crew) H.crew.hideHead = this.mode === 1;
     const drag = this.input.consumeDrag();
     const wheel = this.input.consumeWheel();
     this.input.drag.idle += dt;
@@ -140,8 +141,10 @@ export class Cameras {
       fov = 50;
     } else if (this.mode === 1) {
       this.fpYaw -= drag.x * 0.0035; this.fpPitch = Math.max(-1.1, Math.min(1.5, this.fpPitch - drag.y * 0.0035));
-      // eye in the +x passenger compartment, breathing with the basket sway
-      const eye = new THREE.Vector3(0.62, 1.63 + Math.sin(t * 1.3) * 0.006, 0.0).applyMatrix4(H.basket.matrixWorld);
+      // the pilot's eyes, under the burner
+      const crew = H.crew;
+      const el = crew && crew.people[0].eyeLocal ? crew.people[0].eyeLocal : new THREE.Vector3(0, 1.72, 0.24);
+      const eye = el.clone().applyMatrix4(H.basket.matrixWorld);
       pos.copy(eye);
       const q = H.basket.quaternion;
       const dir = new THREE.Vector3(Math.cos(this.fpPitch) * Math.cos(this.fpYaw), Math.sin(this.fpPitch), Math.cos(this.fpPitch) * Math.sin(this.fpYaw)).applyQuaternion(q);

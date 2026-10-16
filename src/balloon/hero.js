@@ -113,7 +113,7 @@ export class Hero {
     this._b.set(0.05, 0.3, 0.05).applyMatrix4(this.env.matrixWorld);
     this.setCable(k++, this._b, this._a, 0.009);
     this._a.copy(this._b);
-    this._b.set(0.3, BASKET.frameY - 0.1, 0.32).applyMatrix4(this.basket.matrixWorld);
+    this._b.set(0.28, 1.72, 0.34).applyMatrix4(this.basket.matrixWorld);
     this.setCable(k++, this._b, this._a, 0.009);
     this.cables.count = k;
     this.cables.instanceMatrix.needsUpdate = true;
