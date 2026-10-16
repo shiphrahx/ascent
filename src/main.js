@@ -13,6 +13,9 @@ import { Pipeline } from './core/pipeline.js';
 import { Probe } from './world/probe.js';
 import { Volumetrics } from './fx/volumetrics.js';
 import { Rocks } from './world/rocks.js';
+import { Hero } from './balloon/hero.js';
+import { Input } from './core/input.js';
+import { Cameras } from './core/cameras.js';
 
 const canvas = document.getElementById('view');
 const loadFill = document.getElementById('loadFill');
@@ -62,10 +65,17 @@ async function boot() {
   scene.add(rocks.group);
   G.rocks = rocks;
   setProgress(0.68); await tick();
+  const hero = new Hero(scene, data, rocks, null);
+  G.hero = hero;
   const tshadow = new TerrainShadow(renderer);
   const shadows = new Shadows(renderer);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
+  hero.flight.wind = wind;
+  const input = new Input(canvas);
+  const cams = new Cameras(camera, hero, data, rocks, input);
+  G.cams = cams;
+  input.onCamera = m => cams.setMode(m);
   const pipe = new Pipeline(renderer);
   const probe = new Probe(renderer);
   const vol = new Volumetrics(renderer);
@@ -89,18 +99,28 @@ async function boot() {
   const fixedCam = dbg.cam ? dbg.cam.split(',').map(Number) : null;
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
+  if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
+  if (fixedCam) cams.fixed = (cam) => { cam.position.fromArray(fixedCam); cam.lookAt(new THREE.Vector3().fromArray(fixedLook || [0, 0, 0])); };
+  // fast-forward the flight for testing: sim=seconds
+  if (dbg.sim) {
+    const n = Math.floor(parseFloat(dbg.sim) / 0.1);
+    const st0 = sky.update(0, 1);
+    for (let i = 0; i < n; i++) { const s = dbg.freeze ? st0 : sky.update(0.1, 1); wind.update(0.1, s); hero.update(0.1, i * 0.1, input, s); }
+    if (dbg.h !== undefined) sky.cycleT = cycleForHour(parseFloat(dbg.h));
+  }
 
   const clock = new THREE.Clock();
   let time = 0;
   const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3();
   const look = {};
-  window.__dbg = { G, U, sky, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0 };
+  window.__dbg = { G, U, sky, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
+    extra: () => ({ exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp }) };
 
   function frame() {
     const dt = Math.min(0.05, clock.getDelta());
     time += dt;
     const freeze = !!dbg.freeze;
-    const st = sky.update(freeze ? 0 : dt, 1);
+    const st = sky.update(freeze ? 0 : dt, input.fast ? 14 : 1);
     wind.update(dt, st);
     U.uTime.value = time;
     U.uSunDir.value.copy(sky.sunDir); U.uMoonDir.value.copy(sky.moonDir);
@@ -115,27 +135,29 @@ async function boot() {
     U.uCloudOffset.value.x += dt * 9; U.uCloudOffset.value.y -= dt * 3;
     U.uCloudBase.value = 1500 - 520 * st.storm; U.uCloudTop.value = 2600 - 250 * st.storm;
 
-    if (fixedCam) {
-      camera.position.fromArray(fixedCam);
-      camera.lookAt(new THREE.Vector3().fromArray(fixedLook || [0, 0, 0]));
-    }
-    camera.updateMatrixWorld();
+    const fast = input.fast ? 14 : 1;
+    hero.update(dt, time, input, st);
+    cams.update(dt, time);
 
     dome.update(sky, camera);
     probe.update(st.snow);
     {
       // auto exposure from sky irradiance and the key light; nights stay darker than days
       const up = probe.up, k = sky.keyColor;
-      const B = (0.2126 * up.r + 0.7152 * up.g + 0.0722 * up.b) + (0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b) * 0.35 * Math.max(0.25, sky.keyDir.y);
+      const B = (0.2126 * up.r + 0.7152 * up.g + 0.0722 * up.b) + (0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b) * 0.3;
       const e = st.sunElev * 180 / Math.PI;
       const nightDim = 1 - 0.8 * Math.min(1, Math.max(0, (-e - 2) / 12));
       const target = st.grade.exp * 0.55 * nightDim / Math.pow(Math.max(B, 1e-5), 0.74);
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
     }
     tshadow.update(window.__dbg.frames < 2);
-    focus.copy(camera.position);
-    viewC.copy(camera.position);
-    farC.copy(camera.position);
+    // cascades: basket detail, the area the camera looks at, wide for far balloons
+    focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
+    if (camera.position.distanceTo(focus) > 140) focus.copy(camera.position);
+    camera.getWorldDirection(viewC).multiplyScalar(500).add(camera.position);
+    viewC.lerp(camera.position, 0.45);
+    viewC.y = Math.max(viewC.y, data.height(viewC.x, viewC.z));
+    farC.copy(viewC);
     rocks.update(camera);
     shadows.render(scene, focus, viewC, farC);
     terrain.update(camera);

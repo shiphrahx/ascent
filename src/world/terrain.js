@@ -90,7 +90,7 @@ void main(){
   // soils on gentle ground
   float flat_ = smoothstep(0.32, 0.12, slope);
   vec3 dryGrass = mix(vec3(0.52, 0.47, 0.30), vec3(0.42, 0.40, 0.26), nz2.g);
-  vec3 tuffSoil = mix(vec3(0.74, 0.66, 0.52), vec3(0.62, 0.52, 0.40), nz.g);
+  vec3 tuffSoil = mix(vec3(0.60, 0.51, 0.39), vec3(0.50, 0.41, 0.31), nz.g);
   vec3 plowed = mix(vec3(0.42, 0.30, 0.22), vec3(0.50, 0.38, 0.27), nz2.r);
   // furrows in plowed fields
   float ang = at.a * 3.14159;
@@ -147,7 +147,7 @@ void main(){
   float frost = uFrost * (1. - snow) * smoothstep(0.7, 0.3, slope) * (0.6 + 0.4 * nz.r);
   float sunWarm = terrainShadow(P) * smoothstep(0.08, 0.25, uKeyDir.y) * uKeyIsSun;
   frost *= 1. - sunWarm * 0.7;
-  alb = mix(alb, vec3(0.80, 0.84, 0.90), frost * 0.5);
+  alb = mix(alb, vec3(0.80, 0.84, 0.90), frost * 0.25);
 
   Surf s;
   s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.12; s.sss = 0.;
@@ -157,7 +157,7 @@ void main(){
   vec2 gcell = floor(P.xz * 9.);
   float gl = hash12(gcell + floor(uTime * 0.0));
   float facing = pow(sat(dot(reflect(-V, vec3(0,1,0)), uKeyDir)), 6.);
-  float sparkle = step(0.985, gl) * (frost + snow * 0.6) * (0.3 + facing * 3.) * (1. - smoothstep(60., 400., dist));
+  float sparkle = step(0.996, gl) * (frost + snow * 0.6) * (0.3 + facing * 3.) * (1. - smoothstep(60., 400., dist));
   col += uKeyColor * sparkle * sh * 2.5;
   // cave and village windows are separate geometry; terrain only darkens in deep cracks
   col = applyHaze(col, P);

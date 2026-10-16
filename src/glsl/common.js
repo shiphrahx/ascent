@@ -234,18 +234,18 @@ vec3 tuffColor(float y, float rose, vec2 xz, float var){
   float band = fract(b);
   float id = floor(b);
   float r = hash12(vec2(id, 3.7));
-  vec3 cream = vec3(0.86, 0.78, 0.64);
-  vec3 ochre = vec3(0.80, 0.60, 0.38);
-  vec3 roseC = vec3(0.84, 0.58, 0.52);
-  vec3 rust  = vec3(0.66, 0.40, 0.27);
+  vec3 cream = vec3(0.76, 0.66, 0.52);
+  vec3 ochre = vec3(0.74, 0.52, 0.31);
+  vec3 roseC = vec3(0.78, 0.51, 0.44);
+  vec3 rust  = vec3(0.60, 0.35, 0.22);
   vec3 c = r < 0.4 ? cream : (r < 0.62 ? ochre : (r < 0.85 ? mix(cream, roseC, 0.6) : rust));
   vec3 nextc = hash12(vec2(id + 1., 3.7)) < 0.5 ? cream : ochre;
   c = mix(c, nextc, smoothstep(0.82, 1.0, band) * 0.5);
   // thin dark ash seams between layers
   c *= 1. - 0.28 * smoothstep(0.035, 0.0, abs(band - 0.06)) * step(0.55, hash12(vec2(id, 9.1)));
   // rose valley: the whole stack shifts to pink and salmon
-  vec3 pinkStack = mix(vec3(0.90, 0.62, 0.58), vec3(0.78, 0.46, 0.42), smoothstep(0.3, 0.9, r));
-  pinkStack = mix(pinkStack, vec3(0.93, 0.80, 0.70), step(0.8, r));
+  vec3 pinkStack = mix(vec3(0.82, 0.53, 0.48), vec3(0.70, 0.38, 0.34), smoothstep(0.3, 0.9, r));
+  pinkStack = mix(pinkStack, vec3(0.84, 0.70, 0.60), step(0.8, r));
   c = mix(c, pinkStack, rose);
   c *= 0.9 + 0.2 * var;
   return c;

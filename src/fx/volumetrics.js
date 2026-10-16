@@ -33,13 +33,13 @@ float viewDist(vec2 uv, out vec3 dir){
 // valley fog: thick below the fog top, wispy surface, lifts and thins as it burns off
 float fogDensity(vec3 p){
   if (uValleyFog <= 0.001) return 0.;
-  float top = uFogTop - 18. * (1. - uValleyFog);
+  float top = uFogTop - 40. * (1. - uValleyFog);
   vec3 q = p / 140. + vec3(uTime * 0.012, uTime * 0.004, uTime * 0.008);
   float n = texture(uNoise3D, q).r * 0.65 + texture(uNoise3D, q * 3.1).g * 0.35;
   float surf = top + (n - 0.5) * 22.;
   float h = (surf - p.y) / 16.;
   float d = smoothstep(-0.3, 1.0, h);
-  return d * (0.55 + 0.6 * n) * uValleyFog;
+  return d * (0.55 + 0.6 * n) * uValleyFog * sqrt(uValleyFog);
 }
 float cloudCover(vec2 xz){ return cloudDensity2D(xz); }
 float cloudDensity(vec3 p){
@@ -64,7 +64,7 @@ void main(){
   vec3 dir;
   float D = viewDist(vUv, dir);
   vec3 C = cameraPosition;
-  float jit = fract(ign(gl_FragCoord.xy) + uFrame * 0.618034);
+  float jit = fract(texelFetch(uNoise2D, ivec2(gl_FragCoord.xy) & 255, 0).a + uFrame * 0.618034);
   vec3 L = uKeyDir;
   float mu = dot(dir, L);
   float phaseFog = mix(hgPhase(mu, 0.55), hgPhase(mu, -0.15), 0.35) * 12.566;
@@ -213,6 +213,26 @@ void main(){
 }
 `;
 
+const BLUR = /* glsl */`
+precision highp float;
+varying vec2 vUv;
+uniform sampler2D tVol, tDepth;
+uniform vec2 uDir, uHalfRes;
+uniform mat4 uProj;
+float linZ(float d){ float z = d * 2. - 1.; return uProj[3][2] / (z * uProj[2][3] - uProj[2][2]); }
+void main(){
+  float zc = linZ(texture(tDepth, vUv).r);
+  vec4 acc = vec4(0); float ws = 0.;
+  for (int i = -3; i <= 3; i++) {
+    vec2 uv = vUv + uDir * float(i) / uHalfRes;
+    float z = linZ(texture(tDepth, uv).r);
+    float w = exp(-float(i * i) / 6.) * exp(-abs(z - zc) / (abs(zc) * 0.05 + 0.3));
+    acc += texture(tVol, uv) * w; ws += w;
+  }
+  gl_FragColor = acc / ws;
+}
+`;
+
 const BLEND = /* glsl */`
 precision highp float;
 varying vec2 vUv;
@@ -231,6 +251,7 @@ export class Volumetrics {
       tVol: { value: null }, tDepth: { value: null }, uHalfRes: { value: new THREE.Vector2() }, uFullRes: { value: new THREE.Vector2() },
       uProj: { value: new THREE.Matrix4() },
     });
+    this.blur = fsMaterial(BLUR, { tVol: { value: null }, tDepth: { value: null }, uDir: { value: new THREE.Vector2() }, uHalfRes: { value: new THREE.Vector2() }, uProj: { value: new THREE.Matrix4() } });
     // dst = vol.rgb + dst * vol.a
     this.blend = fsMaterial(BLEND, { tVol: { value: null } }, {
       blending: THREE.CustomBlending,
@@ -239,8 +260,9 @@ export class Volumetrics {
     this.half = null; this.full = null; this.frame = 0;
   }
   setSize(W, H) {
-    if (this.half) { this.half.dispose(); this.full.dispose(); }
+    if (this.half) { this.half.dispose(); this.full.dispose(); this.half2.dispose(); }
     this.half = makeRT(Math.ceil(W / 2), Math.ceil(H / 2), { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+    this.half2 = makeRT(Math.ceil(W / 2), Math.ceil(H / 2), { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     this.full = makeRT(W, H);
     this.W = W; this.H = H;
   }
@@ -254,6 +276,10 @@ export class Volumetrics {
     m.uHalfRes.value.set(this.half.width, this.half.height);
     m.uFrame.value = this.frame++ % 64;
     renderFS(r, this.march, this.half);
+    const bl = this.blur.uniforms;
+    bl.tDepth.value = mainRT.depthTexture; bl.uHalfRes.value.set(this.half.width, this.half.height); bl.uProj.value.copy(camera.projectionMatrix);
+    bl.tVol.value = this.half.texture; bl.uDir.value.set(1, 0); renderFS(r, this.blur, this.half2);
+    bl.tVol.value = this.half2.texture; bl.uDir.value.set(0, 1); renderFS(r, this.blur, this.half);
     const u = this.up.uniforms;
     u.tVol.value = this.half.texture; u.tDepth.value = mainRT.depthTexture;
     u.uHalfRes.value.set(this.half.width, this.half.height); u.uFullRes.value.set(this.W, this.H);

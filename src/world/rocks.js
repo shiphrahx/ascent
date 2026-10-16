@@ -119,7 +119,7 @@ function mushroom(rng, lod) {
     ydist: u => u,
     profile: (u, th) => {
       let r = u < un ? Rn + (Rb - Rn) * Math.pow(1 - u / un, 1.35) : Rn * (1 - 0.25 * smooth(un, 1, u));
-      r *= 1 + 0.55 * Math.exp(-Math.max(0, u) * 14);   // talus flare
+      r *= 1 + 0.3 * Math.exp(-Math.max(0, u) * 14);   // talus flare
       if (u < 0) r *= 1.35;
       return r;
     },
@@ -323,6 +323,8 @@ void main(){
     alb = tuffColor(P.y, rose, P.xz, nz.r);
     // darker weathering streaks running down from the cap
     alb *= 1. - 0.18 * smoothstep(0.55, 0.8, str) * smoothstep(0., 8., vLocalY);
+    // scree and soil splash around the foot
+    alb = mix(alb, vec3(0.42, 0.36, 0.28) * (0.8 + 0.4 * nz.g), smoothstep(1.6, -0.5, vLocalY) * 0.7);
   } else if (m < 1.5) {
     // basalt cap: dark, rough, with lichen and a rusty skin
     alb = mix(vec3(0.11, 0.095, 0.085), vec3(0.22, 0.19, 0.16), nz.r);
@@ -344,7 +346,7 @@ void main(){
   alb *= 1. - 0.32 * wet; rough = mix(rough, 0.3, wet); spec = mix(spec, 0.6, wet);
   // frost
   float frost = uFrost * (1. - snow) * smoothstep(0.2, 0.7, N.y + nz.r * 0.3) * (1. - terrainShadow(P) * uKeyIsSun * smoothstep(0.1, 0.3, uKeyDir.y) * 0.8);
-  alb = mix(alb, vec3(0.82, 0.86, 0.92), frost * 0.45);
+  alb = mix(alb, vec3(0.82, 0.86, 0.92), frost * 0.18);
 
   Surf s;
   s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.15; s.sss = 0.;
