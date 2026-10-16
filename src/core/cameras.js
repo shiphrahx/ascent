@@ -131,6 +131,11 @@ export class Cameras {
     if (this.mode === 0) {
       this.yaw -= drag.x * 0.005; this.pitch = Math.max(-0.35, Math.min(1.3, this.pitch + drag.y * 0.004));
       this.distT = Math.max(24, Math.min(240, this.distT * Math.pow(1.12, wheel)));
+      // while you're steering, swing round behind the balloon like a driving camera
+      if (F.manualT < 12 && this.input.drag.idle > 1.5) {
+        let d = (F.heading + Math.PI) - this.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+        this.yaw += d * Math.min(1, dt * 1.8);
+      }
       this.dist += (this.distT - this.dist) * Math.min(1, dt * 4);
       // slow cinematic drift when left alone
       if (this.input.drag.idle > 4) { this.yaw += dt * 0.03 * Math.sin(t * 0.05 + 1.0); this.pitch += (0.12 + 0.08 * Math.sin(t * 0.07) - this.pitch) * dt * 0.05; }

@@ -25,19 +25,23 @@ export class Flight {
     const L = SITES.launch;
     const gx = L.x + 40, gz = L.z - 10;
     const gy = this.data.height(gx, gz);
-    this.p.set(gx, gy + HANG + 0.05, gz);
+    // start already aloft over the launch field, pointed at the first landmark
+    this.p.set(gx, gy + HANG + 50, gz);
     this.v.set(0, 0, 0);
-    this.x = -6;                 // excess temperature over neutral
+    this.x = 0;                  // excess temperature over neutral
+    this.heading = Math.atan2(ROUTE[1].z - gz, ROUTE[1].x - gx);
+    this.apHeading = this.heading;
+    this.v.set(Math.cos(this.heading) * 5.5, 0, Math.sin(this.heading) * 5.5);
     this.burn = 0; this.vent = 0;
     this.burnTimer = 0; this.burnHold = 0; this.burnCooldown = 2;
-    this.yaw = -0.4; this.yawRate = 0;
+    this.yaw = Math.PI / 2 - this.heading; this.yawRate = 0;
     this.swing = new THREE.Vector2(); this.swingV = new THREE.Vector2();
     this.lean = new THREE.Vector2();
     this.dent = 0; this.dentV = 0; this.dentDir = new THREE.Vector3(1, 0, 0);
-    this.grounded = true;
+    this.grounded = false;
     this.wp = 1;
-    this.targetAlt = 60;
-    this.mode = 'prelaunch';    // prelaunch -> flying -> landing -> landed
+    this.targetAlt = this.p.y;
+    this.mode = 'flying';       // flying -> landing -> landed
     this.modeT = 0;
     this.manualT = 99;
     this.touchdown = 0;
@@ -84,6 +88,7 @@ export class Flight {
     let ax = w.x, az = w.z;
     if (!last) { const n = ROUTE[this.wp + 1]; const k = Math.max(0, 1 - dist / 260) * 0.5; ax += (n.x - w.x) * k; az += (n.z - w.z) * k; }
     const desired = Math.atan2(az - this.p.z, ax - this.p.x);
+    this.apHeading = desired;
     // look ahead along the current drift for terrain and rocks
     const vh = Math.hypot(this.v.x, this.v.z) + 0.1;
     let minSafe = -1e9;
@@ -135,7 +140,16 @@ export class Flight {
     // --- control ---
     const manualActive = input.burn || input.vent || input.left || input.right;
     if (manualActive) this.manualT = 0; else this.manualT += dt;
-    const manual = this.manualT < 7 && this.mode === 'flying';
+    const manual = this.manualT < 12 && this.mode === 'flying';
+    // handing back to the autopilot: pick up the route at the nearest landmark ahead
+    if (this.wasManual && !manual) {
+      let bi = this.wp, bd = 1e9;
+      for (let i = 1; i < ROUTE.length; i++) { const d = Math.hypot(ROUTE[i].x - p.x, ROUTE[i].z - p.z); if (d < bd) { bd = d; bi = i; } }
+      if (bi < ROUTE.length - 1) { const a = ROUTE[bi], b = ROUTE[bi + 1]; if ((p.x - a.x) * (b.x - a.x) + (p.z - a.z) * (b.z - a.z) > 0) bi++; }
+      this.wp = Math.max(1, bi);
+    }
+    this.wasManual = manual;
+    const turnIn = (input.left ? 1 : 0) - (input.right ? 1 : 0);
     if (this.mode === 'prelaunch') {
       this.burn = 0; this.vent = 0;
       // a few warm-up blasts, then lift off
@@ -192,9 +206,23 @@ export class Flight {
     this.gust = this.wind.gust(p.x, p.z);
     let ay = LIFT_K * this.x - DRAG_K * v.y * Math.abs(v.y) + w.y * 0.3 + (this._surge || 0);
     // horizontal: carried by the air with a few seconds of lag
-    const tau = this.grounded ? 0.5 : 5.5;
-    let ax = (w.x - v.x) / tau, az = (w.z - v.z) / tau;
-    if (this.grounded) { ax = -v.x * 3; az = -v.z * 3; }
+    let ax, az;
+    if (this.mode === 'flying' && !this.grounded) {
+      // the balloon holds its own heading: A/D turn it by hand, the autopilot turns it toward the next landmark
+      if (manual) this.heading -= turnIn * 0.55 * dt;
+      else if (this.apHeading != null) {
+        let d = this.apHeading - this.heading; d = Math.atan2(Math.sin(d), Math.cos(d));
+        this.heading += Math.max(-0.22 * dt, Math.min(0.22 * dt, d * 0.8 * dt));
+      }
+      const spd = Math.max(5.5, Math.hypot(w.x, w.z)) * (manual ? 1.1 : 1);
+      const tau = manual ? 1.0 : 2.5;
+      ax = (Math.cos(this.heading) * spd - v.x) / tau; az = (Math.sin(this.heading) * spd - v.z) / tau;
+    } else {
+      const tau = this.grounded ? 0.5 : 5.5;
+      ax = (w.x - v.x) / tau; az = (w.z - v.z) / tau;
+      if (this.grounded) { ax = -v.x * 3; az = -v.z * 3; }
+      this.heading = Math.atan2(v.z || 1e-4, v.x || 1);
+    }
     // --- collisions: terrain under the basket and around the envelope ---
     const f = this._f.set(0, 0, 0);
     const ground = this.groundAt(p.x, p.z);
@@ -254,7 +282,9 @@ export class Flight {
 
     // --- rotation: slow drift plus the rotation vent ---
     const turn = (input.left ? 1 : 0) - (input.right ? 1 : 0);
-    this.yawRate += (turn * 0.9 + Math.sin(t * 0.05) * 0.01 - this.yawRate * (turn ? 1.4 : 0.6)) * dt;
+    // the basket swings round to face the way it's travelling
+    let dyaw = (Math.PI / 2 - this.heading) - this.yaw; dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw));
+    this.yawRate += ((dyaw * 1.6 + turn * 0.0) - this.yawRate) * Math.min(1, dt * 3);
     this.yaw += this.yawRate * dt;
 
     // --- basket swing: pendulum driven by horizontal acceleration and gusts ---
