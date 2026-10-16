@@ -14,8 +14,8 @@ export function plateau(x, z) {
   let h = 84 + 11 * fbm2(x / 1100, z / 1100, 4) + 4 * fbm2(x / 260, z / 260, 3);
   h += 18 * smooth(700, 1300, Math.abs(z)) * (0.6 + 0.4 * simplex2(x / 900, 3.3));
   // dendritic gullies across the plateau surface
-  const g = ridged2(x / 420 + 7, z / 420 - 3, 4);
-  h -= 16 * Math.pow(g, 4);
+  const g = ridged2(x / 520 + 7, z / 520 - 3, 3);
+  h -= 7 * Math.pow(g, 4);
   // rolling uplands and far ranges outside the core
   if (r > 2500) {
     h += 40 * fbm2(x / 4200, z / 4200, 4) * smooth(2500, 9000, r);
@@ -150,7 +150,7 @@ export class TerrainData {
         // castle hill rising out of the plateau, gently terraced where the village sits
         const cd = Math.hypot(x - castle.x, z - castle.z) + 12 * simplex2(x / 60, z / 60);
         if (cd < castle.r * 1.6) {
-          const base = Math.max(h, 70);
+          const base = h;
           let hill = base + castle.rise * Math.pow(smooth(castle.r * 1.45, 0, cd), 1.4);
           const terr = 3.2;
           const q = hill / terr;
@@ -173,7 +173,7 @@ export class TerrainData {
         const vmask = smooth(vin.r, vin.r * 0.7, vd);
         if (vmask > 0) {
           const step = 3.0, q = h / step, fq = q - Math.floor(q);
-          const stepped = (Math.floor(q) + smooth(0.72, 1.0, fq)) * step;
+          const stepped = (Math.floor(q) + smooth(0.86, 1.0, fq)) * step;
           h = h + (stepped - h) * vmask;
         }
         // flatten launch and landing fields
@@ -193,6 +193,13 @@ export class TerrainData {
         const ai = k * 4;
         A[ai] = clamp01(rose + 0.12 * simplex2(x / 300, z / 300)) * 255;
         let soil = 0.18 * smooth(0.0, 0.6, simplex2(x / 90, z / 90) * 0.5 + 0.5);
+        if (minT > 0.97) {
+          // the plateau tops are farmed: a patchwork of ploughed plots, stubble and fallow
+          const fi = Math.floor((x * 0.95 + z * 0.31) / 130), fj = Math.floor((-x * 0.31 + z * 0.95) / 85);
+          const hs = Math.abs(Math.sin(fi * 91.7 + fj * 47.3) * 43758.5) % 1;
+          soil = hs < 0.32 ? 0.72 : hs < 0.62 ? 0.42 : hs < 0.8 ? 0.36 : 0.15;
+          A[ai + 3] = ((hs * 7.3) % 1) * 255;
+        }
         if (minT < 0.12) soil = 0.4 + 0.1 * simplex2(x / 40, z / 40);
         if (rd < 220 && rd > 10) {
           // floodplain patchwork of fields and meadow

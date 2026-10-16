@@ -65,7 +65,10 @@ void main(){
   vec3 N = normalAt(P.xz);
   vec4 at = attrAt(P.xz);
   float rose = at.r, soilT = at.g, water = at.b;
-  float slope = 1. - N.y;
+  // classify by the steeper of the smooth normal and the actual triangle, so soil never paints a cliff
+  vec3 Ng = normalize(cross(dFdx(P), dFdy(P)));
+  if (Ng.y < 0.) Ng = -Ng;
+  float slope = 1. - min(N.y, mix(N.y, Ng.y, 0.7));
 
   // detail normals: vertical erosion grooves on steep faces, grain on flats
   float detailFade = 1. - smoothstep(600., 2500., dist);
@@ -238,7 +241,7 @@ export class Terrain {
       const d = this._v.distanceTo(cp);
       // spacing of a vertex at this LOD vs. distance
       let l;
-      if (c.core) l = d < 450 * lodBias ? 0 : d < 1100 * lodBias ? 1 : d < 2400 * lodBias ? 2 : 3;
+      if (c.core) l = d < 700 * lodBias ? 0 : d < 1600 * lodBias ? 1 : d < 3200 * lodBias ? 2 : 3;
       else l = c.s <= 640 ? (d < 3000 ? 1 : 2) : (d < 9000 ? 0 : d < 20000 ? 1 : 2);
       const L = this.levels[l];
       const k = counts[l]++;

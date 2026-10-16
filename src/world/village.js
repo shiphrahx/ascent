@@ -180,8 +180,8 @@ export class Village {
     // place houses on the castle slopes and down toward the river
     const c = SITES.castle;
     const placed = [];
-    for (let i = 0; i < 9000 && placed.length < 240; i++) {
-      const a = rng() * Math.PI * 2, r = 48 + Math.pow(rng(), 1.25) * 290;
+    for (let i = 0; i < 16000 && placed.length < 320; i++) {
+      const a = rng() * Math.PI * 2, r = 46 + Math.pow(rng(), 1.6) * 280;
       let x = c.x + Math.cos(a) * r, z = c.z + Math.sin(a) * r;
       // the village spills east and south toward the river valley
       x += Math.max(0, Math.cos(a)) * r * 0.35;
