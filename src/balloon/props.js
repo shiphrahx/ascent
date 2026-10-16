@@ -12,7 +12,7 @@ attribute float aMat;
 attribute vec3 aCol;
 attribute vec2 aUV2;
 varying vec3 vWorld, vN, vObj, vCol;
-varying float vMat;
+varying float vMat, vSeed;
 varying vec2 vUV2;
 #ifdef DEPTH_PASS
 varying float vDepthAlpha;
@@ -28,8 +28,10 @@ void main(){
   mat4 B = uBones[int(aBone)];
   lp = B * lp; ln = mat3(B) * ln;
 #endif
+  vSeed = 0.;
 #ifdef USE_INSTANCING
   lp = instanceMatrix * lp; ln = mat3(instanceMatrix) * ln;
+  vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
 #endif
   vec4 wp = modelMatrix * lp;
   vWorld = wp.xyz; vN = normalize(mat3(modelMatrix) * ln); vObj = position; vMat = aMat; vCol = aCol; vUV2 = aUV2;
@@ -44,7 +46,7 @@ const FRAG = /* glsl */`
 ${COMMON}
 uniform vec3 uLocalLightPos, uLocalLightCol;
 varying vec3 vWorld, vN, vObj, vCol;
-varying float vMat;
+varying float vMat, vSeed;
 varying vec2 vUV2;
 void main(){
   vec3 P = vWorld;
@@ -119,8 +121,44 @@ void main(){
     float r = sin(vObj.y * 180.) * 0.5 + 0.5;
     alb = vCol * (0.75 + 0.3 * r); rough = 0.95;
   }
+  vec3 emit = vec3(0);
+  if (m >= 15. && m <= 16.) {
+    // tuff ashlar masonry in world space: coursed blocks, recessed mortar
+    vec3 aN = abs(N);
+    float hcoord = aN.x > aN.z ? P.z : P.x;
+    float vcoord = P.y;
+    if (m == 16. || aN.y > 0.7) { hcoord = P.x; vcoord = P.z; }
+    float row = floor(vcoord / 0.32);
+    float hb = hcoord / 0.55 + hash12(vec2(row, 3.1)) * 2.;
+    float bi = floor(hb);
+    vec2 f = vec2(fract(hb), fract(vcoord / 0.32));
+    float mortar = smoothstep(0.0, 0.06, min(f.x, 1. - f.x)) * smoothstep(0.0, 0.1, min(f.y, 1. - f.y));
+    float bv = hash12(vec2(bi, row));
+    vec3 stone = mix(vec3(0.70, 0.60, 0.46), vec3(0.80, 0.70, 0.55), bv);
+    stone = mix(stone, vec3(0.62, 0.48, 0.36), step(0.85, bv) * 0.6);
+    stone *= 0.85 + 0.2 * texture(uNoise2D, P.xz * 0.7 + P.y * 0.3).r;
+    alb = mix(vec3(0.42, 0.37, 0.32), stone, mortar) * vCol;
+    ao = 0.65 + 0.35 * mortar;
+    N = normalize(N + (vec3(f.x - 0.5, f.y - 0.5, 0.) * 0.15) * mortar);
+    if (m == 16.) {
+      // flat roofs: packed earth over slabs, a little straw
+      alb = mix(vec3(0.46, 0.38, 0.30), vec3(0.56, 0.47, 0.37), texture(uNoise2D, P.xz * 0.4).r) * vCol;
+      ao = 1.;
+    }
+    rough = 0.85;
+  } else if (m == 17.) {
+    float plank = fract(vObj.x * 6. + vObj.z * 6.);
+    alb = mix(vec3(0.20, 0.12, 0.07), vec3(0.30, 0.19, 0.11), smoothstep(0.1, 0.3, plank) * texture(uNoise2D, vObj.xy * vec2(2., 0.3)).r) * vCol;
+  } else if (m == 18.) {
+    // windows: dark glass by day, warm lamplight after dusk in most houses
+    alb = vec3(0.03, 0.035, 0.04); rough = 0.15; spec = 1.2;
+    float lit = step(0.32, fract(vSeed * 13.7 + floor(vObj.x * 3. + vObj.z * 3.) * 0.31)) * smoothstep(0.3, 0.75, uNight);
+    float flick = 0.9 + 0.1 * sin(uTime * 5. + vSeed * 40.);
+    emit = vec3(1.0, 0.55, 0.22) * lit * flick * 2.6;
+  }
   // snow settles on the basket rim and shoulders
-  float snow = uSnow * smoothstep(0.6, 0.9, N.y) * (m == 1. || m == 0. || m == 9. ? 1. : 0.5) * step(0.35, texture(uNoise2D, vObj.xz * 5.).r + uSnow * 0.4);
+  float snow = uSnow * smoothstep(0.6, 0.9, N.y) * (m == 1. || m == 0. || m == 9. || m >= 15. ? 1. : 0.5) * step(0.35, texture(uNoise2D, vObj.xz * 5.).r + uSnow * 0.4);
+  if (m >= 15. && m <= 16.) { alb *= 1. - 0.3 * uWet * (1. - snow); }
   alb = mix(alb, vec3(0.92, 0.94, 0.98), snow);
   Surf s; s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.3; s.sss = sss;
   float sh = keyShadow(P, N);
@@ -129,6 +167,7 @@ void main(){
   vec3 tl = uLocalLightPos - P;
   float d2 = dot(tl, tl);
   col += alb * uLocalLightCol * (max(dot(N, tl * inversesqrt(d2)), 0.) * 0.8 + 0.2) / (1. + d2 * 0.5);
+  col += emit;
   col = applyHaze(col, P);
   gl_FragColor = vec4(col, 1.);
 }

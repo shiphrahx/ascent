@@ -96,7 +96,7 @@ void main(){
   float ang = at.a * 3.14159;
   vec2 fd = vec2(cos(ang), sin(ang));
   float furrow = 0.5 + 0.5 * sin(dot(P.xz, fd) * 2.4);
-  plowed *= 0.8 + 0.3 * furrow;
+  plowed *= 1. + (0.25 * furrow - 0.12) * (1. - smoothstep(60., 220., dist));
   vec3 vineSoil = mix(vec3(0.58, 0.42, 0.30), vec3(0.66, 0.50, 0.36), nz.g);
   vec3 soil = tuffSoil;
   soil = mix(soil, dryGrass, smoothstep(0.3, 0.42, soilT) * (1. - smoothstep(0.62, 0.7, soilT)));

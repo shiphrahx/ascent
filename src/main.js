@@ -14,6 +14,7 @@ import { Probe } from './world/probe.js';
 import { Volumetrics } from './fx/volumetrics.js';
 import { Rocks } from './world/rocks.js';
 import { defineFacades, sculpt, Landmarks } from './world/landmarks.js';
+import { Village } from './world/village.js';
 import { Hero } from './balloon/hero.js';
 import { Fleet } from './balloon/fleet.js';
 import { Crew } from './balloon/crew.js';
@@ -71,6 +72,8 @@ async function boot() {
   scene.add(rocks.group);
   const landmarks = new Landmarks(scene, data, facades);
   rocks.addCollider(landmarks.castle);
+  const village = new Village(scene, data, rocks);
+  G.village = village;
   G.rocks = rocks;
   setProgress(0.68); await tick();
   const hero = new Hero(scene, data, rocks, null);
@@ -116,6 +119,8 @@ async function boot() {
     const f = { church: facades[0], dove1: facades[1], dove2: facades[2] }[dbg.at];
     const dist = parseFloat(dbg.d || 45), up = parseFloat(dbg.up || 12);
     if (f) cams.fixed = (cam) => { cam.position.set(f.x + f.nx * dist + f.tx * dist * 0.3, f.floorY + up, f.z + f.nz * dist + f.tz * dist * 0.3); cam.lookAt(f.x, f.floorY + f.H * 0.4, f.z); };
+    else if (dbg.at === 'bridge') cams.fixed = (cam) => { const b = village.bridge; cam.position.set(b.x + Math.cos(b.ang) * 70 + 20, 22, b.z + Math.sin(b.ang) * 70); cam.lookAt(b.x, 6, b.z); };
+    else if (dbg.at === 'village') cams.fixed = (cam) => { const c = landmarks.castle; cam.position.set(c.x + 260, c.y + 70, c.z + 180); cam.lookAt(c.x + 60, c.y - 10, c.z + 30); };
     else if (dbg.at === 'castle') cams.fixed = (cam) => { const c = landmarks.castle; cam.position.set(c.x + 160, c.y + 60, c.z + 120); cam.lookAt(c.x, c.y + 25, c.z); };
   }
   if (fixedCam) cams.fixed = (cam) => { cam.position.fromArray(fixedCam); cam.lookAt(new THREE.Vector3().fromArray(fixedLook || [0, 0, 0])); };

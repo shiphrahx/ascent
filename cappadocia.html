@@ -7507,6 +7507,20 @@
       vertices.push(contour[i].y);
     }
   }
+  function toJSON$1(shapes, options, data) {
+    data.shapes = [];
+    if (Array.isArray(shapes)) {
+      for (let i = 0, l = shapes.length; i < l; i++) {
+        const shape = shapes[i];
+        data.shapes.push(shape.uuid);
+      }
+    } else {
+      data.shapes.push(shapes.uuid);
+    }
+    data.options = Object.assign({}, options);
+    if (options.extrudePath !== void 0) data.options.extrudePath = options.extrudePath.toJSON();
+    return data;
+  }
   function toJSON(shapes, data) {
     data.shapes = [];
     if (Array.isArray(shapes)) {
@@ -7533,7 +7547,7 @@
   function now() {
     return performance.now();
   }
-  var REVISION, CullFaceNone, CullFaceBack, CullFaceFront, PCFShadowMap, PCFSoftShadowMap, VSMShadowMap, FrontSide, BackSide, DoubleSide, NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending, CustomBlending, AddEquation, SubtractEquation, ReverseSubtractEquation, MinEquation, MaxEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, ConstantColorFactor, OneMinusConstantColorFactor, ConstantAlphaFactor, OneMinusConstantAlphaFactor, NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth, MultiplyOperation, MixOperation, AddOperation, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, CustomToneMapping, AgXToneMapping, NeutralToneMapping, UVMapping, CubeReflectionMapping, CubeRefractionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping, CubeUVReflectionMapping, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, AlphaFormat, RGBFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, BasicDepthPacking, RGBADepthPacking, TangentSpaceNormalMap, ObjectSpaceNormalMap, NoColorSpace, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, AlwaysStencilFunc, NeverCompare, LessCompare, EqualCompare, LessEqualCompare, GreaterCompare, NotEqualCompare, GreaterEqualCompare, AlwaysCompare, StaticDrawUsage, DynamicDrawUsage, GLSL3, WebGLCoordinateSystem, WebGPUCoordinateSystem, EventDispatcher, _lut, DEG2RAD, RAD2DEG, Vector2, Matrix3, _m3, _cache, ColorManagement, REC709_PRIMARIES, REC709_LUMINANCE_COEFFICIENTS, D65, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, _canvas, ImageUtils, _sourceId, Source, _textureId, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Quaternion, Vector3, _vector$c, _quaternion$4, Box3, _points, _vector$b, _box$4, _v0$3, _v1$7, _v2$4, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _box$3, _v1$6, _v2$3, Sphere, _vector$a, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, Matrix4, _v1$5, _m1$4, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$3, Euler, Layers, _object3DId, _v1$4, _q1, _m1$3, _target, _position$3, _scale$2, _quaternion$2, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, _v0$2, _v1$3, _v2$2, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, _colorKeywords, _hslA, _hslB, Color, _color, _materialId, Material, MeshBasicMaterial, _vector$9, _vector2$1, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _id$2, _m1$2, _obj, _offset, _box$2, _boxMorphTargets, _vector$8, BufferGeometry, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA$1, _vB$1, _vC$1, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, BoxGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, fov, aspect, CubeCamera, CubeTexture, WebGLCubeRenderTarget, _vector1, _vector2, _normalMatrix, Plane, _sphere$5, _vector$7, Frustum, PlaneGeometry, alphahash_fragment, alphahash_pars_fragment, alphamap_fragment, alphamap_pars_fragment, alphatest_fragment, alphatest_pars_fragment, aomap_fragment, aomap_pars_fragment, batching_pars_vertex, batching_vertex, begin_vertex, beginnormal_vertex, bsdfs, iridescence_fragment, bumpmap_pars_fragment, clipping_planes_fragment, clipping_planes_pars_fragment, clipping_planes_pars_vertex, clipping_planes_vertex, color_fragment, color_pars_fragment, color_pars_vertex, color_vertex, common, cube_uv_reflection_fragment, defaultnormal_vertex, displacementmap_pars_vertex, displacementmap_vertex, emissivemap_fragment, emissivemap_pars_fragment, colorspace_fragment, colorspace_pars_fragment, envmap_fragment, envmap_common_pars_fragment, envmap_pars_fragment, envmap_pars_vertex, envmap_vertex, fog_vertex, fog_pars_vertex, fog_fragment, fog_pars_fragment, gradientmap_pars_fragment, lightmap_pars_fragment, lights_lambert_fragment, lights_lambert_pars_fragment, lights_pars_begin, envmap_physical_pars_fragment, lights_toon_fragment, lights_toon_pars_fragment, lights_phong_fragment, lights_phong_pars_fragment, lights_physical_fragment, lights_physical_pars_fragment, lights_fragment_begin, lights_fragment_maps, lights_fragment_end, logdepthbuf_fragment, logdepthbuf_pars_fragment, logdepthbuf_pars_vertex, logdepthbuf_vertex, map_fragment, map_pars_fragment, map_particle_fragment, map_particle_pars_fragment, metalnessmap_fragment, metalnessmap_pars_fragment, morphinstance_vertex, morphcolor_vertex, morphnormal_vertex, morphtarget_pars_vertex, morphtarget_vertex, normal_fragment_begin, normal_fragment_maps, normal_pars_fragment, normal_pars_vertex, normal_vertex, normalmap_pars_fragment, clearcoat_normal_fragment_begin, clearcoat_normal_fragment_maps, clearcoat_pars_fragment, iridescence_pars_fragment, opaque_fragment, packing, premultiplied_alpha_fragment, project_vertex, dithering_fragment, dithering_pars_fragment, roughnessmap_fragment, roughnessmap_pars_fragment, shadowmap_pars_fragment, shadowmap_pars_vertex, shadowmap_vertex, shadowmask_pars_fragment, skinbase_vertex, skinning_pars_vertex, skinning_vertex, skinnormal_vertex, specularmap_fragment, specularmap_pars_fragment, tonemapping_fragment, tonemapping_pars_fragment, transmission_fragment, transmission_pars_fragment, uv_pars_fragment, uv_pars_vertex, uv_vertex, worldpos_vertex, vertex$h, fragment$h, vertex$g, fragment$g, vertex$f, fragment$f, vertex$e, fragment$e, vertex$d, fragment$d, vertex$c, fragment$c, vertex$b, fragment$b, vertex$a, fragment$a, vertex$9, fragment$9, vertex$8, fragment$8, vertex$7, fragment$7, vertex$6, fragment$6, vertex$5, fragment$5, vertex$4, fragment$4, vertex$3, fragment$3, vertex$2, fragment$2, vertex$1, fragment$1, ShaderChunk, UniformsLib, ShaderLib, _rgb, _e1$1, _m1$1, OrthographicCamera, LOD_MIN, EXTRA_LOD_SIGMA, MAX_SAMPLES, _flatCamera, _clearColor, _oldTarget, _oldActiveCubeFace, _oldActiveMipmapLevel, _oldXrEnabled, PHI, INV_PHI, _axisDirections, PMREMGenerator, DepthTexture, emptyTexture, emptyShadowTexture, emptyArrayTexture, empty3dTexture, emptyCubeTexture, arrayCacheF32, arrayCacheI32, mat4array, mat3array, mat2array, SingleUniform, PureArrayUniform, StructuredUniform, RePathPart, WebGLUniforms, COMPLETION_STATUS_KHR, programIdCount, _m0, _v0$1, includePattern, shaderChunkMap, unrollLoopPattern, _id$1, WebGLShaderCache, WebGLShaderStage, nextVersion, MeshDepthMaterial, MeshDistanceMaterial, vertex, fragment, reversedFuncs, ArrayCamera, Group, _moveEvent, WebXRController, _occlusion_vertex, _occlusion_fragment, WebXRDepthSensing, WebXRManager, _e1, _m1, WebGLRenderer, Scene, DataTexture, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$3, InstancedMesh, Curve, EllipseCurve, ArcCurve, tmp, px, py, pz, CatmullRomCurve3, CubicBezierCurve, CubicBezierCurve3, LineCurve, LineCurve3, QuadraticBezierCurve, QuadraticBezierCurve3, SplineCurve, Curves, CurvePath, Path, LatheGeometry, CylinderGeometry, ConeGeometry, Shape, Earcut, ShapeUtils, ShapeGeometry, SphereGeometry, TorusGeometry, TubeGeometry, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, LoadingManager, DefaultLoadingManager, Loader, InstancedBufferGeometry, Clock, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _controlInterpolantsResultBuffer;
+  var REVISION, CullFaceNone, CullFaceBack, CullFaceFront, PCFShadowMap, PCFSoftShadowMap, VSMShadowMap, FrontSide, BackSide, DoubleSide, NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending, CustomBlending, AddEquation, SubtractEquation, ReverseSubtractEquation, MinEquation, MaxEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, ConstantColorFactor, OneMinusConstantColorFactor, ConstantAlphaFactor, OneMinusConstantAlphaFactor, NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth, MultiplyOperation, MixOperation, AddOperation, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, CustomToneMapping, AgXToneMapping, NeutralToneMapping, UVMapping, CubeReflectionMapping, CubeRefractionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping, CubeUVReflectionMapping, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, AlphaFormat, RGBFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, BasicDepthPacking, RGBADepthPacking, TangentSpaceNormalMap, ObjectSpaceNormalMap, NoColorSpace, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, AlwaysStencilFunc, NeverCompare, LessCompare, EqualCompare, LessEqualCompare, GreaterCompare, NotEqualCompare, GreaterEqualCompare, AlwaysCompare, StaticDrawUsage, DynamicDrawUsage, GLSL3, WebGLCoordinateSystem, WebGPUCoordinateSystem, EventDispatcher, _lut, DEG2RAD, RAD2DEG, Vector2, Matrix3, _m3, _cache, ColorManagement, REC709_PRIMARIES, REC709_LUMINANCE_COEFFICIENTS, D65, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, _canvas, ImageUtils, _sourceId, Source, _textureId, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Quaternion, Vector3, _vector$c, _quaternion$4, Box3, _points, _vector$b, _box$4, _v0$3, _v1$7, _v2$4, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _box$3, _v1$6, _v2$3, Sphere, _vector$a, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, Matrix4, _v1$5, _m1$4, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$3, Euler, Layers, _object3DId, _v1$4, _q1, _m1$3, _target, _position$3, _scale$2, _quaternion$2, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, _v0$2, _v1$3, _v2$2, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, _colorKeywords, _hslA, _hslB, Color, _color, _materialId, Material, MeshBasicMaterial, _vector$9, _vector2$1, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _id$2, _m1$2, _obj, _offset, _box$2, _boxMorphTargets, _vector$8, BufferGeometry, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA$1, _vB$1, _vC$1, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, BoxGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, fov, aspect, CubeCamera, CubeTexture, WebGLCubeRenderTarget, _vector1, _vector2, _normalMatrix, Plane, _sphere$5, _vector$7, Frustum, PlaneGeometry, alphahash_fragment, alphahash_pars_fragment, alphamap_fragment, alphamap_pars_fragment, alphatest_fragment, alphatest_pars_fragment, aomap_fragment, aomap_pars_fragment, batching_pars_vertex, batching_vertex, begin_vertex, beginnormal_vertex, bsdfs, iridescence_fragment, bumpmap_pars_fragment, clipping_planes_fragment, clipping_planes_pars_fragment, clipping_planes_pars_vertex, clipping_planes_vertex, color_fragment, color_pars_fragment, color_pars_vertex, color_vertex, common, cube_uv_reflection_fragment, defaultnormal_vertex, displacementmap_pars_vertex, displacementmap_vertex, emissivemap_fragment, emissivemap_pars_fragment, colorspace_fragment, colorspace_pars_fragment, envmap_fragment, envmap_common_pars_fragment, envmap_pars_fragment, envmap_pars_vertex, envmap_vertex, fog_vertex, fog_pars_vertex, fog_fragment, fog_pars_fragment, gradientmap_pars_fragment, lightmap_pars_fragment, lights_lambert_fragment, lights_lambert_pars_fragment, lights_pars_begin, envmap_physical_pars_fragment, lights_toon_fragment, lights_toon_pars_fragment, lights_phong_fragment, lights_phong_pars_fragment, lights_physical_fragment, lights_physical_pars_fragment, lights_fragment_begin, lights_fragment_maps, lights_fragment_end, logdepthbuf_fragment, logdepthbuf_pars_fragment, logdepthbuf_pars_vertex, logdepthbuf_vertex, map_fragment, map_pars_fragment, map_particle_fragment, map_particle_pars_fragment, metalnessmap_fragment, metalnessmap_pars_fragment, morphinstance_vertex, morphcolor_vertex, morphnormal_vertex, morphtarget_pars_vertex, morphtarget_vertex, normal_fragment_begin, normal_fragment_maps, normal_pars_fragment, normal_pars_vertex, normal_vertex, normalmap_pars_fragment, clearcoat_normal_fragment_begin, clearcoat_normal_fragment_maps, clearcoat_pars_fragment, iridescence_pars_fragment, opaque_fragment, packing, premultiplied_alpha_fragment, project_vertex, dithering_fragment, dithering_pars_fragment, roughnessmap_fragment, roughnessmap_pars_fragment, shadowmap_pars_fragment, shadowmap_pars_vertex, shadowmap_vertex, shadowmask_pars_fragment, skinbase_vertex, skinning_pars_vertex, skinning_vertex, skinnormal_vertex, specularmap_fragment, specularmap_pars_fragment, tonemapping_fragment, tonemapping_pars_fragment, transmission_fragment, transmission_pars_fragment, uv_pars_fragment, uv_pars_vertex, uv_vertex, worldpos_vertex, vertex$h, fragment$h, vertex$g, fragment$g, vertex$f, fragment$f, vertex$e, fragment$e, vertex$d, fragment$d, vertex$c, fragment$c, vertex$b, fragment$b, vertex$a, fragment$a, vertex$9, fragment$9, vertex$8, fragment$8, vertex$7, fragment$7, vertex$6, fragment$6, vertex$5, fragment$5, vertex$4, fragment$4, vertex$3, fragment$3, vertex$2, fragment$2, vertex$1, fragment$1, ShaderChunk, UniformsLib, ShaderLib, _rgb, _e1$1, _m1$1, OrthographicCamera, LOD_MIN, EXTRA_LOD_SIGMA, MAX_SAMPLES, _flatCamera, _clearColor, _oldTarget, _oldActiveCubeFace, _oldActiveMipmapLevel, _oldXrEnabled, PHI, INV_PHI, _axisDirections, PMREMGenerator, DepthTexture, emptyTexture, emptyShadowTexture, emptyArrayTexture, empty3dTexture, emptyCubeTexture, arrayCacheF32, arrayCacheI32, mat4array, mat3array, mat2array, SingleUniform, PureArrayUniform, StructuredUniform, RePathPart, WebGLUniforms, COMPLETION_STATUS_KHR, programIdCount, _m0, _v0$1, includePattern, shaderChunkMap, unrollLoopPattern, _id$1, WebGLShaderCache, WebGLShaderStage, nextVersion, MeshDepthMaterial, MeshDistanceMaterial, vertex, fragment, reversedFuncs, ArrayCamera, Group, _moveEvent, WebXRController, _occlusion_vertex, _occlusion_fragment, WebXRDepthSensing, WebXRManager, _e1, _m1, WebGLRenderer, Scene, DataTexture, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$3, InstancedMesh, Curve, EllipseCurve, ArcCurve, tmp, px, py, pz, CatmullRomCurve3, CubicBezierCurve, CubicBezierCurve3, LineCurve, LineCurve3, QuadraticBezierCurve, QuadraticBezierCurve3, SplineCurve, Curves, CurvePath, Path, LatheGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, Shape, Earcut, ShapeUtils, ExtrudeGeometry, WorldUVGenerator, IcosahedronGeometry, ShapeGeometry, SphereGeometry, TorusGeometry, TubeGeometry, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, LoadingManager, DefaultLoadingManager, Loader, InstancedBufferGeometry, Clock, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _controlInterpolantsResultBuffer;
   var init_three_module = __esm({
     "node_modules/three/build/three.module.js"() {
       REVISION = "170";
@@ -10067,9 +10081,9 @@
         clone() {
           return new this.constructor().copy(this);
         }
-        copy(box) {
-          this.min.copy(box.min);
-          this.max.copy(box.max);
+        copy(box2) {
+          this.min.copy(box2.min);
+          this.max.copy(box2.max);
           return this;
         }
         makeEmpty() {
@@ -10141,8 +10155,8 @@
         containsPoint(point) {
           return point.x >= this.min.x && point.x <= this.max.x && point.y >= this.min.y && point.y <= this.max.y && point.z >= this.min.z && point.z <= this.max.z;
         }
-        containsBox(box) {
-          return this.min.x <= box.min.x && box.max.x <= this.max.x && this.min.y <= box.min.y && box.max.y <= this.max.y && this.min.z <= box.min.z && box.max.z <= this.max.z;
+        containsBox(box2) {
+          return this.min.x <= box2.min.x && box2.max.x <= this.max.x && this.min.y <= box2.min.y && box2.max.y <= this.max.y && this.min.z <= box2.min.z && box2.max.z <= this.max.z;
         }
         getParameter(point, target) {
           return target.set(
@@ -10151,8 +10165,8 @@
             (point.z - this.min.z) / (this.max.z - this.min.z)
           );
         }
-        intersectsBox(box) {
-          return box.max.x >= this.min.x && box.min.x <= this.max.x && box.max.y >= this.min.y && box.min.y <= this.max.y && box.max.z >= this.min.z && box.min.z <= this.max.z;
+        intersectsBox(box2) {
+          return box2.max.x >= this.min.x && box2.min.x <= this.max.x && box2.max.y >= this.min.y && box2.min.y <= this.max.y && box2.max.z >= this.min.z && box2.min.z <= this.max.z;
         }
         intersectsSphere(sphere) {
           this.clampPoint(sphere.center, _vector$b);
@@ -10250,15 +10264,15 @@
           }
           return target;
         }
-        intersect(box) {
-          this.min.max(box.min);
-          this.max.min(box.max);
+        intersect(box2) {
+          this.min.max(box2.min);
+          this.max.min(box2.max);
           if (this.isEmpty()) this.makeEmpty();
           return this;
         }
-        union(box) {
-          this.min.min(box.min);
-          this.max.max(box.max);
+        union(box2) {
+          this.min.min(box2.min);
+          this.max.max(box2.max);
           return this;
         }
         applyMatrix4(matrix) {
@@ -10279,8 +10293,8 @@
           this.max.add(offset);
           return this;
         }
-        equals(box) {
-          return box.min.equals(this.min) && box.max.equals(this.max);
+        equals(box2) {
+          return box2.min.equals(this.min) && box2.max.equals(this.max);
         }
       };
       _points = [
@@ -10356,8 +10370,8 @@
           const radiusSum = this.radius + sphere.radius;
           return sphere.center.distanceToSquared(this.center) <= radiusSum * radiusSum;
         }
-        intersectsBox(box) {
-          return box.intersectsSphere(this);
+        intersectsBox(box2) {
+          return box2.intersectsSphere(this);
         }
         intersectsPlane(plane) {
           return Math.abs(plane.distanceToPoint(this.center)) <= this.radius;
@@ -10586,33 +10600,33 @@
           }
           return false;
         }
-        intersectBox(box, target) {
+        intersectBox(box2, target) {
           let tmin, tmax, tymin, tymax, tzmin, tzmax;
           const invdirx = 1 / this.direction.x, invdiry = 1 / this.direction.y, invdirz = 1 / this.direction.z;
           const origin = this.origin;
           if (invdirx >= 0) {
-            tmin = (box.min.x - origin.x) * invdirx;
-            tmax = (box.max.x - origin.x) * invdirx;
+            tmin = (box2.min.x - origin.x) * invdirx;
+            tmax = (box2.max.x - origin.x) * invdirx;
           } else {
-            tmin = (box.max.x - origin.x) * invdirx;
-            tmax = (box.min.x - origin.x) * invdirx;
+            tmin = (box2.max.x - origin.x) * invdirx;
+            tmax = (box2.min.x - origin.x) * invdirx;
           }
           if (invdiry >= 0) {
-            tymin = (box.min.y - origin.y) * invdiry;
-            tymax = (box.max.y - origin.y) * invdiry;
+            tymin = (box2.min.y - origin.y) * invdiry;
+            tymax = (box2.max.y - origin.y) * invdiry;
           } else {
-            tymin = (box.max.y - origin.y) * invdiry;
-            tymax = (box.min.y - origin.y) * invdiry;
+            tymin = (box2.max.y - origin.y) * invdiry;
+            tymax = (box2.min.y - origin.y) * invdiry;
           }
           if (tmin > tymax || tymin > tmax) return null;
           if (tymin > tmin || isNaN(tmin)) tmin = tymin;
           if (tymax < tmax || isNaN(tmax)) tmax = tymax;
           if (invdirz >= 0) {
-            tzmin = (box.min.z - origin.z) * invdirz;
-            tzmax = (box.max.z - origin.z) * invdirz;
+            tzmin = (box2.min.z - origin.z) * invdirz;
+            tzmax = (box2.max.z - origin.z) * invdirz;
           } else {
-            tzmin = (box.max.z - origin.z) * invdirz;
-            tzmax = (box.min.z - origin.z) * invdirz;
+            tzmin = (box2.max.z - origin.z) * invdirz;
+            tzmax = (box2.min.z - origin.z) * invdirz;
           }
           if (tmin > tzmax || tzmin > tmax) return null;
           if (tzmin > tmin || tmin !== tmin) tmin = tzmin;
@@ -10620,8 +10634,8 @@
           if (tmax < 0) return null;
           return this.at(tmin >= 0 ? tmin : tmax, target);
         }
-        intersectsBox(box) {
-          return this.intersectBox(box, _vector$a) !== null;
+        intersectsBox(box2) {
+          return this.intersectBox(box2, _vector$a) !== null;
         }
         intersectTriangle(a, b, c, backfaceCulling, target) {
           _edge1.subVectors(b, a);
@@ -12343,8 +12357,8 @@
         isFrontFacing(direction) {
           return _Triangle.isFrontFacing(this.a, this.b, this.c, direction);
         }
-        intersectsBox(box) {
-          return box.intersectsTriangle(this);
+        intersectsBox(box2) {
+          return box2.intersectsTriangle(this);
         }
         closestPointToPoint(p, target) {
           const a = this.a, b = this.b, c = this.c;
@@ -14916,8 +14930,8 @@
           const endSign = this.distanceToPoint(line.end);
           return startSign < 0 && endSign > 0 || endSign < 0 && startSign > 0;
         }
-        intersectsBox(box) {
-          return box.intersectsPlane(this);
+        intersectsBox(box2) {
+          return box2.intersectsPlane(this);
         }
         intersectsSphere(sphere) {
           return sphere.intersectsPlane(this);
@@ -15016,13 +15030,13 @@
           }
           return true;
         }
-        intersectsBox(box) {
+        intersectsBox(box2) {
           const planes = this.planes;
           for (let i = 0; i < 6; i++) {
             const plane = planes[i];
-            _vector$7.x = plane.normal.x > 0 ? box.max.x : box.min.x;
-            _vector$7.y = plane.normal.y > 0 ? box.max.y : box.min.y;
-            _vector$7.z = plane.normal.z > 0 ? box.max.z : box.min.z;
+            _vector$7.x = plane.normal.x > 0 ? box2.max.x : box2.min.x;
+            _vector$7.y = plane.normal.y > 0 ? box2.max.y : box2.min.y;
+            _vector$7.z = plane.normal.z > 0 ? box2.max.z : box2.min.z;
             if (plane.distanceToPoint(_vector$7) < 0) {
               return false;
             }
@@ -20121,6 +20135,165 @@ void main() {
           return new _ConeGeometry(data.radius, data.height, data.radialSegments, data.heightSegments, data.openEnded, data.thetaStart, data.thetaLength);
         }
       };
+      PolyhedronGeometry = class _PolyhedronGeometry extends BufferGeometry {
+        constructor(vertices = [], indices = [], radius = 1, detail = 0) {
+          super();
+          this.type = "PolyhedronGeometry";
+          this.parameters = {
+            vertices,
+            indices,
+            radius,
+            detail
+          };
+          const vertexBuffer = [];
+          const uvBuffer = [];
+          subdivide(detail);
+          applyRadius(radius);
+          generateUVs();
+          this.setAttribute("position", new Float32BufferAttribute(vertexBuffer, 3));
+          this.setAttribute("normal", new Float32BufferAttribute(vertexBuffer.slice(), 3));
+          this.setAttribute("uv", new Float32BufferAttribute(uvBuffer, 2));
+          if (detail === 0) {
+            this.computeVertexNormals();
+          } else {
+            this.normalizeNormals();
+          }
+          function subdivide(detail2) {
+            const a = new Vector3();
+            const b = new Vector3();
+            const c = new Vector3();
+            for (let i = 0; i < indices.length; i += 3) {
+              getVertexByIndex(indices[i + 0], a);
+              getVertexByIndex(indices[i + 1], b);
+              getVertexByIndex(indices[i + 2], c);
+              subdivideFace(a, b, c, detail2);
+            }
+          }
+          function subdivideFace(a, b, c, detail2) {
+            const cols = detail2 + 1;
+            const v = [];
+            for (let i = 0; i <= cols; i++) {
+              v[i] = [];
+              const aj = a.clone().lerp(c, i / cols);
+              const bj = b.clone().lerp(c, i / cols);
+              const rows = cols - i;
+              for (let j = 0; j <= rows; j++) {
+                if (j === 0 && i === cols) {
+                  v[i][j] = aj;
+                } else {
+                  v[i][j] = aj.clone().lerp(bj, j / rows);
+                }
+              }
+            }
+            for (let i = 0; i < cols; i++) {
+              for (let j = 0; j < 2 * (cols - i) - 1; j++) {
+                const k = Math.floor(j / 2);
+                if (j % 2 === 0) {
+                  pushVertex(v[i][k + 1]);
+                  pushVertex(v[i + 1][k]);
+                  pushVertex(v[i][k]);
+                } else {
+                  pushVertex(v[i][k + 1]);
+                  pushVertex(v[i + 1][k + 1]);
+                  pushVertex(v[i + 1][k]);
+                }
+              }
+            }
+          }
+          function applyRadius(radius2) {
+            const vertex2 = new Vector3();
+            for (let i = 0; i < vertexBuffer.length; i += 3) {
+              vertex2.x = vertexBuffer[i + 0];
+              vertex2.y = vertexBuffer[i + 1];
+              vertex2.z = vertexBuffer[i + 2];
+              vertex2.normalize().multiplyScalar(radius2);
+              vertexBuffer[i + 0] = vertex2.x;
+              vertexBuffer[i + 1] = vertex2.y;
+              vertexBuffer[i + 2] = vertex2.z;
+            }
+          }
+          function generateUVs() {
+            const vertex2 = new Vector3();
+            for (let i = 0; i < vertexBuffer.length; i += 3) {
+              vertex2.x = vertexBuffer[i + 0];
+              vertex2.y = vertexBuffer[i + 1];
+              vertex2.z = vertexBuffer[i + 2];
+              const u = azimuth(vertex2) / 2 / Math.PI + 0.5;
+              const v = inclination(vertex2) / Math.PI + 0.5;
+              uvBuffer.push(u, 1 - v);
+            }
+            correctUVs();
+            correctSeam();
+          }
+          function correctSeam() {
+            for (let i = 0; i < uvBuffer.length; i += 6) {
+              const x0 = uvBuffer[i + 0];
+              const x1 = uvBuffer[i + 2];
+              const x2 = uvBuffer[i + 4];
+              const max = Math.max(x0, x1, x2);
+              const min = Math.min(x0, x1, x2);
+              if (max > 0.9 && min < 0.1) {
+                if (x0 < 0.2) uvBuffer[i + 0] += 1;
+                if (x1 < 0.2) uvBuffer[i + 2] += 1;
+                if (x2 < 0.2) uvBuffer[i + 4] += 1;
+              }
+            }
+          }
+          function pushVertex(vertex2) {
+            vertexBuffer.push(vertex2.x, vertex2.y, vertex2.z);
+          }
+          function getVertexByIndex(index, vertex2) {
+            const stride = index * 3;
+            vertex2.x = vertices[stride + 0];
+            vertex2.y = vertices[stride + 1];
+            vertex2.z = vertices[stride + 2];
+          }
+          function correctUVs() {
+            const a = new Vector3();
+            const b = new Vector3();
+            const c = new Vector3();
+            const centroid = new Vector3();
+            const uvA = new Vector2();
+            const uvB = new Vector2();
+            const uvC = new Vector2();
+            for (let i = 0, j = 0; i < vertexBuffer.length; i += 9, j += 6) {
+              a.set(vertexBuffer[i + 0], vertexBuffer[i + 1], vertexBuffer[i + 2]);
+              b.set(vertexBuffer[i + 3], vertexBuffer[i + 4], vertexBuffer[i + 5]);
+              c.set(vertexBuffer[i + 6], vertexBuffer[i + 7], vertexBuffer[i + 8]);
+              uvA.set(uvBuffer[j + 0], uvBuffer[j + 1]);
+              uvB.set(uvBuffer[j + 2], uvBuffer[j + 3]);
+              uvC.set(uvBuffer[j + 4], uvBuffer[j + 5]);
+              centroid.copy(a).add(b).add(c).divideScalar(3);
+              const azi = azimuth(centroid);
+              correctUV(uvA, j + 0, a, azi);
+              correctUV(uvB, j + 2, b, azi);
+              correctUV(uvC, j + 4, c, azi);
+            }
+          }
+          function correctUV(uv, stride, vector, azimuth2) {
+            if (azimuth2 < 0 && uv.x === 1) {
+              uvBuffer[stride] = uv.x - 1;
+            }
+            if (vector.x === 0 && vector.z === 0) {
+              uvBuffer[stride] = azimuth2 / 2 / Math.PI + 0.5;
+            }
+          }
+          function azimuth(vector) {
+            return Math.atan2(vector.z, -vector.x);
+          }
+          function inclination(vector) {
+            return Math.atan2(-vector.y, Math.sqrt(vector.x * vector.x + vector.z * vector.z));
+          }
+        }
+        copy(source) {
+          super.copy(source);
+          this.parameters = Object.assign({}, source.parameters);
+          return this;
+        }
+        static fromJSON(data) {
+          return new _PolyhedronGeometry(data.vertices, data.indices, data.radius, data.details);
+        }
+      };
       Shape = class extends Path {
         constructor(points) {
           super(points);
@@ -20230,6 +20403,490 @@ void main() {
             faces.push(triangles.slice(i, i + 3));
           }
           return faces;
+        }
+      };
+      ExtrudeGeometry = class _ExtrudeGeometry extends BufferGeometry {
+        constructor(shapes = new Shape([new Vector2(0.5, 0.5), new Vector2(-0.5, 0.5), new Vector2(-0.5, -0.5), new Vector2(0.5, -0.5)]), options = {}) {
+          super();
+          this.type = "ExtrudeGeometry";
+          this.parameters = {
+            shapes,
+            options
+          };
+          shapes = Array.isArray(shapes) ? shapes : [shapes];
+          const scope = this;
+          const verticesArray = [];
+          const uvArray = [];
+          for (let i = 0, l = shapes.length; i < l; i++) {
+            const shape = shapes[i];
+            addShape(shape);
+          }
+          this.setAttribute("position", new Float32BufferAttribute(verticesArray, 3));
+          this.setAttribute("uv", new Float32BufferAttribute(uvArray, 2));
+          this.computeVertexNormals();
+          function addShape(shape) {
+            const placeholder = [];
+            const curveSegments = options.curveSegments !== void 0 ? options.curveSegments : 12;
+            const steps = options.steps !== void 0 ? options.steps : 1;
+            const depth = options.depth !== void 0 ? options.depth : 1;
+            let bevelEnabled = options.bevelEnabled !== void 0 ? options.bevelEnabled : true;
+            let bevelThickness = options.bevelThickness !== void 0 ? options.bevelThickness : 0.2;
+            let bevelSize = options.bevelSize !== void 0 ? options.bevelSize : bevelThickness - 0.1;
+            let bevelOffset = options.bevelOffset !== void 0 ? options.bevelOffset : 0;
+            let bevelSegments = options.bevelSegments !== void 0 ? options.bevelSegments : 3;
+            const extrudePath = options.extrudePath;
+            const uvgen = options.UVGenerator !== void 0 ? options.UVGenerator : WorldUVGenerator;
+            let extrudePts, extrudeByPath = false;
+            let splineTube, binormal, normal, position2;
+            if (extrudePath) {
+              extrudePts = extrudePath.getSpacedPoints(steps);
+              extrudeByPath = true;
+              bevelEnabled = false;
+              splineTube = extrudePath.computeFrenetFrames(steps, false);
+              binormal = new Vector3();
+              normal = new Vector3();
+              position2 = new Vector3();
+            }
+            if (!bevelEnabled) {
+              bevelSegments = 0;
+              bevelThickness = 0;
+              bevelSize = 0;
+              bevelOffset = 0;
+            }
+            const shapePoints = shape.extractPoints(curveSegments);
+            let vertices = shapePoints.shape;
+            const holes = shapePoints.holes;
+            const reverse = !ShapeUtils.isClockWise(vertices);
+            if (reverse) {
+              vertices = vertices.reverse();
+              for (let h = 0, hl = holes.length; h < hl; h++) {
+                const ahole = holes[h];
+                if (ShapeUtils.isClockWise(ahole)) {
+                  holes[h] = ahole.reverse();
+                }
+              }
+            }
+            const faces = ShapeUtils.triangulateShape(vertices, holes);
+            const contour = vertices;
+            for (let h = 0, hl = holes.length; h < hl; h++) {
+              const ahole = holes[h];
+              vertices = vertices.concat(ahole);
+            }
+            function scalePt2(pt, vec, size) {
+              if (!vec) console.error("THREE.ExtrudeGeometry: vec does not exist");
+              return pt.clone().addScaledVector(vec, size);
+            }
+            const vlen = vertices.length, flen = faces.length;
+            function getBevelVec(inPt, inPrev, inNext) {
+              let v_trans_x, v_trans_y, shrink_by;
+              const v_prev_x = inPt.x - inPrev.x, v_prev_y = inPt.y - inPrev.y;
+              const v_next_x = inNext.x - inPt.x, v_next_y = inNext.y - inPt.y;
+              const v_prev_lensq = v_prev_x * v_prev_x + v_prev_y * v_prev_y;
+              const collinear0 = v_prev_x * v_next_y - v_prev_y * v_next_x;
+              if (Math.abs(collinear0) > Number.EPSILON) {
+                const v_prev_len = Math.sqrt(v_prev_lensq);
+                const v_next_len = Math.sqrt(v_next_x * v_next_x + v_next_y * v_next_y);
+                const ptPrevShift_x = inPrev.x - v_prev_y / v_prev_len;
+                const ptPrevShift_y = inPrev.y + v_prev_x / v_prev_len;
+                const ptNextShift_x = inNext.x - v_next_y / v_next_len;
+                const ptNextShift_y = inNext.y + v_next_x / v_next_len;
+                const sf = ((ptNextShift_x - ptPrevShift_x) * v_next_y - (ptNextShift_y - ptPrevShift_y) * v_next_x) / (v_prev_x * v_next_y - v_prev_y * v_next_x);
+                v_trans_x = ptPrevShift_x + v_prev_x * sf - inPt.x;
+                v_trans_y = ptPrevShift_y + v_prev_y * sf - inPt.y;
+                const v_trans_lensq = v_trans_x * v_trans_x + v_trans_y * v_trans_y;
+                if (v_trans_lensq <= 2) {
+                  return new Vector2(v_trans_x, v_trans_y);
+                } else {
+                  shrink_by = Math.sqrt(v_trans_lensq / 2);
+                }
+              } else {
+                let direction_eq = false;
+                if (v_prev_x > Number.EPSILON) {
+                  if (v_next_x > Number.EPSILON) {
+                    direction_eq = true;
+                  }
+                } else {
+                  if (v_prev_x < -Number.EPSILON) {
+                    if (v_next_x < -Number.EPSILON) {
+                      direction_eq = true;
+                    }
+                  } else {
+                    if (Math.sign(v_prev_y) === Math.sign(v_next_y)) {
+                      direction_eq = true;
+                    }
+                  }
+                }
+                if (direction_eq) {
+                  v_trans_x = -v_prev_y;
+                  v_trans_y = v_prev_x;
+                  shrink_by = Math.sqrt(v_prev_lensq);
+                } else {
+                  v_trans_x = v_prev_x;
+                  v_trans_y = v_prev_y;
+                  shrink_by = Math.sqrt(v_prev_lensq / 2);
+                }
+              }
+              return new Vector2(v_trans_x / shrink_by, v_trans_y / shrink_by);
+            }
+            const contourMovements = [];
+            for (let i = 0, il = contour.length, j = il - 1, k = i + 1; i < il; i++, j++, k++) {
+              if (j === il) j = 0;
+              if (k === il) k = 0;
+              contourMovements[i] = getBevelVec(contour[i], contour[j], contour[k]);
+            }
+            const holesMovements = [];
+            let oneHoleMovements, verticesMovements = contourMovements.concat();
+            for (let h = 0, hl = holes.length; h < hl; h++) {
+              const ahole = holes[h];
+              oneHoleMovements = [];
+              for (let i = 0, il = ahole.length, j = il - 1, k = i + 1; i < il; i++, j++, k++) {
+                if (j === il) j = 0;
+                if (k === il) k = 0;
+                oneHoleMovements[i] = getBevelVec(ahole[i], ahole[j], ahole[k]);
+              }
+              holesMovements.push(oneHoleMovements);
+              verticesMovements = verticesMovements.concat(oneHoleMovements);
+            }
+            for (let b = 0; b < bevelSegments; b++) {
+              const t = b / bevelSegments;
+              const z = bevelThickness * Math.cos(t * Math.PI / 2);
+              const bs2 = bevelSize * Math.sin(t * Math.PI / 2) + bevelOffset;
+              for (let i = 0, il = contour.length; i < il; i++) {
+                const vert = scalePt2(contour[i], contourMovements[i], bs2);
+                v(vert.x, vert.y, -z);
+              }
+              for (let h = 0, hl = holes.length; h < hl; h++) {
+                const ahole = holes[h];
+                oneHoleMovements = holesMovements[h];
+                for (let i = 0, il = ahole.length; i < il; i++) {
+                  const vert = scalePt2(ahole[i], oneHoleMovements[i], bs2);
+                  v(vert.x, vert.y, -z);
+                }
+              }
+            }
+            const bs = bevelSize + bevelOffset;
+            for (let i = 0; i < vlen; i++) {
+              const vert = bevelEnabled ? scalePt2(vertices[i], verticesMovements[i], bs) : vertices[i];
+              if (!extrudeByPath) {
+                v(vert.x, vert.y, 0);
+              } else {
+                normal.copy(splineTube.normals[0]).multiplyScalar(vert.x);
+                binormal.copy(splineTube.binormals[0]).multiplyScalar(vert.y);
+                position2.copy(extrudePts[0]).add(normal).add(binormal);
+                v(position2.x, position2.y, position2.z);
+              }
+            }
+            for (let s = 1; s <= steps; s++) {
+              for (let i = 0; i < vlen; i++) {
+                const vert = bevelEnabled ? scalePt2(vertices[i], verticesMovements[i], bs) : vertices[i];
+                if (!extrudeByPath) {
+                  v(vert.x, vert.y, depth / steps * s);
+                } else {
+                  normal.copy(splineTube.normals[s]).multiplyScalar(vert.x);
+                  binormal.copy(splineTube.binormals[s]).multiplyScalar(vert.y);
+                  position2.copy(extrudePts[s]).add(normal).add(binormal);
+                  v(position2.x, position2.y, position2.z);
+                }
+              }
+            }
+            for (let b = bevelSegments - 1; b >= 0; b--) {
+              const t = b / bevelSegments;
+              const z = bevelThickness * Math.cos(t * Math.PI / 2);
+              const bs2 = bevelSize * Math.sin(t * Math.PI / 2) + bevelOffset;
+              for (let i = 0, il = contour.length; i < il; i++) {
+                const vert = scalePt2(contour[i], contourMovements[i], bs2);
+                v(vert.x, vert.y, depth + z);
+              }
+              for (let h = 0, hl = holes.length; h < hl; h++) {
+                const ahole = holes[h];
+                oneHoleMovements = holesMovements[h];
+                for (let i = 0, il = ahole.length; i < il; i++) {
+                  const vert = scalePt2(ahole[i], oneHoleMovements[i], bs2);
+                  if (!extrudeByPath) {
+                    v(vert.x, vert.y, depth + z);
+                  } else {
+                    v(vert.x, vert.y + extrudePts[steps - 1].y, extrudePts[steps - 1].x + z);
+                  }
+                }
+              }
+            }
+            buildLidFaces();
+            buildSideFaces();
+            function buildLidFaces() {
+              const start = verticesArray.length / 3;
+              if (bevelEnabled) {
+                let layer = 0;
+                let offset = vlen * layer;
+                for (let i = 0; i < flen; i++) {
+                  const face = faces[i];
+                  f3(face[2] + offset, face[1] + offset, face[0] + offset);
+                }
+                layer = steps + bevelSegments * 2;
+                offset = vlen * layer;
+                for (let i = 0; i < flen; i++) {
+                  const face = faces[i];
+                  f3(face[0] + offset, face[1] + offset, face[2] + offset);
+                }
+              } else {
+                for (let i = 0; i < flen; i++) {
+                  const face = faces[i];
+                  f3(face[2], face[1], face[0]);
+                }
+                for (let i = 0; i < flen; i++) {
+                  const face = faces[i];
+                  f3(face[0] + vlen * steps, face[1] + vlen * steps, face[2] + vlen * steps);
+                }
+              }
+              scope.addGroup(start, verticesArray.length / 3 - start, 0);
+            }
+            function buildSideFaces() {
+              const start = verticesArray.length / 3;
+              let layeroffset = 0;
+              sidewalls(contour, layeroffset);
+              layeroffset += contour.length;
+              for (let h = 0, hl = holes.length; h < hl; h++) {
+                const ahole = holes[h];
+                sidewalls(ahole, layeroffset);
+                layeroffset += ahole.length;
+              }
+              scope.addGroup(start, verticesArray.length / 3 - start, 1);
+            }
+            function sidewalls(contour2, layeroffset) {
+              let i = contour2.length;
+              while (--i >= 0) {
+                const j = i;
+                let k = i - 1;
+                if (k < 0) k = contour2.length - 1;
+                for (let s = 0, sl = steps + bevelSegments * 2; s < sl; s++) {
+                  const slen1 = vlen * s;
+                  const slen2 = vlen * (s + 1);
+                  const a = layeroffset + j + slen1, b = layeroffset + k + slen1, c = layeroffset + k + slen2, d = layeroffset + j + slen2;
+                  f4(a, b, c, d);
+                }
+              }
+            }
+            function v(x, y, z) {
+              placeholder.push(x);
+              placeholder.push(y);
+              placeholder.push(z);
+            }
+            function f3(a, b, c) {
+              addVertex(a);
+              addVertex(b);
+              addVertex(c);
+              const nextIndex = verticesArray.length / 3;
+              const uvs = uvgen.generateTopUV(scope, verticesArray, nextIndex - 3, nextIndex - 2, nextIndex - 1);
+              addUV(uvs[0]);
+              addUV(uvs[1]);
+              addUV(uvs[2]);
+            }
+            function f4(a, b, c, d) {
+              addVertex(a);
+              addVertex(b);
+              addVertex(d);
+              addVertex(b);
+              addVertex(c);
+              addVertex(d);
+              const nextIndex = verticesArray.length / 3;
+              const uvs = uvgen.generateSideWallUV(scope, verticesArray, nextIndex - 6, nextIndex - 3, nextIndex - 2, nextIndex - 1);
+              addUV(uvs[0]);
+              addUV(uvs[1]);
+              addUV(uvs[3]);
+              addUV(uvs[1]);
+              addUV(uvs[2]);
+              addUV(uvs[3]);
+            }
+            function addVertex(index) {
+              verticesArray.push(placeholder[index * 3 + 0]);
+              verticesArray.push(placeholder[index * 3 + 1]);
+              verticesArray.push(placeholder[index * 3 + 2]);
+            }
+            function addUV(vector2) {
+              uvArray.push(vector2.x);
+              uvArray.push(vector2.y);
+            }
+          }
+        }
+        copy(source) {
+          super.copy(source);
+          this.parameters = Object.assign({}, source.parameters);
+          return this;
+        }
+        toJSON() {
+          const data = super.toJSON();
+          const shapes = this.parameters.shapes;
+          const options = this.parameters.options;
+          return toJSON$1(shapes, options, data);
+        }
+        static fromJSON(data, shapes) {
+          const geometryShapes = [];
+          for (let j = 0, jl = data.shapes.length; j < jl; j++) {
+            const shape = shapes[data.shapes[j]];
+            geometryShapes.push(shape);
+          }
+          const extrudePath = data.options.extrudePath;
+          if (extrudePath !== void 0) {
+            data.options.extrudePath = new Curves[extrudePath.type]().fromJSON(extrudePath);
+          }
+          return new _ExtrudeGeometry(geometryShapes, data.options);
+        }
+      };
+      WorldUVGenerator = {
+        generateTopUV: function(geometry, vertices, indexA, indexB, indexC) {
+          const a_x = vertices[indexA * 3];
+          const a_y = vertices[indexA * 3 + 1];
+          const b_x = vertices[indexB * 3];
+          const b_y = vertices[indexB * 3 + 1];
+          const c_x = vertices[indexC * 3];
+          const c_y = vertices[indexC * 3 + 1];
+          return [
+            new Vector2(a_x, a_y),
+            new Vector2(b_x, b_y),
+            new Vector2(c_x, c_y)
+          ];
+        },
+        generateSideWallUV: function(geometry, vertices, indexA, indexB, indexC, indexD) {
+          const a_x = vertices[indexA * 3];
+          const a_y = vertices[indexA * 3 + 1];
+          const a_z = vertices[indexA * 3 + 2];
+          const b_x = vertices[indexB * 3];
+          const b_y = vertices[indexB * 3 + 1];
+          const b_z = vertices[indexB * 3 + 2];
+          const c_x = vertices[indexC * 3];
+          const c_y = vertices[indexC * 3 + 1];
+          const c_z = vertices[indexC * 3 + 2];
+          const d_x = vertices[indexD * 3];
+          const d_y = vertices[indexD * 3 + 1];
+          const d_z = vertices[indexD * 3 + 2];
+          if (Math.abs(a_y - b_y) < Math.abs(a_x - b_x)) {
+            return [
+              new Vector2(a_x, 1 - a_z),
+              new Vector2(b_x, 1 - b_z),
+              new Vector2(c_x, 1 - c_z),
+              new Vector2(d_x, 1 - d_z)
+            ];
+          } else {
+            return [
+              new Vector2(a_y, 1 - a_z),
+              new Vector2(b_y, 1 - b_z),
+              new Vector2(c_y, 1 - c_z),
+              new Vector2(d_y, 1 - d_z)
+            ];
+          }
+        }
+      };
+      IcosahedronGeometry = class _IcosahedronGeometry extends PolyhedronGeometry {
+        constructor(radius = 1, detail = 0) {
+          const t = (1 + Math.sqrt(5)) / 2;
+          const vertices = [
+            -1,
+            t,
+            0,
+            1,
+            t,
+            0,
+            -1,
+            -t,
+            0,
+            1,
+            -t,
+            0,
+            0,
+            -1,
+            t,
+            0,
+            1,
+            t,
+            0,
+            -1,
+            -t,
+            0,
+            1,
+            -t,
+            t,
+            0,
+            -1,
+            t,
+            0,
+            1,
+            -t,
+            0,
+            -1,
+            -t,
+            0,
+            1
+          ];
+          const indices = [
+            0,
+            11,
+            5,
+            0,
+            5,
+            1,
+            0,
+            1,
+            7,
+            0,
+            7,
+            10,
+            0,
+            10,
+            11,
+            1,
+            5,
+            9,
+            5,
+            11,
+            4,
+            11,
+            10,
+            2,
+            10,
+            7,
+            6,
+            7,
+            1,
+            8,
+            3,
+            9,
+            4,
+            3,
+            4,
+            2,
+            3,
+            2,
+            6,
+            3,
+            6,
+            8,
+            3,
+            8,
+            9,
+            4,
+            9,
+            5,
+            2,
+            4,
+            11,
+            6,
+            2,
+            10,
+            8,
+            6,
+            7,
+            9,
+            8,
+            1
+          ];
+          super(vertices, indices, radius, detail);
+          this.type = "IcosahedronGeometry";
+          this.parameters = {
+            radius,
+            detail
+          };
+        }
+        static fromJSON(data) {
+          return new _IcosahedronGeometry(data.radius, data.detail);
         }
       };
       ShapeGeometry = class _ShapeGeometry extends BufferGeometry {
@@ -23301,7 +23958,7 @@ void main(){
   float ang = at.a * 3.14159;
   vec2 fd = vec2(cos(ang), sin(ang));
   float furrow = 0.5 + 0.5 * sin(dot(P.xz, fd) * 2.4);
-  plowed *= 0.8 + 0.3 * furrow;
+  plowed *= 1. + (0.25 * furrow - 0.12) * (1. - smoothstep(60., 220., dist));
   vec3 vineSoil = mix(vec3(0.58, 0.42, 0.30), vec3(0.66, 0.50, 0.36), nz.g);
   vec3 soil = tuffSoil;
   soil = mix(soil, dryGrass, smoothstep(0.3, 0.42, soilT) * (1. - smoothstep(0.62, 0.7, soilT)));
@@ -25310,364 +25967,6 @@ void main(){
     }
   });
 
-  // src/balloon/envelope.js
-  function profileAt(s) {
-    const n = PROF.length - 1;
-    const f = s * n, i = Math.min(n - 1, Math.floor(f)), t = f - i;
-    const p0 = PROF[Math.max(0, i - 1)], p1 = PROF[i], p2 = PROF[i + 1], p3 = PROF[Math.min(n, i + 2)];
-    const cr = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
-    return [Math.max(0, cr(p0[0], p1[0], p2[0], p3[0])), cr(p0[1], p1[1], p2[1], p3[1])];
-  }
-  function envelopeRadiusAt(y) {
-    let best = 0;
-    for (let k = 0; k <= 60; k++) {
-      const [r, yy] = profileAt(k / 60);
-      if (Math.abs(yy - y) < 0.6) best = Math.max(best, r);
-    }
-    return best;
-  }
-  function buildEnvelope(lod = 0) {
-    const NG = ENV.NG;
-    const U2 = lod === 0 ? 10 : lod === 1 ? 4 : 2;
-    const NS = lod === 0 ? 140 : lod === 1 ? 48 : 22;
-    const cols = NG * U2;
-    const pos = [], gu = [], sv = [], idx = [];
-    for (let j = 0; j <= NS; j++) {
-      let s = j / NS;
-      s = s - 0.06 * Math.sin(s * Math.PI * 2) / (Math.PI * 2) * 2;
-      const [r0, y] = profileAt(s);
-      for (let i = 0; i <= cols; i++) {
-        const g2 = Math.floor(i / U2) % NG, u = i % U2 / U2 + (i === cols ? 0 : 0);
-        const uu = i === cols ? 1 : i % U2 / U2;
-        const gi = i === cols ? NG - 1 : g2;
-        const th = i / cols * Math.PI * 2;
-        const bulge = 0.022 * Math.sin(Math.PI * uu) * Math.sin(Math.PI * Math.min(1, s * 1.15));
-        const r = r0 * (1 + bulge);
-        pos.push(Math.cos(th) * r, y, Math.sin(th) * r);
-        gu.push(gi + (i === cols ? 0.9999 : uu), 0);
-        sv.push(s);
-      }
-    }
-    const W = cols + 1;
-    for (let j = 0; j < NS; j++) for (let i = 0; i < cols; i++) {
-      const a = j * W + i, b = a + 1, c = a + W, d = c + 1;
-      idx.push(a, b, c, b, d, c);
-    }
-    const g = new BufferGeometry();
-    g.setAttribute("position", new Float32BufferAttribute(pos, 3));
-    g.setAttribute("aGU", new Float32BufferAttribute(gu, 2));
-    g.setAttribute("aS", new Float32BufferAttribute(sv, 1));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    const n = g.attributes.normal;
-    for (let j = 0; j <= NS; j++) {
-      const a = j * W, b = a + cols;
-      const x = n.getX(a) + n.getX(b), y = n.getY(a) + n.getY(b), z = n.getZ(a) + n.getZ(b), l = Math.hypot(x, y, z) || 1;
-      n.setXYZ(a, x / l, y / l, z / l);
-      n.setXYZ(b, x / l, y / l, z / l);
-    }
-    g.boundingSphere = new Sphere(new Vector3(0, 11, 0), 14);
-    return g;
-  }
-  function buildSkirt(lod = 0) {
-    const NR = lod ? 24 : 80, NY = lod ? 3 : 10;
-    const pos = [], gu = [], sv = [], idx = [];
-    for (let j = 0; j <= NY; j++) {
-      const v = j / NY;
-      const y = -1.35 * (1 - v) + 0.05;
-      for (let i = 0; i <= NR; i++) {
-        const th = i / NR * Math.PI * 2;
-        const r = ENV.mouthR + 0.04 + 0.32 * Math.pow(1 - v, 1.4) + 0.04 * Math.sin(th * ENV.NG);
-        pos.push(Math.cos(th) * r, y, Math.sin(th) * r);
-        gu.push(i / NR * ENV.NG, 1);
-        sv.push(-0.06 * (1 - v));
-      }
-    }
-    const W = NR + 1;
-    for (let j = 0; j < NY; j++) for (let i = 0; i < NR; i++) {
-      const a = j * W + i, b = a + 1, c = a + W, d = c + 1;
-      idx.push(a, b, c, b, d, c);
-    }
-    const g = new BufferGeometry();
-    g.setAttribute("position", new Float32BufferAttribute(pos, 3));
-    g.setAttribute("aGU", new Float32BufferAttribute(gu, 2));
-    g.setAttribute("aS", new Float32BufferAttribute(sv, 1));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    return g;
-  }
-  function buildCrown() {
-    const g = new TorusGeometry(1.32, 0.05, 6, 48);
-    g.rotateX(Math.PI / 2);
-    g.translate(0, 21.68, 0);
-    return g;
-  }
-  function paletteTexture() {
-    const W = 8, H = PALETTES.length;
-    const d = new Float32Array(W * H * 4);
-    PALETTES.forEach((p, j) => p.forEach((c, i) => {
-      const k = (j * W + i) * 4;
-      d[k] = c[0];
-      d[k + 1] = c[1];
-      d[k + 2] = c[2];
-      d[k + 3] = 1;
-    }));
-    const t = new DataTexture(d, W, H, RGBAFormat, FloatType);
-    t.minFilter = t.magFilter = NearestFilter;
-    t.needsUpdate = true;
-    return t;
-  }
-  function envelopeMaterial(fleet) {
-    return makeMaterial({
-      vertex: VERT3,
-      fragment: FRAG5,
-      defines: fleet ? { FLEET: 1 } : {},
-      side: DoubleSide,
-      uniforms: {
-        uPal: { value: PALETTE_TEX },
-        uPalette: { value: 0 },
-        uPattern: { value: 0 },
-        uBurn: { value: 0 },
-        uFlameI: { value: 6 },
-        uBurnerPos: { value: new Vector3() },
-        uBreath: { value: 0 },
-        uDent: { value: 0 },
-        uRipple: { value: 0.04 },
-        uDentDir: { value: new Vector3(1, 0, 0) },
-        uSkirt: { value: 1 },
-        uLying: { value: 0 },
-        uGroundY: { value: 0 },
-        uInflate: { value: 1 }
-      }
-    });
-  }
-  var ENV, PROF, PALETTES, PALETTE_TEX, VERT3, FRAG5;
-  var init_envelope = __esm({
-    "src/balloon/envelope.js"() {
-      init_three_module();
-      init_common();
-      init_mat();
-      ENV = { NG: 20, PANELS: 14, mouthY: 0, height: 21.8, maxR: 8.7, mouthR: 2.25 };
-      PROF = [[2.25, 0], [2.6, 0.9], [3.9, 3], [5.7, 5.6], [7.3, 8.4], [8.35, 11.3], [8.7, 13.7], [8.45, 16.1], [7.55, 18.2], [5.9, 19.95], [3.6, 21.15], [1.35, 21.7], [0, 21.8]];
-      PALETTES = [
-        // linear-ish colours, 5 per palette; picked to read well backlit and night-glowing
-        [[0.62, 0.05, 0.06], [0.95, 0.62, 0.1], [0.05, 0.3, 0.42], [0.92, 0.86, 0.72], [0.3, 0.04, 0.18]],
-        // hero: crimson, saffron, teal, cream, plum
-        [[0.85, 0.2, 0.04], [0.95, 0.75, 0.18], [0.8, 0.08, 0.1], [0.98, 0.92, 0.7], [0.55, 0.1, 0.04]],
-        [[0.04, 0.18, 0.55], [0.85, 0.85, 0.88], [0.8, 0.1, 0.12], [0.06, 0.45, 0.7], [0.95, 0.75, 0.15]],
-        [[0.1, 0.45, 0.2], [0.95, 0.85, 0.3], [0.9, 0.4, 0.08], [0.05, 0.22, 0.12], [0.96, 0.95, 0.85]],
-        [[0.55, 0.1, 0.45], [0.95, 0.45, 0.55], [0.25, 0.05, 0.35], [0.98, 0.85, 0.9], [0.9, 0.65, 0.1]],
-        [[0.95, 0.8, 0.1], [0.85, 0.3, 0.05], [0.95, 0.95, 0.9], [0.6, 0.08, 0.05], [0.15, 0.1, 0.08]],
-        [[0.08, 0.55, 0.6], [0.95, 0.9, 0.8], [0.95, 0.45, 0.2], [0.03, 0.25, 0.35], [0.85, 0.12, 0.2]],
-        [[0.75, 0.05, 0.08], [0.98, 0.97, 0.94], [0.75, 0.05, 0.08], [0.08, 0.12, 0.4], [0.98, 0.97, 0.94]],
-        [[0.3, 0.65, 0.2], [0.95, 0.88, 0.2], [0.1, 0.4, 0.75], [0.9, 0.25, 0.1], [0.6, 0.1, 0.5]],
-        [[0.95, 0.55, 0.12], [0.98, 0.85, 0.45], [0.75, 0.22, 0.05], [0.45, 0.08, 0.04], [0.98, 0.95, 0.88]],
-        [[0.1, 0.12, 0.4], [0.95, 0.75, 0.15], [0.95, 0.95, 0.95], [0.55, 0.05, 0.1], [0.2, 0.45, 0.8]],
-        [[0.9, 0.3, 0.45], [0.98, 0.9, 0.75], [0.45, 0.7, 0.75], [0.95, 0.6, 0.3], [0.35, 0.15, 0.4]],
-        [[0.85, 0.85, 0.8], [0.12, 0.3, 0.6], [0.85, 0.85, 0.8], [0.8, 0.15, 0.1], [0.95, 0.7, 0.1]],
-        [[0.35, 0.05, 0.05], [0.85, 0.55, 0.1], [0.1, 0.1, 0.12], [0.9, 0.8, 0.55], [0.6, 0.2, 0.05]],
-        [[0.05, 0.35, 0.3], [0.75, 0.85, 0.3], [0.95, 0.8, 0.3], [0.1, 0.25, 0.15], [0.98, 0.95, 0.85]],
-        [[0.7, 0.4, 0.85], [0.3, 0.7, 0.95], [0.95, 0.9, 0.4], [0.95, 0.45, 0.45], [0.95, 0.95, 0.95]]
-      ];
-      PALETTE_TEX = paletteTexture();
-      VERT3 = /* glsl */
-      `
-${VCOMMON}
-attribute vec2 aGU;
-attribute float aS;
-#ifdef FLEET
-attribute vec4 aBal;   // palette, pattern, burner, seed
-attribute vec4 aBal2;  // deflate, unused...
-varying vec4 vBal;
-varying vec3 vBurnerW;
-#endif
-uniform float uBreath, uDent, uRipple, uBurn, uLying, uGroundY, uInflate;
-uniform vec3 uDentDir;   // local-space horizontal direction the wind comes from
-uniform float uSkirt;
-varying vec3 vWorld, vN, vLocal;
-varying vec2 vGU;
-varying float vS;
-#ifdef DEPTH_PASS
-varying float vDepthAlpha;
-#endif
-void main(){
-  vec3 p = position;
-  vec3 n = normal;
-  float s = aS;
-  float t = uTime;
-  float breath = uBreath, dent = uDent, ripple = uRipple, burn = uBurn;
-  float lying = uLying, groundY = uGroundY, infl = uInflate;
-  vec3 dentDir = uDentDir;
-  float seed = 0.;
-#ifdef FLEET
-  vBal = aBal;
-  burn = aBal.z; seed = aBal.w;
-  breath = 0.006 * sin(t * 0.7 + seed * 40.) + 0.012 * burn;
-  ripple = 0.05 + 0.04 * sin(t * 0.3 + seed * 9.);
-  dent = 0.15 * max(0., sin(t * 0.21 + seed * 31.)) ;
-  dentDir = normalize(vec3(cos(seed * 50.), 0., sin(seed * 50.)));
-  lying = aBal2.x; groundY = aBal2.y; infl = aBal2.z;
-#endif
-  vec2 hr = p.xz;
-  float rr = length(hr);
-  vec3 radial = rr > 1e-4 ? vec3(p.x / rr, 0., p.z / rr) : vec3(0.);
-  float th = atan(p.z, p.x);
-  // breathing: the whole envelope swells a touch with each blast
-  float sm = sin(3.14159 * clamp(s * 1.1, 0., 1.));
-  p += n * (breath * 8.0 * sm);
-  // travelling ripples across loose fabric, stronger low on the envelope
-  float loose = (1. - smoothstep(0.15, 0.75, s)) * 0.8 + 0.2;
-  float w1 = sin(th * 3. + s * 14. - t * 2.3 + seed) * sin(th * 2. - s * 9. + t * 1.7);
-  float w2 = sin(th * 7. + s * 21. + t * 3.1 + seed * 3.);
-  p += n * ripple * loose * (w1 * 0.7 + w2 * 0.3);
-  // wind shear dent on the windward side
-  float face = max(0., dot(radial, dentDir));
-  float dm = pow(face, 3.) * smoothstep(0.1, 0.4, s) * smoothstep(0.95, 0.6, s);
-  p -= radial * dent * 2.6 * dm;
-  // skirt flutters
-  if (s < 0.) p += radial * (0.06 * sin(th * 5. + t * 6. + seed) + 0.04 * sin(th * 11. - t * 9.)) * uSkirt * (-s / 0.06);
-  // partly inflated fabric: slack folds and wrinkles
-  if (infl < 0.999) {
-    float wr = 1. - infl;
-    p -= n * wr * (0.9 + 0.8 * sin(th * 10. + s * 25. + seed * 7.) * sin(s * 13. + th * 3.)) * sm * 2.2;
-    p.y *= 1. - wr * 0.25;
-  }
-#ifdef FLEET
-  vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.);
-  vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * n);
-  vBurnerW = (modelMatrix * instanceMatrix * vec4(0., -2.3, 0., 1.)).xyz;
-#else
-  vec4 wp = modelMatrix * vec4(p, 1.);
-  vN = normalize(mat3(modelMatrix) * n);
-#endif
-  // envelope lying on the field: fabric settles on the ground
-  if (lying > 0.01) {
-    float gy = groundY + 0.15 + 0.12 * sin(p.x * 1.7 + seed * 5.) * sin(p.z * 1.3);
-    wp.y = max(wp.y, gy);
-  }
-  vWorld = wp.xyz; vLocal = p; vGU = aGU; vS = s;
-#ifdef DEPTH_PASS
-  vDepthAlpha = 1.;
-#endif
-  gl_Position = projectionMatrix * viewMatrix * wp;
-}
-`;
-      FRAG5 = /* glsl */
-      `
-${COMMON}
-uniform sampler2D uPal;
-uniform float uPalette, uPattern, uBurn, uFlameI;
-uniform vec3 uBurnerPos;
-#ifdef FLEET
-varying vec4 vBal;
-varying vec3 vBurnerW;
-#endif
-varying vec3 vWorld, vN, vLocal;
-varying vec2 vGU;
-varying float vS;
-vec3 pal(float p, int i){ return texelFetch(uPal, ivec2(i, int(p)), 0).rgb; }
-
-// returns colour index 0..4 for a gore/height location
-int patternIndex(float pat, float g, float u, float s){
-  int gi = int(g);
-  float gf = g;
-  if (pat < 0.5) {
-    // hero: saffron crown, chevron band, alternating gores below, plum mouth
-    if (s > 0.86) return 1;
-    float chev = abs(u - 0.5) * 0.10;
-    if (s > 0.62 + chev && s < 0.70 + chev) return 3;
-    if (s > 0.70 + chev) return (gi % 2 == 0) ? 0 : 2;
-    if (s < 0.14) return 4;
-    if (s > 0.55 + chev) return 1;
-    return (gi % 4 == 0) ? 2 : ((gi % 2 == 0) ? 0 : 3);
-  }
-  if (pat < 1.5) return gi % 2 == 0 ? 0 : 1;                                   // alternating gores
-  if (pat < 2.5) return int(mod(floor(s * 9.), 4.));                           // horizontal bands
-  if (pat < 3.5) { float z = abs(fract(gf * 0.5) - 0.5) * 0.25; return int(mod(floor((s + z) * 7.), 3.)); } // zigzag
-  if (pat < 4.5) { float dd = abs(fract(gf) - 0.5) + abs(fract(s * 10.) - 0.5); return dd < 0.5 ? (gi % 2 == 0 ? 0 : 1) : 2; } // harlequin
-  if (pat < 5.5) { return s > 0.8 ? 1 : (int(mod(gf * 2., 3.)) ); }            // sunburst rays
-  if (pat < 6.5) { return int(mod(gf / 4. + floor(s * 3.), 5.)); }           // patchwork quadrants
-  return s > 0.5 ? (gi % 3 == 0 ? 2 : 0) : (gi % 2 == 0 ? 3 : 4);               // split
-}
-
-void main(){
-  vec3 P = vWorld;
-  if (P.y < uClipY) discard;
-  vec3 V = normalize(cameraPosition - P);
-  vec3 N = normalize(vN);
-  bool inside = !gl_FrontFacing;
-  float palette = uPalette, pattern = uPattern, burn = uBurn;
-#ifdef FLEET
-  palette = vBal.x; pattern = vBal.y; burn = vBal.z;
-#endif
-  float g = floor(vGU.x), u = fract(vGU.x);
-  float s = vS;
-  bool skirt = vGU.y > 0.5;
-  int ci = patternIndex(pattern, g, u, s);
-  vec3 fab = pal(palette, ci);
-  if (skirt) fab = vec3(0.12, 0.11, 0.10);
-  // crown parachute vent: lighter panel with its own seams
-  float vent = smoothstep(0.955, 0.965, s);
-  fab = mix(fab, pal(palette, 3) * 0.9, vent);
-
-  // seams: vertical at gore edges (load tapes) and horizontal panel seams
-  float goreW = 2.0 * 3.14159 * max(length(vLocal.xz), 0.5) / 20.;
-  float du = min(u, 1. - u) * goreW;
-  float tape = 1. - smoothstep(0.025, 0.045, du);
-  float pan = fract(s * 14.);
-  float dp = min(pan, 1. - pan) * 21.8 / 14.;
-  float pseam = 1. - smoothstep(0.008, 0.02, dp);
-  float fine = 1. - smoothstep(0.004, 0.012, abs(fract(u * 2.) - 0.5) * goreW * 0.5);
-  vec3 tapeC = vec3(0.78, 0.70, 0.55);
-  vec3 alb = mix(fab, tapeC, tape * 0.85);
-  alb *= 1. - pseam * 0.35 - fine * 0.12;
-  // tapes are raised: bend the normal across them
-  vec3 tang = normalize(vec3(-vLocal.z, 0., vLocal.x));
-  float side = (u < 0.5 ? 1. : -1.);
-  N = normalize(N + tang * side * tape * 0.35);
-  // nylon sheen and soft weave
-  float weave = texture(uNoise2D, vec2(g + u, s * 20.) * vec2(0.37, 1.3)).g;
-  alb *= 0.94 + 0.12 * weave;
-
-  vec3 L = uKeyDir;
-  float sh = keyShadow(P, N);
-  // fabric translucency: thin gores glow when the light is behind them, seams and tapes stay dark
-  float thin = (1. - tape * 0.85) * (1. - pseam * 0.6) * (skirt ? 0.15 : 1.);
-  float back = sat(dot(-V, L));
-  float ndl = dot(inside ? -N : N, L);
-  vec3 col;
-  // burner light from inside (r^2 falloff to the fabric)
-#ifdef FLEET
-  vec3 toB = vBurnerW - P;
-#else
-  vec3 toB = uBurnerPos - P;
-#endif
-  float bd = length(toB);
-  vec3 flame = vec3(1.0, 0.55, 0.22) * burn * uFlameI;
-  float bfall = 1. / (1. + bd * bd * 0.012);
-  if (!inside) {
-    Surf sf; sf.albedo = alb; sf.N = N; sf.rough = 0.55; sf.spec = 0.35; sf.ao = 1.; sf.wrap = 0.25; sf.sss = 0.;
-    col = shadeSurf(sf, P, V, sh);
-    // sunlight passing through two layers of fabric toward the viewer
-    float through = sat(-ndl) * mix(0.25, 1., back * back) ;
-    col += uKeyColor * fab * fab * through * thin * 1.25 * keyHorizon(P) * cloudShadow(P);
-    // glow of the burner through the fabric
-    col += flame * fab * thin * bfall * 1.6 * (0.4 + 0.6 * (1. - s));
-  } else {
-    // interior: every sunlit panel glows in its own colour; seams draw dark lines across the dome
-    float sunlitPanel = sat(ndl * 1.2 + 0.25);
-    vec3 Lin = uKeyColor * fab * thin * sunlitPanel * 1.1 * keyHorizon(P) * cloudShadow(P);
-    Lin += ambCube(-N) * fab * thin * 0.9;
-    Lin += flame * (alb * 0.9 + fab * thin * 0.4) * bfall * 2.2;
-    col = Lin;
-  }
-  col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
-}
-`;
-    }
-  });
-
   // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
   function mergeGeometries(geometries, useGroups = false) {
     const isIndexed = geometries[0].index !== null;
@@ -25827,7 +26126,7 @@ void main(){
   function propMaterial(skinned) {
     const uniforms = { uLocalLightPos: { value: new Vector3() }, uLocalLightCol: { value: new Color(0, 0, 0) } };
     if (skinned) uniforms.uBones = { value: Array.from({ length: 24 }, () => new Matrix4()) };
-    return makeMaterial({ vertex: VERT4, fragment: FRAG6, side: DoubleSide, uniforms, defines: skinned ? { SKINNED_PARTS: 1 } : {} });
+    return makeMaterial({ vertex: VERT3, fragment: FRAG5, side: DoubleSide, uniforms, defines: skinned ? { SKINNED_PARTS: 1 } : {} });
   }
   function tag(g, mat, col = [1, 1, 1], uvFn = null, bone = 0) {
     g = g.index ? g.toNonIndexed() : g;
@@ -25872,21 +26171,21 @@ void main(){
     g.translate(x, y + h / 2, z);
     return g;
   }
-  var VERT4, FRAG6;
+  var VERT3, FRAG5;
   var init_props = __esm({
     "src/balloon/props.js"() {
       init_three_module();
       init_common();
       init_mat();
       init_BufferGeometryUtils();
-      VERT4 = /* glsl */
+      VERT3 = /* glsl */
       `
 ${VCOMMON}
 attribute float aMat;
 attribute vec3 aCol;
 attribute vec2 aUV2;
 varying vec3 vWorld, vN, vObj, vCol;
-varying float vMat;
+varying float vMat, vSeed;
 varying vec2 vUV2;
 #ifdef DEPTH_PASS
 varying float vDepthAlpha;
@@ -25902,8 +26201,10 @@ void main(){
   mat4 B = uBones[int(aBone)];
   lp = B * lp; ln = mat3(B) * ln;
 #endif
+  vSeed = 0.;
 #ifdef USE_INSTANCING
   lp = instanceMatrix * lp; ln = mat3(instanceMatrix) * ln;
+  vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
 #endif
   vec4 wp = modelMatrix * lp;
   vWorld = wp.xyz; vN = normalize(mat3(modelMatrix) * ln); vObj = position; vMat = aMat; vCol = aCol; vUV2 = aUV2;
@@ -25913,12 +26214,12 @@ void main(){
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
 `;
-      FRAG6 = /* glsl */
+      FRAG5 = /* glsl */
       `
 ${COMMON}
 uniform vec3 uLocalLightPos, uLocalLightCol;
 varying vec3 vWorld, vN, vObj, vCol;
-varying float vMat;
+varying float vMat, vSeed;
 varying vec2 vUV2;
 void main(){
   vec3 P = vWorld;
@@ -25993,8 +26294,44 @@ void main(){
     float r = sin(vObj.y * 180.) * 0.5 + 0.5;
     alb = vCol * (0.75 + 0.3 * r); rough = 0.95;
   }
+  vec3 emit = vec3(0);
+  if (m >= 15. && m <= 16.) {
+    // tuff ashlar masonry in world space: coursed blocks, recessed mortar
+    vec3 aN = abs(N);
+    float hcoord = aN.x > aN.z ? P.z : P.x;
+    float vcoord = P.y;
+    if (m == 16. || aN.y > 0.7) { hcoord = P.x; vcoord = P.z; }
+    float row = floor(vcoord / 0.32);
+    float hb = hcoord / 0.55 + hash12(vec2(row, 3.1)) * 2.;
+    float bi = floor(hb);
+    vec2 f = vec2(fract(hb), fract(vcoord / 0.32));
+    float mortar = smoothstep(0.0, 0.06, min(f.x, 1. - f.x)) * smoothstep(0.0, 0.1, min(f.y, 1. - f.y));
+    float bv = hash12(vec2(bi, row));
+    vec3 stone = mix(vec3(0.70, 0.60, 0.46), vec3(0.80, 0.70, 0.55), bv);
+    stone = mix(stone, vec3(0.62, 0.48, 0.36), step(0.85, bv) * 0.6);
+    stone *= 0.85 + 0.2 * texture(uNoise2D, P.xz * 0.7 + P.y * 0.3).r;
+    alb = mix(vec3(0.42, 0.37, 0.32), stone, mortar) * vCol;
+    ao = 0.65 + 0.35 * mortar;
+    N = normalize(N + (vec3(f.x - 0.5, f.y - 0.5, 0.) * 0.15) * mortar);
+    if (m == 16.) {
+      // flat roofs: packed earth over slabs, a little straw
+      alb = mix(vec3(0.46, 0.38, 0.30), vec3(0.56, 0.47, 0.37), texture(uNoise2D, P.xz * 0.4).r) * vCol;
+      ao = 1.;
+    }
+    rough = 0.85;
+  } else if (m == 17.) {
+    float plank = fract(vObj.x * 6. + vObj.z * 6.);
+    alb = mix(vec3(0.20, 0.12, 0.07), vec3(0.30, 0.19, 0.11), smoothstep(0.1, 0.3, plank) * texture(uNoise2D, vObj.xy * vec2(2., 0.3)).r) * vCol;
+  } else if (m == 18.) {
+    // windows: dark glass by day, warm lamplight after dusk in most houses
+    alb = vec3(0.03, 0.035, 0.04); rough = 0.15; spec = 1.2;
+    float lit = step(0.32, fract(vSeed * 13.7 + floor(vObj.x * 3. + vObj.z * 3.) * 0.31)) * smoothstep(0.3, 0.75, uNight);
+    float flick = 0.9 + 0.1 * sin(uTime * 5. + vSeed * 40.);
+    emit = vec3(1.0, 0.55, 0.22) * lit * flick * 2.6;
+  }
   // snow settles on the basket rim and shoulders
-  float snow = uSnow * smoothstep(0.6, 0.9, N.y) * (m == 1. || m == 0. || m == 9. ? 1. : 0.5) * step(0.35, texture(uNoise2D, vObj.xz * 5.).r + uSnow * 0.4);
+  float snow = uSnow * smoothstep(0.6, 0.9, N.y) * (m == 1. || m == 0. || m == 9. || m >= 15. ? 1. : 0.5) * step(0.35, texture(uNoise2D, vObj.xz * 5.).r + uSnow * 0.4);
+  if (m >= 15. && m <= 16.) { alb *= 1. - 0.3 * uWet * (1. - snow); }
   alb = mix(alb, vec3(0.92, 0.94, 0.98), snow);
   Surf s; s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.3; s.sss = sss;
   float sh = keyShadow(P, N);
@@ -26003,6 +26340,668 @@ void main(){
   vec3 tl = uLocalLightPos - P;
   float d2 = dot(tl, tl);
   col += alb * uLocalLightCol * (max(dot(N, tl * inversesqrt(d2)), 0.) * 0.8 + 0.2) / (1. + d2 * 0.5);
+  col += emit;
+  col = applyHaze(col, P);
+  gl_FragColor = vec4(col, 1.);
+}
+`;
+    }
+  });
+
+  // src/world/village.js
+  function house(rng) {
+    const parts = [];
+    const w = 5 + rng() * 4, d = 4.5 + rng() * 3.5, h = 3.2 + rng() * 1.8;
+    const twoStory = rng() < 0.35;
+    const stone = [1, 0.96 + rng() * 0.06, 0.9 + rng() * 0.1];
+    parts.push(tag(box(w, h + 5, d, 0, -5, 0), 15, stone));
+    parts.push(tag(box(w - 0.3, 0.12, d - 0.3, 0, h, 0), 16, [1, 1, 1]));
+    for (const [pw, pd, px2, pz2] of [[w, 0.3, 0, d / 2 - 0.15], [w, 0.3, 0, -d / 2 + 0.15], [0.3, d, w / 2 - 0.15, 0], [0.3, d, -w / 2 + 0.15, 0]])
+      parts.push(tag(box(pw, 0.4, pd, px2, h, pz2), 15, stone));
+    let topH = h;
+    if (twoStory) {
+      const w2 = w * (0.45 + rng() * 0.2), d2 = d * (0.6 + rng() * 0.2), h2 = 2.6 + rng() * 0.6;
+      const ox = (rng() - 0.5) * (w - w2) * 0.8, oz = -(d - d2) / 2 + 0.2;
+      parts.push(tag(box(w2, h2, d2, ox, h, oz), 15, stone));
+      parts.push(tag(box(w2 - 0.2, 0.12, d2 - 0.2, ox, h + h2, oz), 16, [1, 1, 1]));
+      parts.push(tag(box(w2 + 0.1, 0.3, 0.25, ox, h + h2, oz + d2 / 2 - 0.12), 15, stone));
+      parts.push(tag(box(0.7, 1, 0.1, ox + w2 * 0.15, h + 0.9, oz + d2 / 2 + 0.03), 18));
+      topH = h + h2;
+    }
+    const cx = (rng() - 0.5) * (w - 1.4), cz = -d / 2 + 0.8 + rng() * 1.2;
+    const chH = (twoStory ? topH : h) + 1.1;
+    parts.push(tag(box(0.55, chH - (twoStory ? 0 : h) + (twoStory ? 0 : 0), 0.55, cx, twoStory ? 0 : h, cz), 15, stone));
+    parts.push(tag(box(0.8, 0.1, 0.8, cx, (twoStory ? 0 : h) + chH - (twoStory ? 0 : h), cz), 15, stone));
+    const doorX = (rng() - 0.5) * (w - 2.4);
+    parts.push(tag(box(1, 2, 0.12, doorX, 0, d / 2 + 0.01), 17, [1, 0.9 + rng() * 0.2, 0.8]));
+    parts.push(tag(box(1.35, 0.25, 0.2, doorX, 2, d / 2 + 0.05), 15, stone));
+    const nw = 1 + Math.floor(rng() * 3);
+    for (let k = 0; k < nw; k++) {
+      let wx = -w / 2 + 0.9 + rng() * (w - 1.8);
+      if (Math.abs(wx - doorX) < 1.2) wx = doorX + (wx < doorX ? -1.3 : 1.3);
+      if (Math.abs(wx) > w / 2 - 0.6) continue;
+      parts.push(tag(box(0.6, 0.85, 0.1, wx, 1.3, d / 2 + 0.02), 18));
+      parts.push(tag(box(0.8, 0.08, 0.22, wx, 1.22, d / 2 + 0.06), 15, stone));
+    }
+    parts.push(tag(box(0.1, 0.8, 0.6, w / 2 + 0.02, 1.4, (rng() - 0.5) * (d - 1.6)), 18));
+    if (rng() < 0.4) {
+      const cw = w + 2, cd = 3 + rng() * 2;
+      parts.push(tag(box(cw, 1.2, 0.4, 0, -1, d / 2 + cd), 15, stone));
+      parts.push(tag(box(0.4, 1.2, cd, -cw / 2 + 0.2, -1, d / 2 + cd / 2), 15, stone));
+      parts.push(tag(box(0.4, 1.2, cd * 0.5, cw / 2 - 0.2, -1, d / 2 + cd * 0.75), 15, stone));
+    }
+    if (rng() < 0.4) for (let s = 0; s < 10; s++) parts.push(tag(box(0.9, h * (s + 1) / 10, 0.35, -w / 2 - 0.45, -0.2, -d / 2 + 0.4 + s * 0.35), 15, stone));
+    return { geo: merge(parts), w, d, chimney: new Vector3(cx, (twoStory ? 0 : h) + chH - (twoStory ? 0 : h) + 0.1, cz), h: topH };
+  }
+  function bridgeGeo() {
+    const parts = [];
+    const L = 52, Wd = 4.4;
+    const spans = [{ c: 0, s: 13 }, { c: -14.5, s: 9 }, { c: 14.5, s: 9 }];
+    const deckY = (x) => 7.4 - 4.8 * Math.pow(Math.abs(x) / (L / 2), 1.7);
+    const shape = new Shape();
+    const N = 40;
+    shape.moveTo(-L / 2, -2);
+    for (let i = 0; i <= N; i++) {
+      const x = -L / 2 + L * i / N;
+      shape.lineTo(x, deckY(x) - 0.35);
+    }
+    shape.lineTo(L / 2, -2);
+    shape.lineTo(-L / 2, -2);
+    for (const sp of spans) {
+      const hole = new Path();
+      const r = sp.s / 2, spring = sp.c === 0 ? 1.2 : 0.8;
+      hole.moveTo(sp.c - r, -2);
+      hole.lineTo(sp.c - r, spring);
+      for (let i = 0; i <= 24; i++) {
+        const a = Math.PI - i / 24 * Math.PI;
+        hole.lineTo(sp.c + Math.cos(a) * r, spring + Math.sin(a) * r * 0.92);
+      }
+      hole.lineTo(sp.c + r, -2);
+      hole.lineTo(sp.c - r, -2);
+      shape.holes.push(hole);
+    }
+    const body = new ExtrudeGeometry(shape, { depth: Wd, bevelEnabled: false, curveSegments: 4 });
+    body.translate(0, 0, -Wd / 2);
+    parts.push(tag(body, 15, [0.98, 0.94, 0.86]));
+    const rng = mulberry32(5);
+    for (const sp of spans) {
+      const r = sp.s / 2, spring = sp.c === 0 ? 1.2 : 0.8;
+      const n = Math.round(Math.PI * r / 0.55);
+      for (let i = 0; i < n; i++) {
+        const a0 = Math.PI - (i + 0.5) / n * Math.PI;
+        const cx = sp.c + Math.cos(a0) * (r + 0.4), cy = spring + Math.sin(a0) * (r * 0.92 + 0.4);
+        for (const side of [-1, 1]) {
+          const g = new BoxGeometry(0.5, 0.8 + rng() * 0.1, 0.25);
+          g.rotateZ(a0 - Math.PI / 2);
+          g.translate(cx, cy, side * (Wd / 2 + 0.06));
+          const v = 0.85 + rng() * 0.2;
+          parts.push(tag(g, 15, [v, v * 0.95, v * 0.88]));
+        }
+      }
+      const soffit = new CylinderGeometry(r, r, Wd, 24, 1, true, Math.PI / 2, Math.PI);
+      soffit.rotateX(Math.PI / 2);
+      soffit.rotateZ(-Math.PI / 2);
+      soffit.scale(1, 0.92, 1);
+      soffit.translate(sp.c, spring, 0);
+      const p = soffit.attributes.position;
+      for (let i = 0; i < p.count; i++) if (p.getY(i) < spring - 0.01) p.setY(i, spring);
+      soffit.computeVertexNormals();
+      parts.push(tag(soffit, 15, [0.9, 0.86, 0.8]));
+    }
+    for (const px2 of [-7.25 + 0, 7.25]) {
+      const piersX = px2 < 0 ? -(13 / 2 + 1) : 13 / 2 + 1;
+      for (const side of [-1, 1]) {
+        const cw = new ConeGeometry(1.6, 4.5, 4, 1);
+        cw.rotateY(Math.PI / 4);
+        cw.scale(0.75, 1, 1);
+        cw.translate(piersX, 0.25, side * (Wd / 2 + 0.7));
+        parts.push(tag(cw, 15, [0.95, 0.9, 0.82]));
+      }
+    }
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 26; i++) {
+        const x0 = -L / 2 + L * i / 26, x1 = -L / 2 + L * (i + 1) / 26, xm = (x0 + x1) / 2;
+        const y0 = deckY(xm);
+        const seg = new BoxGeometry(x1 - x0 + 0.02, 0.8, 0.38);
+        const ang = Math.atan2(deckY(x1) - deckY(x0), x1 - x0);
+        seg.rotateZ(ang);
+        seg.translate(xm, y0 + 0.4, side * (Wd / 2 - 0.19));
+        parts.push(tag(seg, 15, [1, 0.96, 0.9]));
+        const cap = new BoxGeometry(x1 - x0 + 0.02, 0.12, 0.46);
+        cap.rotateZ(ang);
+        cap.translate(xm, y0 + 0.86, side * (Wd / 2 - 0.19));
+        parts.push(tag(cap, 15, [0.85, 0.8, 0.72]));
+        if (side === 1) {
+          const deck = new BoxGeometry(x1 - x0 + 0.02, 0.2, Wd - 0.7);
+          deck.rotateZ(ang);
+          deck.translate(xm, y0 - 0.1, 0);
+          parts.push(tag(deck, 16, [0.95, 0.92, 0.88]));
+        }
+      }
+    }
+    return merge(parts);
+  }
+  function wallSegment(rng) {
+    const parts = [];
+    for (let c = 0; c < 3; c++) {
+      let x = -2;
+      while (x < 2) {
+        const l = 0.35 + rng() * 0.35;
+        const g = new IcosahedronGeometry(0.5, 0);
+        g.scale(l, 0.26 + rng() * 0.08, 0.32 + rng() * 0.12);
+        g.rotateY((rng() - 0.5) * 0.3);
+        g.translate(x + l / 2, -0.3 + c * 0.3 + (c === 2 ? 0.05 : 0), (rng() - 0.5) * 0.06);
+        const v = 0.75 + rng() * 0.3;
+        parts.push(tag(g, 15, [v, v * 0.95, v * 0.88]));
+        x += l * 0.92;
+      }
+    }
+    return merge(parts);
+  }
+  var box, Village;
+  var init_village = __esm({
+    "src/world/village.js"() {
+      init_three_module();
+      init_props();
+      init_mat();
+      init_noise();
+      init_layout();
+      init_shared();
+      box = (w, h, d, x, y, z) => {
+        const g = new BoxGeometry(w, h, d);
+        g.translate(x, y + h / 2, z);
+        return g;
+      };
+      Village = class {
+        constructor(scene2, data, rocks) {
+          this.data = data;
+          const rng = mulberry32(31);
+          this.mat = propMaterial(false);
+          this.chimneys = [];
+          this.lamps = [];
+          this.windows = [];
+          const variants = [];
+          for (let k = 0; k < 8; k++) variants.push({ ...house(rng), list: [] });
+          const c = SITES.castle;
+          const placed = [];
+          for (let i = 0; i < 9e3 && placed.length < 240; i++) {
+            const a2 = rng() * Math.PI * 2, r = 48 + Math.pow(rng(), 1.25) * 290;
+            let x = c.x + Math.cos(a2) * r, z = c.z + Math.sin(a2) * r;
+            x += Math.max(0, Math.cos(a2)) * r * 0.35;
+            const vt = data.sampleArr(data.valleyT, x, z);
+            if (vt < 0.5 && data.sampleArr(data.valleyId, x, z) !== 3) continue;
+            const n = data.normal(x, z);
+            if (n.y < 0.8) continue;
+            const v = variants[Math.floor(rng() * variants.length)];
+            const rad = Math.hypot(v.w, v.d) / 2 + 0.4;
+            if (placed.some((p2) => Math.hypot(p2.x - x, p2.z - z) < p2.rad + rad)) continue;
+            let clash = false;
+            for (const o of rocks.near(x, z)) if (Math.hypot(o.x - x, o.z - z) < o.rb + rad) clash = true;
+            if (clash) continue;
+            const rot = Math.atan2(n.x, n.z) + (rng() - 0.5) * 0.5;
+            let gy = -1e9;
+            const cr = Math.cos(rot), sr = Math.sin(rot);
+            for (const [lx, lz] of [[-v.w / 2, -v.d / 2], [v.w / 2, -v.d / 2], [-v.w / 2, v.d / 2], [v.w / 2, v.d / 2], [0, 0]])
+              gy = Math.max(gy, data.height(x + lx * cr + lz * sr, z - lx * sr + lz * cr));
+            const p = { x, z, y: gy - 0.05, rot, rad, v };
+            placed.push(p);
+            v.list.push(p);
+            const ch = v.chimney.clone().applyAxisAngle(new Vector3(0, 1, 0), rot).add(new Vector3(x, p.y, z));
+            this.chimneys.push(ch);
+            this.windows.push(new Vector3(x, p.y + 1.5, z));
+          }
+          this.houses = placed;
+          this.group = new Group();
+          scene2.add(this.group);
+          const m4 = new Matrix4(), q = new Quaternion();
+          for (const v of variants) {
+            if (!v.list.length) continue;
+            const im = new InstancedMesh(v.geo, this.mat, v.list.length);
+            v.list.forEach((p, i) => {
+              q.setFromAxisAngle(new Vector3(0, 1, 0), p.rot);
+              m4.compose(new Vector3(p.x, p.y, p.z), q, new Vector3(1, 1, 1));
+              im.setMatrixAt(i, m4);
+            });
+            im.layers.enable(2);
+            addCaster(im);
+            this.group.add(im);
+          }
+          for (let i = 0; i < placed.length; i += 5) {
+            const p = placed[i];
+            const lx = p.x + Math.cos(p.rot) * (p.v.w / 2 + 2), lz = p.z - Math.sin(p.rot) * (p.v.w / 2 + 2);
+            this.lamps.push(new Vector3(lx, data.height(lx, lz) + 3.6, lz));
+          }
+          const lampGeo = merge([tag(cyl(0.06, 0.05, 3.5, 6), 2, [0.2, 0.2, 0.2]), tag(box(0.3, 0.35, 0.3, 0, 3.4, 0), 18)]);
+          const lamps = new InstancedMesh(lampGeo, this.mat, this.lamps.length);
+          this.lamps.forEach((l, i) => {
+            m4.makeTranslation(l.x, l.y - 3.6, l.z);
+            lamps.setMatrixAt(i, m4);
+          });
+          lamps.layers.enable(2);
+          this.group.add(lamps);
+          let best = null, bd = 1e9;
+          for (let i = 0; i < RIVER.length - 1; i++) {
+            const d = Math.hypot(RIVER[i][0] - SITES.bridge.x, RIVER[i][1] - SITES.bridge.z);
+            if (d < bd) {
+              bd = d;
+              best = i;
+            }
+          }
+          const a = RIVER[best], b = RIVER[best + 1];
+          const flowAng = Math.atan2(b[1] - a[1], b[0] - a[0]);
+          const bg = bridgeGeo();
+          const bridge = new Mesh(bg, this.mat);
+          bridge.position.set(a[0], WORLD.riverY - 0.2, a[1]);
+          bridge.rotation.y = -(flowAng + Math.PI / 2);
+          bridge.layers.enable(2);
+          addCaster(bridge);
+          this.group.add(bridge);
+          this.bridge = { x: a[0], z: a[1], ang: flowAng };
+          rocks.addCollider({ x: a[0], z: a[1], y: WORLD.riverY, h: 8, r: 24 });
+          const segs = [];
+          const segGeo = [0, 1, 2].map((k) => wallSegment(mulberry32(70 + k)));
+          const lines = [];
+          const ux = [0.8, 0.6], uz = [-0.6, 0.8];
+          for (let gx = -40; gx < 40; gx++) for (let gz = -40; gz < 40; gz++) {
+            const s0 = gx * 70, t0 = gz * 46;
+            const wx = s0 * ux[0] + t0 * uz[0], wz = s0 * ux[1] + t0 * uz[1];
+            if (Math.abs(wx - 300) > 900 || Math.abs(wz) > 1250) continue;
+            if (rng() < 0.55) lines.push([[wx, wz], [wx + 70 * ux[0], wz + 70 * ux[1]]]);
+            if (rng() < 0.45) lines.push([[wx, wz], [wx + 46 * uz[0], wz + 46 * uz[1]]]);
+          }
+          const ringAround = (cx, cz, r, n) => {
+            const pts = [];
+            for (let i = 0; i <= n; i++) {
+              const t = i / n * Math.PI * 2;
+              pts.push([cx + Math.cos(t) * r * (1 + 0.08 * Math.sin(t * 3)), cz + Math.sin(t) * r]);
+            }
+            for (let i = 0; i < n; i++) if (i % 9 !== 0) lines.push([pts[i], pts[i + 1]]);
+          };
+          ringAround(SITES.orchard.x, SITES.orchard.z, SITES.orchard.r * 0.8, 40);
+          for (const [p0, p1] of lines) {
+            const L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+            const n = Math.floor(L / 4);
+            const ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
+            for (let k = 0; k < n; k++) {
+              const t = (k + 0.5) / n, x = p0[0] + (p1[0] - p0[0]) * t, z = p0[1] + (p1[1] - p0[1]) * t;
+              const rd = data.riverD[Math.floor((z - WORLD.core.minZ) / data.cell) * data.nx + Math.floor((x - WORLD.core.minX) / data.cell)];
+              const soil = data.attr(x, z, 1);
+              if (!(rd > 22 && (soil > 0.4 || Math.hypot(x - SITES.orchard.x, z - SITES.orchard.z) < SITES.orchard.r))) continue;
+              const nrm = data.normal(x, z);
+              if (nrm.y < 0.93) continue;
+              segs.push({ x, z, y: data.height(x, z) - 0.05, ang, k: Math.floor(rng() * 3) });
+            }
+          }
+          for (let k = 0; k < 3; k++) {
+            const list = segs.filter((s) => s.k === k);
+            if (!list.length) continue;
+            const im = new InstancedMesh(segGeo[k], this.mat, list.length);
+            list.forEach((s, i) => {
+              q.setFromAxisAngle(new Vector3(0, 1, 0), -s.ang);
+              m4.compose(new Vector3(s.x, s.y + 0.3, s.z), q, new Vector3(1, 1, 1));
+              im.setMatrixAt(i, m4);
+            });
+            im.layers.enable(2);
+            addCaster(im);
+            this.group.add(im);
+          }
+          this.wallCount = segs.length;
+        }
+      };
+    }
+  });
+
+  // src/balloon/envelope.js
+  function profileAt(s) {
+    const n = PROF.length - 1;
+    const f = s * n, i = Math.min(n - 1, Math.floor(f)), t = f - i;
+    const p0 = PROF[Math.max(0, i - 1)], p1 = PROF[i], p2 = PROF[i + 1], p3 = PROF[Math.min(n, i + 2)];
+    const cr = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
+    return [Math.max(0, cr(p0[0], p1[0], p2[0], p3[0])), cr(p0[1], p1[1], p2[1], p3[1])];
+  }
+  function envelopeRadiusAt(y) {
+    let best = 0;
+    for (let k = 0; k <= 60; k++) {
+      const [r, yy] = profileAt(k / 60);
+      if (Math.abs(yy - y) < 0.6) best = Math.max(best, r);
+    }
+    return best;
+  }
+  function buildEnvelope(lod = 0) {
+    const NG = ENV.NG;
+    const U2 = lod === 0 ? 10 : lod === 1 ? 4 : 2;
+    const NS = lod === 0 ? 140 : lod === 1 ? 48 : 22;
+    const cols = NG * U2;
+    const pos = [], gu = [], sv = [], idx = [];
+    for (let j = 0; j <= NS; j++) {
+      let s = j / NS;
+      s = s - 0.06 * Math.sin(s * Math.PI * 2) / (Math.PI * 2) * 2;
+      const [r0, y] = profileAt(s);
+      for (let i = 0; i <= cols; i++) {
+        const g2 = Math.floor(i / U2) % NG, u = i % U2 / U2 + (i === cols ? 0 : 0);
+        const uu = i === cols ? 1 : i % U2 / U2;
+        const gi = i === cols ? NG - 1 : g2;
+        const th = i / cols * Math.PI * 2;
+        const bulge = 0.022 * Math.sin(Math.PI * uu) * Math.sin(Math.PI * Math.min(1, s * 1.15));
+        const r = r0 * (1 + bulge);
+        pos.push(Math.cos(th) * r, y, Math.sin(th) * r);
+        gu.push(gi + (i === cols ? 0.9999 : uu), 0);
+        sv.push(s);
+      }
+    }
+    const W = cols + 1;
+    for (let j = 0; j < NS; j++) for (let i = 0; i < cols; i++) {
+      const a = j * W + i, b = a + 1, c = a + W, d = c + 1;
+      idx.push(a, b, c, b, d, c);
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+    g.setAttribute("aGU", new Float32BufferAttribute(gu, 2));
+    g.setAttribute("aS", new Float32BufferAttribute(sv, 1));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    const n = g.attributes.normal;
+    for (let j = 0; j <= NS; j++) {
+      const a = j * W, b = a + cols;
+      const x = n.getX(a) + n.getX(b), y = n.getY(a) + n.getY(b), z = n.getZ(a) + n.getZ(b), l = Math.hypot(x, y, z) || 1;
+      n.setXYZ(a, x / l, y / l, z / l);
+      n.setXYZ(b, x / l, y / l, z / l);
+    }
+    g.boundingSphere = new Sphere(new Vector3(0, 11, 0), 14);
+    return g;
+  }
+  function buildSkirt(lod = 0) {
+    const NR = lod ? 24 : 80, NY = lod ? 3 : 10;
+    const pos = [], gu = [], sv = [], idx = [];
+    for (let j = 0; j <= NY; j++) {
+      const v = j / NY;
+      const y = -1.35 * (1 - v) + 0.05;
+      for (let i = 0; i <= NR; i++) {
+        const th = i / NR * Math.PI * 2;
+        const r = ENV.mouthR + 0.04 + 0.32 * Math.pow(1 - v, 1.4) + 0.04 * Math.sin(th * ENV.NG);
+        pos.push(Math.cos(th) * r, y, Math.sin(th) * r);
+        gu.push(i / NR * ENV.NG, 1);
+        sv.push(-0.06 * (1 - v));
+      }
+    }
+    const W = NR + 1;
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NR; i++) {
+      const a = j * W + i, b = a + 1, c = a + W, d = c + 1;
+      idx.push(a, b, c, b, d, c);
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+    g.setAttribute("aGU", new Float32BufferAttribute(gu, 2));
+    g.setAttribute("aS", new Float32BufferAttribute(sv, 1));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+  function buildCrown() {
+    const g = new TorusGeometry(1.32, 0.05, 6, 48);
+    g.rotateX(Math.PI / 2);
+    g.translate(0, 21.68, 0);
+    return g;
+  }
+  function paletteTexture() {
+    const W = 8, H = PALETTES.length;
+    const d = new Float32Array(W * H * 4);
+    PALETTES.forEach((p, j) => p.forEach((c, i) => {
+      const k = (j * W + i) * 4;
+      d[k] = c[0];
+      d[k + 1] = c[1];
+      d[k + 2] = c[2];
+      d[k + 3] = 1;
+    }));
+    const t = new DataTexture(d, W, H, RGBAFormat, FloatType);
+    t.minFilter = t.magFilter = NearestFilter;
+    t.needsUpdate = true;
+    return t;
+  }
+  function envelopeMaterial(fleet) {
+    return makeMaterial({
+      vertex: VERT4,
+      fragment: FRAG6,
+      defines: fleet ? { FLEET: 1 } : {},
+      side: DoubleSide,
+      uniforms: {
+        uPal: { value: PALETTE_TEX },
+        uPalette: { value: 0 },
+        uPattern: { value: 0 },
+        uBurn: { value: 0 },
+        uFlameI: { value: 6 },
+        uBurnerPos: { value: new Vector3() },
+        uBreath: { value: 0 },
+        uDent: { value: 0 },
+        uRipple: { value: 0.04 },
+        uDentDir: { value: new Vector3(1, 0, 0) },
+        uSkirt: { value: 1 },
+        uLying: { value: 0 },
+        uGroundY: { value: 0 },
+        uInflate: { value: 1 }
+      }
+    });
+  }
+  var ENV, PROF, PALETTES, PALETTE_TEX, VERT4, FRAG6;
+  var init_envelope = __esm({
+    "src/balloon/envelope.js"() {
+      init_three_module();
+      init_common();
+      init_mat();
+      ENV = { NG: 20, PANELS: 14, mouthY: 0, height: 21.8, maxR: 8.7, mouthR: 2.25 };
+      PROF = [[2.25, 0], [2.6, 0.9], [3.9, 3], [5.7, 5.6], [7.3, 8.4], [8.35, 11.3], [8.7, 13.7], [8.45, 16.1], [7.55, 18.2], [5.9, 19.95], [3.6, 21.15], [1.35, 21.7], [0, 21.8]];
+      PALETTES = [
+        // linear-ish colours, 5 per palette; picked to read well backlit and night-glowing
+        [[0.62, 0.05, 0.06], [0.95, 0.62, 0.1], [0.05, 0.3, 0.42], [0.92, 0.86, 0.72], [0.3, 0.04, 0.18]],
+        // hero: crimson, saffron, teal, cream, plum
+        [[0.85, 0.2, 0.04], [0.95, 0.75, 0.18], [0.8, 0.08, 0.1], [0.98, 0.92, 0.7], [0.55, 0.1, 0.04]],
+        [[0.04, 0.18, 0.55], [0.85, 0.85, 0.88], [0.8, 0.1, 0.12], [0.06, 0.45, 0.7], [0.95, 0.75, 0.15]],
+        [[0.1, 0.45, 0.2], [0.95, 0.85, 0.3], [0.9, 0.4, 0.08], [0.05, 0.22, 0.12], [0.96, 0.95, 0.85]],
+        [[0.55, 0.1, 0.45], [0.95, 0.45, 0.55], [0.25, 0.05, 0.35], [0.98, 0.85, 0.9], [0.9, 0.65, 0.1]],
+        [[0.95, 0.8, 0.1], [0.85, 0.3, 0.05], [0.95, 0.95, 0.9], [0.6, 0.08, 0.05], [0.15, 0.1, 0.08]],
+        [[0.08, 0.55, 0.6], [0.95, 0.9, 0.8], [0.95, 0.45, 0.2], [0.03, 0.25, 0.35], [0.85, 0.12, 0.2]],
+        [[0.75, 0.05, 0.08], [0.98, 0.97, 0.94], [0.75, 0.05, 0.08], [0.08, 0.12, 0.4], [0.98, 0.97, 0.94]],
+        [[0.3, 0.65, 0.2], [0.95, 0.88, 0.2], [0.1, 0.4, 0.75], [0.9, 0.25, 0.1], [0.6, 0.1, 0.5]],
+        [[0.95, 0.55, 0.12], [0.98, 0.85, 0.45], [0.75, 0.22, 0.05], [0.45, 0.08, 0.04], [0.98, 0.95, 0.88]],
+        [[0.1, 0.12, 0.4], [0.95, 0.75, 0.15], [0.95, 0.95, 0.95], [0.55, 0.05, 0.1], [0.2, 0.45, 0.8]],
+        [[0.9, 0.3, 0.45], [0.98, 0.9, 0.75], [0.45, 0.7, 0.75], [0.95, 0.6, 0.3], [0.35, 0.15, 0.4]],
+        [[0.85, 0.85, 0.8], [0.12, 0.3, 0.6], [0.85, 0.85, 0.8], [0.8, 0.15, 0.1], [0.95, 0.7, 0.1]],
+        [[0.35, 0.05, 0.05], [0.85, 0.55, 0.1], [0.1, 0.1, 0.12], [0.9, 0.8, 0.55], [0.6, 0.2, 0.05]],
+        [[0.05, 0.35, 0.3], [0.75, 0.85, 0.3], [0.95, 0.8, 0.3], [0.1, 0.25, 0.15], [0.98, 0.95, 0.85]],
+        [[0.7, 0.4, 0.85], [0.3, 0.7, 0.95], [0.95, 0.9, 0.4], [0.95, 0.45, 0.45], [0.95, 0.95, 0.95]]
+      ];
+      PALETTE_TEX = paletteTexture();
+      VERT4 = /* glsl */
+      `
+${VCOMMON}
+attribute vec2 aGU;
+attribute float aS;
+#ifdef FLEET
+attribute vec4 aBal;   // palette, pattern, burner, seed
+attribute vec4 aBal2;  // deflate, unused...
+varying vec4 vBal;
+varying vec3 vBurnerW;
+#endif
+uniform float uBreath, uDent, uRipple, uBurn, uLying, uGroundY, uInflate;
+uniform vec3 uDentDir;   // local-space horizontal direction the wind comes from
+uniform float uSkirt;
+varying vec3 vWorld, vN, vLocal;
+varying vec2 vGU;
+varying float vS;
+#ifdef DEPTH_PASS
+varying float vDepthAlpha;
+#endif
+void main(){
+  vec3 p = position;
+  vec3 n = normal;
+  float s = aS;
+  float t = uTime;
+  float breath = uBreath, dent = uDent, ripple = uRipple, burn = uBurn;
+  float lying = uLying, groundY = uGroundY, infl = uInflate;
+  vec3 dentDir = uDentDir;
+  float seed = 0.;
+#ifdef FLEET
+  vBal = aBal;
+  burn = aBal.z; seed = aBal.w;
+  breath = 0.006 * sin(t * 0.7 + seed * 40.) + 0.012 * burn;
+  ripple = 0.05 + 0.04 * sin(t * 0.3 + seed * 9.);
+  dent = 0.15 * max(0., sin(t * 0.21 + seed * 31.)) ;
+  dentDir = normalize(vec3(cos(seed * 50.), 0., sin(seed * 50.)));
+  lying = aBal2.x; groundY = aBal2.y; infl = aBal2.z;
+#endif
+  vec2 hr = p.xz;
+  float rr = length(hr);
+  vec3 radial = rr > 1e-4 ? vec3(p.x / rr, 0., p.z / rr) : vec3(0.);
+  float th = atan(p.z, p.x);
+  // breathing: the whole envelope swells a touch with each blast
+  float sm = sin(3.14159 * clamp(s * 1.1, 0., 1.));
+  p += n * (breath * 8.0 * sm);
+  // travelling ripples across loose fabric, stronger low on the envelope
+  float loose = (1. - smoothstep(0.15, 0.75, s)) * 0.8 + 0.2;
+  float w1 = sin(th * 3. + s * 14. - t * 2.3 + seed) * sin(th * 2. - s * 9. + t * 1.7);
+  float w2 = sin(th * 7. + s * 21. + t * 3.1 + seed * 3.);
+  p += n * ripple * loose * (w1 * 0.7 + w2 * 0.3);
+  // wind shear dent on the windward side
+  float face = max(0., dot(radial, dentDir));
+  float dm = pow(face, 3.) * smoothstep(0.1, 0.4, s) * smoothstep(0.95, 0.6, s);
+  p -= radial * dent * 2.6 * dm;
+  // skirt flutters
+  if (s < 0.) p += radial * (0.06 * sin(th * 5. + t * 6. + seed) + 0.04 * sin(th * 11. - t * 9.)) * uSkirt * (-s / 0.06);
+  // partly inflated fabric: slack folds and wrinkles
+  if (infl < 0.999) {
+    float wr = 1. - infl;
+    p -= n * wr * (0.9 + 0.8 * sin(th * 10. + s * 25. + seed * 7.) * sin(s * 13. + th * 3.)) * sm * 2.2;
+    p.y *= 1. - wr * 0.25;
+  }
+#ifdef FLEET
+  vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.);
+  vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * n);
+  vBurnerW = (modelMatrix * instanceMatrix * vec4(0., -2.3, 0., 1.)).xyz;
+#else
+  vec4 wp = modelMatrix * vec4(p, 1.);
+  vN = normalize(mat3(modelMatrix) * n);
+#endif
+  // envelope lying on the field: fabric settles on the ground
+  if (lying > 0.01) {
+    float gy = groundY + 0.15 + 0.12 * sin(p.x * 1.7 + seed * 5.) * sin(p.z * 1.3);
+    wp.y = max(wp.y, gy);
+  }
+  vWorld = wp.xyz; vLocal = p; vGU = aGU; vS = s;
+#ifdef DEPTH_PASS
+  vDepthAlpha = 1.;
+#endif
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}
+`;
+      FRAG6 = /* glsl */
+      `
+${COMMON}
+uniform sampler2D uPal;
+uniform float uPalette, uPattern, uBurn, uFlameI;
+uniform vec3 uBurnerPos;
+#ifdef FLEET
+varying vec4 vBal;
+varying vec3 vBurnerW;
+#endif
+varying vec3 vWorld, vN, vLocal;
+varying vec2 vGU;
+varying float vS;
+vec3 pal(float p, int i){ return texelFetch(uPal, ivec2(i, int(p)), 0).rgb; }
+
+// returns colour index 0..4 for a gore/height location
+int patternIndex(float pat, float g, float u, float s){
+  int gi = int(g);
+  float gf = g;
+  if (pat < 0.5) {
+    // hero: saffron crown, chevron band, alternating gores below, plum mouth
+    if (s > 0.86) return 1;
+    float chev = abs(u - 0.5) * 0.10;
+    if (s > 0.62 + chev && s < 0.70 + chev) return 3;
+    if (s > 0.70 + chev) return (gi % 2 == 0) ? 0 : 2;
+    if (s < 0.14) return 4;
+    if (s > 0.55 + chev) return 1;
+    return (gi % 4 == 0) ? 2 : ((gi % 2 == 0) ? 0 : 3);
+  }
+  if (pat < 1.5) return gi % 2 == 0 ? 0 : 1;                                   // alternating gores
+  if (pat < 2.5) return int(mod(floor(s * 9.), 4.));                           // horizontal bands
+  if (pat < 3.5) { float z = abs(fract(gf * 0.5) - 0.5) * 0.25; return int(mod(floor((s + z) * 7.), 3.)); } // zigzag
+  if (pat < 4.5) { float dd = abs(fract(gf) - 0.5) + abs(fract(s * 10.) - 0.5); return dd < 0.5 ? (gi % 2 == 0 ? 0 : 1) : 2; } // harlequin
+  if (pat < 5.5) { return s > 0.8 ? 1 : (int(mod(gf * 2., 3.)) ); }            // sunburst rays
+  if (pat < 6.5) { return int(mod(gf / 4. + floor(s * 3.), 5.)); }           // patchwork quadrants
+  return s > 0.5 ? (gi % 3 == 0 ? 2 : 0) : (gi % 2 == 0 ? 3 : 4);               // split
+}
+
+void main(){
+  vec3 P = vWorld;
+  if (P.y < uClipY) discard;
+  vec3 V = normalize(cameraPosition - P);
+  vec3 N = normalize(vN);
+  bool inside = !gl_FrontFacing;
+  float palette = uPalette, pattern = uPattern, burn = uBurn;
+#ifdef FLEET
+  palette = vBal.x; pattern = vBal.y; burn = vBal.z;
+#endif
+  float g = floor(vGU.x), u = fract(vGU.x);
+  float s = vS;
+  bool skirt = vGU.y > 0.5;
+  int ci = patternIndex(pattern, g, u, s);
+  vec3 fab = pal(palette, ci);
+  if (skirt) fab = vec3(0.12, 0.11, 0.10);
+  // crown parachute vent: lighter panel with its own seams
+  float vent = smoothstep(0.955, 0.965, s);
+  fab = mix(fab, pal(palette, 3) * 0.9, vent);
+
+  // seams: vertical at gore edges (load tapes) and horizontal panel seams
+  float goreW = 2.0 * 3.14159 * max(length(vLocal.xz), 0.5) / 20.;
+  float du = min(u, 1. - u) * goreW;
+  float tape = 1. - smoothstep(0.025, 0.045, du);
+  float pan = fract(s * 14.);
+  float dp = min(pan, 1. - pan) * 21.8 / 14.;
+  float pseam = 1. - smoothstep(0.008, 0.02, dp);
+  float fine = 1. - smoothstep(0.004, 0.012, abs(fract(u * 2.) - 0.5) * goreW * 0.5);
+  vec3 tapeC = vec3(0.78, 0.70, 0.55);
+  vec3 alb = mix(fab, tapeC, tape * 0.85);
+  alb *= 1. - pseam * 0.35 - fine * 0.12;
+  // tapes are raised: bend the normal across them
+  vec3 tang = normalize(vec3(-vLocal.z, 0., vLocal.x));
+  float side = (u < 0.5 ? 1. : -1.);
+  N = normalize(N + tang * side * tape * 0.35);
+  // nylon sheen and soft weave
+  float weave = texture(uNoise2D, vec2(g + u, s * 20.) * vec2(0.37, 1.3)).g;
+  alb *= 0.94 + 0.12 * weave;
+
+  vec3 L = uKeyDir;
+  float sh = keyShadow(P, N);
+  // fabric translucency: thin gores glow when the light is behind them, seams and tapes stay dark
+  float thin = (1. - tape * 0.85) * (1. - pseam * 0.6) * (skirt ? 0.15 : 1.);
+  float back = sat(dot(-V, L));
+  float ndl = dot(inside ? -N : N, L);
+  vec3 col;
+  // burner light from inside (r^2 falloff to the fabric)
+#ifdef FLEET
+  vec3 toB = vBurnerW - P;
+#else
+  vec3 toB = uBurnerPos - P;
+#endif
+  float bd = length(toB);
+  vec3 flame = vec3(1.0, 0.55, 0.22) * burn * uFlameI;
+  float bfall = 1. / (1. + bd * bd * 0.012);
+  if (!inside) {
+    Surf sf; sf.albedo = alb; sf.N = N; sf.rough = 0.55; sf.spec = 0.35; sf.ao = 1.; sf.wrap = 0.25; sf.sss = 0.;
+    col = shadeSurf(sf, P, V, sh);
+    // sunlight passing through two layers of fabric toward the viewer
+    float through = sat(-ndl) * mix(0.25, 1., back * back) ;
+    col += uKeyColor * fab * fab * through * thin * 1.25 * keyHorizon(P) * cloudShadow(P);
+    // glow of the burner through the fabric
+    col += flame * fab * thin * bfall * 1.6 * (0.4 + 0.6 * (1. - s));
+  } else {
+    // interior: every sunlit panel glows in its own colour; seams draw dark lines across the dome
+    float sunlitPanel = sat(ndl * 1.2 + 0.25);
+    vec3 Lin = uKeyColor * fab * thin * sunlitPanel * 1.1 * keyHorizon(P) * cloudShadow(P);
+    Lin += ambCube(-N) * fab * thin * 0.9;
+    Lin += flame * (alb * 0.9 + fab * thin * 0.4) * bfall * 2.2;
+    col = Lin;
+  }
   col = applyHaze(col, P);
   gl_FragColor = vec4(col, 1.);
 }
@@ -26800,9 +27799,9 @@ void main(){
   function fleetBasket() {
     const parts = [];
     const L = 2.6, W = 1.7, H = 1.15;
-    const box = new BoxGeometry(L, H, W, 1, 1, 1);
-    box.translate(0, H / 2, 0);
-    parts.push(tag(box, 0, [1, 1, 1], (x, y, z) => [x + z * 1.3, y]));
+    const box2 = new BoxGeometry(L, H, W, 1, 1, 1);
+    box2.translate(0, H / 2, 0);
+    parts.push(tag(box2, 0, [1, 1, 1], (x, y, z) => [x + z * 1.3, y]));
     const rim = new BoxGeometry(L + 0.08, 0.1, W + 0.08);
     rim.translate(0, H, 0);
     parts.push(tag(rim, 1));
@@ -28042,6 +29041,7 @@ void main(){
       init_volumetrics();
       init_rocks();
       init_landmarks();
+      init_village();
       init_hero();
       init_fleet();
       init_crew();
@@ -28099,6 +29099,8 @@ void main(){
         scene2.add(rocks.group);
         const landmarks = new Landmarks(scene2, data, facades);
         rocks.addCollider(landmarks.castle);
+        const village = new Village(scene2, data, rocks);
+        G.village = village;
         G.rocks = rocks;
         setProgress(0.68);
         await tick2();
@@ -28149,6 +29151,16 @@ void main(){
           if (f) cams.fixed = (cam2) => {
             cam2.position.set(f.x + f.nx * dist + f.tx * dist * 0.3, f.floorY + up, f.z + f.nz * dist + f.tz * dist * 0.3);
             cam2.lookAt(f.x, f.floorY + f.H * 0.4, f.z);
+          };
+          else if (dbg.at === "bridge") cams.fixed = (cam2) => {
+            const b = village.bridge;
+            cam2.position.set(b.x + Math.cos(b.ang) * 70 + 20, 22, b.z + Math.sin(b.ang) * 70);
+            cam2.lookAt(b.x, 6, b.z);
+          };
+          else if (dbg.at === "village") cams.fixed = (cam2) => {
+            const c = landmarks.castle;
+            cam2.position.set(c.x + 260, c.y + 70, c.z + 180);
+            cam2.lookAt(c.x + 60, c.y - 10, c.z + 30);
           };
           else if (dbg.at === "castle") cams.fixed = (cam2) => {
             const c = landmarks.castle;
