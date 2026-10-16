@@ -131,7 +131,8 @@ async function boot() {
   let pr = Math.min(window.devicePixelRatio || 1, 2);
   // start from a pixel budget that suits the GPU, then the governor below adapts every half second
   const budget = { high: 3.7e6, medium: 1.6e6, lite: 0.22e6 }[tier] || 1.6e6;
-  const floorScale = tier === 'lite' ? 0.12 : 0.3;
+  const floorScale = tier === 'lite' ? 0.2 : 0.3;
+  if (tier === 'lite') pipe.post.comp.uniforms.uGrain.value = 0;
   const fitScale = () => Math.max(floorScale, Math.min(1, Math.sqrt(budget / (window.innerWidth * window.innerHeight * pr * pr))));
   pipe.scale = fitScale();
   const resize = () => {

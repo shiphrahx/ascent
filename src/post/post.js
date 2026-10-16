@@ -134,7 +134,7 @@ export class Post {
     this.comp = fsMaterial(COMPOSITE, {
       tScene: { value: null }, tBloom: { value: null }, uRes: { value: new THREE.Vector2() },
       uExposure: { value: 1 }, uBloom: { value: 1 }, uTime: { value: 0 }, uSat: { value: 1 }, uCon: { value: 1 },
-      uVignette: { value: 0.32 }, uGrain: { value: 0.012 }, uFade: { value: 0 }, uFadeColor: { value: new THREE.Color(0.75, 0.78, 0.84) },
+      uVignette: { value: 0.32 }, uGrain: { value: 0.005 }, uFade: { value: 0 }, uFadeColor: { value: new THREE.Color(0.75, 0.78, 0.84) },
       uShadowTint: { value: new THREE.Vector3() }, uHighTint: { value: new THREE.Vector3(1, 1, 1) },
       uHeat: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uHeatUp: { value: [new THREE.Vector2(0, 1), new THREE.Vector2(0, 1)] },
     });

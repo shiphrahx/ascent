@@ -82,6 +82,14 @@ export class Fleet {
     }
     // spread the flyers over the whole region at varied heights
     for (let i = 0; i < FLYERS; i++) this.spawn(this.items[i], true);
+    // the dawn mass launch: a dozen balloons already up and climbing around the launch field
+    for (let i = 0; i < 12; i++) {
+      const it = this.items[i];
+      const x = SITES.launch.x - 450 + rng() * 1100, z = SITES.launch.z - 350 + rng() * 650;
+      const g = this.data.height(x, z);
+      it.p.set(x, g + 30 + rng() * 200, z);
+      it.target = it.p.y + 60 + rng() * 200; it.x = 4 + rng() * 6;
+    }
     // launch field slots
     this.slots = [];
     for (let k = 0; k < LAUNCH; k++) {
@@ -89,7 +97,11 @@ export class Fleet {
       const x = SITES.launch.x - 60 + Math.cos(a) * 85 - k * 18, z = SITES.launch.z + Math.sin(a) * 85 - 30 + k * 22;
       this.slots.push({ x, z, dir: 0.4 + k * 0.25, busy: null });
     }
-    for (let k = 0; k < LAUNCH; k++) this.toLaunch(this.items[FLYERS + k], k, rng() * 60);
+    // the launch slots start at different stages: one standing, one rising, two still lying
+    for (let k = 0; k < LAUNCH; k++) this.toLaunch(this.items[FLYERS + k], k, [0, 0, 20, 45][k]);
+    { const a = this.items[FLYERS], b = this.items[FLYERS + 1];
+      a.mode = 'standing'; a.modeT = 2; a.tilt = 1; a.inflate = 1;
+      b.mode = 'rising'; b.modeT = 4; b.tilt = 0.45; b.inflate = 1; }
 
     // meshes
     this.envMat = envelopeMaterial(true);
@@ -140,7 +152,7 @@ export class Fleet {
   toLaunch(it, k, t0 = 0) {
     const sl = this.slots[k];
     sl.busy = it;
-    it.slot = k; it.mode = 'lying'; it.modeT = t0; it.inflate = 0.45;
+    it.slot = k; it.mode = 'lying'; it.modeT = t0; it.inflate = 0.45; it.tilt = 0;
     const g = this.data.height(sl.x, sl.z);
     it.p.set(sl.x, g, sl.z); it.v.set(0, 0, 0); it.x = 0; it.yaw = sl.dir;
   }
