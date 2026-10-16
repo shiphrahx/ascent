@@ -92,16 +92,13 @@ float terrainShadow(vec3 P){
 // cheaper single-tap version for volumetrics and particles
 float cascadeShadowFast(vec3 P){
   float r = 1.;
-  vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-  vec3 c1 = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-  vec3 c2 = (uShadowM2 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-  float s0 = step(c0.z - uShadowK.x * 0.3, textureLod(uShadow0, c0.xy, 0.).r);
-  float s1 = step(c1.z - uShadowK.y * 1.5, textureLod(uShadow1, c1.xy, 0.).r);
-  float s2 = step(c2.z - uShadowK.z * 4., textureLod(uShadow2, c2.xy, 0.).r);
-  bool in0 = all(greaterThan(c0.xy, vec2(0.003))) && all(lessThan(c0.xy, vec2(0.997))) && c0.z < 1.;
-  bool in1 = all(greaterThan(c1.xy, vec2(0.003))) && all(lessThan(c1.xy, vec2(0.997))) && c1.z < 1.;
-  bool in2 = all(greaterThan(c2.xy, vec2(0.003))) && all(lessThan(c2.xy, vec2(0.997))) && c2.z < 1.;
-  r = in0 ? s0 : (in1 ? s1 : (in2 ? s2 : 1.));
+  vec3 c = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.) {
+    r = step(c.z - uShadowK.y * 1.5, textureLod(uShadow1, c.xy, 0.).r);
+  } else {
+    c = (uShadowM2 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+    if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.) r = step(c.z - uShadowK.z * 4., textureLod(uShadow2, c.xy, 0.).r);
+  }
   return r;
 }
 float cloudDensity2D(vec2 xz){

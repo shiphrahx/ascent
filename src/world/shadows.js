@@ -42,8 +42,8 @@ export class Shadows {
     this.frame++;
     for (let i = 0; i < 3; i++) {
       const c = this.cascades[i];
-      // the far cascade only refreshes every other frame
-      if (i === 2 && (this.frame & 1)) continue;
+      // the wide cascades refresh on alternate frames; the basket detail one every frame
+      if (this.frame > 4 && ((i === 1 && (this.frame & 1)) || (i === 2 && !(this.frame & 1)))) continue;
       const cam = c.cam;
       const half = c.size;
       const back = i === 0 ? 400 : i === 1 ? 3000 : 9000;

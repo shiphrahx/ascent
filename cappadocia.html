@@ -22974,16 +22974,13 @@ float terrainShadow(vec3 P){
 // cheaper single-tap version for volumetrics and particles
 float cascadeShadowFast(vec3 P){
   float r = 1.;
-  vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-  vec3 c1 = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-  vec3 c2 = (uShadowM2 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-  float s0 = step(c0.z - uShadowK.x * 0.3, textureLod(uShadow0, c0.xy, 0.).r);
-  float s1 = step(c1.z - uShadowK.y * 1.5, textureLod(uShadow1, c1.xy, 0.).r);
-  float s2 = step(c2.z - uShadowK.z * 4., textureLod(uShadow2, c2.xy, 0.).r);
-  bool in0 = all(greaterThan(c0.xy, vec2(0.003))) && all(lessThan(c0.xy, vec2(0.997))) && c0.z < 1.;
-  bool in1 = all(greaterThan(c1.xy, vec2(0.003))) && all(lessThan(c1.xy, vec2(0.997))) && c1.z < 1.;
-  bool in2 = all(greaterThan(c2.xy, vec2(0.003))) && all(lessThan(c2.xy, vec2(0.997))) && c2.z < 1.;
-  r = in0 ? s0 : (in1 ? s1 : (in2 ? s2 : 1.));
+  vec3 c = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.) {
+    r = step(c.z - uShadowK.y * 1.5, textureLod(uShadow1, c.xy, 0.).r);
+  } else {
+    c = (uShadowM2 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+    if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.) r = step(c.z - uShadowK.z * 4., textureLod(uShadow2, c.xy, 0.).r);
+  }
   return r;
 }
 float cloudDensity2D(vec2 xz){
@@ -24253,7 +24250,7 @@ void main(){
           this.frame++;
           for (let i = 0; i < 3; i++) {
             const c = this.cascades[i];
-            if (i === 2 && this.frame & 1) continue;
+            if (this.frame > 4 && (i === 1 && this.frame & 1 || i === 2 && !(this.frame & 1))) continue;
             const cam2 = c.cam;
             const half = c.size;
             const back = i === 0 ? 400 : i === 1 ? 3e3 : 9e3;
@@ -24785,7 +24782,7 @@ void main(){
 
   // --- near media: fog, snow haze, faint air for shafts ---
   float Dn = min(D, 6000.);
-  const int N = 30;
+  const int N = 22;
   float prev = 0.;
   float glory = 0.;
   float airBase = 0.00006 + uStorm * 0.0009 + uDiamond * 0.00003;
@@ -24804,7 +24801,9 @@ void main(){
     }
     float sigma = fog * 0.022 + air;
     if (sigma < 1e-7) continue;
-    float sh = keyHorizon(p) * terrainShadow(p) * cascadeShadowFast(p) * cloudShadow(p);
+    // shafts only matter near the camera or inside the fog; skip the shadow maps elsewhere
+    float sh = keyHorizon(p) * terrainShadow(p) * cloudShadow(p);
+    if (t < 2500. || fog > 0.01) sh *= cascadeShadowFast(p);
     // light reaching into the fog bank is dimmed by fog above
     float above = max(0., uFogTop - p.y) / max(L.y, 0.06);
     float Tl = exp(-above * 0.022 * 0.55 * uValleyFog * 0.6);
@@ -24860,7 +24859,7 @@ void main(){
     if (C.y > base && C.y < top) t0 = 0.;
     t1 = min(t1, min(D, 42000.));
     if (t1 > t0 && T > 0.01) {
-      const int M = 26;
+      const int M = 20;
       float len = min(t1 - t0, 9000.);
       float stp = len / float(M);
       float t = t0 + stp * jit;
@@ -24872,9 +24871,9 @@ void main(){
           float sigma = d * 0.018;
           // light march toward the key light
           float od = 0.;
-          for (int k = 0; k < 4; k++) {
-            vec3 q = p + L * (60. + 150. * float(k) * float(k));
-            od += cloudDensity(q) * (120. + 140. * float(k));
+          for (int k = 0; k < 3; k++) {
+            vec3 q = p + L * (70. + 220. * float(k) * float(k));
+            od += cloudDensity(q) * (150. + 220. * float(k));
           }
           float Tl = exp(-od * 0.018) * 0.85 + exp(-od * 0.004) * 0.15;
           float powder = 1. - exp(-sigma * 400.);
@@ -26815,7 +26814,8 @@ void main(){
         }
         setSize(W, H) {
           if (this.rt) this.rt.dispose();
-          this.rt = makeRT(Math.max(2, Math.floor(W / 2)), Math.max(2, Math.floor(H / 2)), { depth: true });
+          this.rt = makeRT(Math.max(2, Math.floor(W / 3)), Math.max(2, Math.floor(H / 3)), { depth: true });
+          this.frame = 0;
           this.mat.uniforms.tReflect.value = this.rt.texture;
         }
         // mirrored camera render; skipped when the river is out of view
@@ -26826,6 +26826,8 @@ void main(){
           this.mesh.visible = this.visible;
           this.mat.uniforms.uIce.value = Math.min(1, st.frost * 0.9 + st.snow * 0.6 + st.night * 0.5 + 0.15);
           if (!this.visible) return;
+          if (this.frame++ & 1 && this.rendered) return;
+          this.rendered = true;
           const y = WORLD.riverY;
           const cam2 = camera, rc = this.rcam;
           this._v.copy(cam2.position);
@@ -30821,12 +30823,13 @@ void main(){
           vol.setSize(W, H);
           river.setSize(W, H);
         };
-        pipe.hooks.volumetrics = (rt) => vol.render(rt, camera);
+        pipe.hooks.volumetrics = dbg.novol ? null : (rt) => vol.render(rt, camera);
         pipe.hooks.transparent = true;
         let exposure = 1;
         setProgress(0.7);
         await tick2();
         let pr = Math.min(window.devicePixelRatio || 1, 2);
+        pipe.scale = pr > 1.4 ? 0.8 : 1;
         const resize = () => {
           const w = window.innerWidth, h = window.innerHeight;
           renderer.setPixelRatio(pr);
@@ -30916,10 +30919,28 @@ void main(){
             sky.cycleT = cycleForHour(h);
           },
           frames: 0,
-          extra: () => ({ exposure: +exposure.toFixed(3), up: probe.up.toArray().map((v) => +v.toFixed(4)), key: sky.keyColor.toArray().map((v) => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) })
+          extra: () => ({ fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map((v) => +v.toFixed(4)), key: sky.keyColor.toArray().map((v) => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) })
         };
+        const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16 };
         function frame() {
-          const dt = Math.min(0.05, clock.getDelta());
+          const rawDt = clock.getDelta();
+          const dt = Math.min(0.05, rawDt);
+          perf.acc += rawDt;
+          perf.n++;
+          perf.t += rawDt;
+          if (perf.t > 2) {
+            perf.ms = perf.acc / perf.n * 1e3;
+            perf.fps = 1e3 / perf.ms;
+            if (window.__dbg.frames > 120 && !dbg.fixres) {
+              const old = pipe.scale;
+              if (perf.ms > 21 && pipe.scale > 0.6) pipe.scale = Math.max(0.6, pipe.scale - 0.08);
+              else if (perf.ms < 13.5 && pipe.scale < 1) pipe.scale = Math.min(1, pipe.scale + 0.05);
+              if (old !== pipe.scale) pipe.setSize(window.innerWidth, window.innerHeight, pr);
+            }
+            perf.acc = 0;
+            perf.n = 0;
+            perf.t = 0;
+          }
           time += dt;
           const freeze = !!dbg.freeze;
           const st = sky.update(freeze ? 0 : dt, input.fast ? 14 : 1);
@@ -31023,9 +31044,9 @@ void main(){
           farC.copy(viewC);
           rocks.update(camera);
           veg.update(camera);
-          shadows.render(scene2, focus, viewC, farC);
+          if (!dbg.noshadow || window.__dbg.frames < 3) shadows.render(scene2, focus, viewC, farC);
           terrain.update(camera);
-          river.render(scene2, camera, st);
+          if (!dbg.norefl) river.render(scene2, camera, st);
           pipe.render(scene2, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
           window.__dbg.frames++;
           requestAnimationFrame(frame);

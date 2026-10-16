@@ -75,7 +75,7 @@ void main(){
 
   // --- near media: fog, snow haze, faint air for shafts ---
   float Dn = min(D, 6000.);
-  const int N = 30;
+  const int N = 22;
   float prev = 0.;
   float glory = 0.;
   float airBase = 0.00006 + uStorm * 0.0009 + uDiamond * 0.00003;
@@ -94,7 +94,9 @@ void main(){
     }
     float sigma = fog * 0.022 + air;
     if (sigma < 1e-7) continue;
-    float sh = keyHorizon(p) * terrainShadow(p) * cascadeShadowFast(p) * cloudShadow(p);
+    // shafts only matter near the camera or inside the fog; skip the shadow maps elsewhere
+    float sh = keyHorizon(p) * terrainShadow(p) * cloudShadow(p);
+    if (t < 2500. || fog > 0.01) sh *= cascadeShadowFast(p);
     // light reaching into the fog bank is dimmed by fog above
     float above = max(0., uFogTop - p.y) / max(L.y, 0.06);
     float Tl = exp(-above * 0.022 * 0.55 * uValleyFog * 0.6);
@@ -150,7 +152,7 @@ void main(){
     if (C.y > base && C.y < top) t0 = 0.;
     t1 = min(t1, min(D, 42000.));
     if (t1 > t0 && T > 0.01) {
-      const int M = 26;
+      const int M = 20;
       float len = min(t1 - t0, 9000.);
       float stp = len / float(M);
       float t = t0 + stp * jit;
@@ -162,9 +164,9 @@ void main(){
           float sigma = d * 0.018;
           // light march toward the key light
           float od = 0.;
-          for (int k = 0; k < 4; k++) {
-            vec3 q = p + L * (60. + 150. * float(k) * float(k));
-            od += cloudDensity(q) * (120. + 140. * float(k));
+          for (int k = 0; k < 3; k++) {
+            vec3 q = p + L * (70. + 220. * float(k) * float(k));
+            od += cloudDensity(q) * (150. + 220. * float(k));
           }
           float Tl = exp(-od * 0.018) * 0.85 + exp(-od * 0.004) * 0.15;
           float powder = 1. - exp(-sigma * 400.);

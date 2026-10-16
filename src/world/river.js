@@ -131,7 +131,8 @@ export class River {
   }
   setSize(W, H) {
     if (this.rt) this.rt.dispose();
-    this.rt = makeRT(Math.max(2, Math.floor(W / 2)), Math.max(2, Math.floor(H / 2)), { depth: true });
+    this.rt = makeRT(Math.max(2, Math.floor(W / 3)), Math.max(2, Math.floor(H / 3)), { depth: true });
+    this.frame = 0;
     this.mat.uniforms.tReflect.value = this.rt.texture;
   }
   // mirrored camera render; skipped when the river is out of view
@@ -143,6 +144,9 @@ export class River {
     // ice is thickest after cold nights and through the storm, thins in the afternoon sun
     this.mat.uniforms.uIce.value = Math.min(1, st.frost * 0.9 + st.snow * 0.6 + st.night * 0.5 + 0.15);
     if (!this.visible) return;
+    // the reflection only needs refreshing every other frame
+    if ((this.frame++ & 1) && this.rendered) return;
+    this.rendered = true;
     const y = WORLD.riverY;
     const cam = camera, rc = this.rcam;
     this._v.copy(cam.position); this._v.y = 2 * y - this._v.y;

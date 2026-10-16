@@ -15,7 +15,7 @@ const W = +(process.env.W || 1600), H = +(process.env.H || 900), DPR = +(process
 const browser = await puppeteer.launch({
   executablePath: EDGE,
   headless: process.env.HEADFUL ? false : 'new',
-  args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', '--disable-features=CalculateNativeWinOcclusion', `--window-size=${W},${H}`, '--autoplay-policy=no-user-gesture-required'],
+  args: ['--use-angle=d3d11', ...(process.env.HP ? ['--force_high_performance_gpu'] : []), '--enable-gpu', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', '--disable-features=CalculateNativeWinOcclusion', `--window-size=${W},${H}`, '--autoplay-policy=no-user-gesture-required'],
   defaultViewport: { width: W, height: H, deviceScaleFactor: DPR },
 });
 for (const job of jobs) {

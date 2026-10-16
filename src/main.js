@@ -112,12 +112,14 @@ async function boot() {
   const probe = new Probe(renderer);
   const vol = new Volumetrics(renderer);
   pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
-  pipe.hooks.volumetrics = rt => vol.render(rt, camera);
+  pipe.hooks.volumetrics = dbg.novol ? null : rt => vol.render(rt, camera);
   pipe.hooks.transparent = true;
   let exposure = 1;
   setProgress(0.7); await tick();
 
   let pr = Math.min(window.devicePixelRatio || 1, 2);
+  // high-density displays start a little under native and adapt from there
+  pipe.scale = pr > 1.4 ? 0.8 : 1;
   const resize = () => {
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setPixelRatio(pr);
@@ -161,10 +163,24 @@ async function boot() {
   const look = {};
   const loop = { phase: null, fade: 0 };
   window.__dbg = { G, U, sky, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
-    extra: () => ({ exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
+    extra: () => ({ fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
+  const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16 };
   function frame() {
-    const dt = Math.min(0.05, clock.getDelta());
+    const rawDt = clock.getDelta();
+    const dt = Math.min(0.05, rawDt);
+    // adaptive resolution: hold ~50+ fps without visibly dropping quality
+    perf.acc += rawDt; perf.n++; perf.t += rawDt;
+    if (perf.t > 2) {
+      perf.ms = perf.acc / perf.n * 1000; perf.fps = 1000 / perf.ms;
+      if (window.__dbg.frames > 120 && !dbg.fixres) {
+        const old = pipe.scale;
+        if (perf.ms > 21 && pipe.scale > 0.6) pipe.scale = Math.max(0.6, pipe.scale - 0.08);
+        else if (perf.ms < 13.5 && pipe.scale < 1) pipe.scale = Math.min(1, pipe.scale + 0.05);
+        if (old !== pipe.scale) pipe.setSize(window.innerWidth, window.innerHeight, pr);
+      }
+      perf.acc = 0; perf.n = 0; perf.t = 0;
+    }
     time += dt;
     const freeze = !!dbg.freeze;
     const st = sky.update(freeze ? 0 : dt, input.fast ? 14 : 1);
@@ -254,9 +270,9 @@ async function boot() {
     farC.copy(viewC);
     rocks.update(camera);
     veg.update(camera);
-    shadows.render(scene, focus, viewC, farC);
+    if (!dbg.noshadow || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
     terrain.update(camera);
-    river.render(scene, camera, st);
+    if (!dbg.norefl) river.render(scene, camera, st);
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
     window.__dbg.frames++;
     requestAnimationFrame(frame);
