@@ -84,7 +84,8 @@ export class Hero {
     eu.uRipple.value = 0.03 + 0.05 * F.gust + Math.min(0.08, F.relWind.length() * 0.012);
     this._v.copy(F.dentDir).applyQuaternion(this._q.copy(this.env.quaternion).invert());
     eu.uDentDir.value.copy(this._v).setY(0).normalize();
-    eu.uDeflate.value = this.deflate;
+    eu.uLying.value = this.deflate > 0 ? 1 : 0; eu.uInflate.value = 1 - this.deflate * 0.7;
+    eu.uGroundY.value = this.flight.groundAt(F.p.x, F.p.z);
     this.burnerWorld.copy(this.rig.burners[0]).lerp(this.rig.burners[1], 0.5).applyMatrix4(this.basket.matrixWorld);
     this.burnerWorld.y += 1.2;
     eu.uBurnerPos.value.copy(this.burnerWorld);

@@ -14,6 +14,7 @@ import { Probe } from './world/probe.js';
 import { Volumetrics } from './fx/volumetrics.js';
 import { Rocks } from './world/rocks.js';
 import { Hero } from './balloon/hero.js';
+import { Fleet } from './balloon/fleet.js';
 import { Input } from './core/input.js';
 import { Cameras } from './core/cameras.js';
 
@@ -72,8 +73,11 @@ async function boot() {
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   hero.flight.wind = wind;
+  const fleet = new Fleet(scene, data, rocks, wind);
+  fleet.hero = hero; hero.flight.fleet = fleet; G.fleet = fleet;
   const input = new Input(canvas);
   const cams = new Cameras(camera, hero, data, rocks, input);
+  cams.fleet = fleet;
   G.cams = cams;
   input.onCamera = m => cams.setMode(m);
   const pipe = new Pipeline(renderer);
@@ -105,7 +109,7 @@ async function boot() {
   if (dbg.sim) {
     const n = Math.floor(parseFloat(dbg.sim) / 0.1);
     const st0 = sky.update(0, 1);
-    for (let i = 0; i < n; i++) { const s = dbg.freeze ? st0 : sky.update(0.1, 1); wind.update(0.1, s); hero.update(0.1, i * 0.1, input, s); }
+    for (let i = 0; i < n; i++) { const s = dbg.freeze ? st0 : sky.update(0.1, 1); wind.update(0.1, s); hero.update(0.1, i * 0.1, input, s); fleet.update(0.1, i * 0.1, camera); }
     if (dbg.h !== undefined) sky.cycleT = cycleForHour(parseFloat(dbg.h));
   }
 
@@ -138,6 +142,7 @@ async function boot() {
     const fast = input.fast ? 14 : 1;
     hero.update(dt, time, input, st);
     cams.update(dt, time);
+    fleet.update(dt, time, camera);
 
     dome.update(sky, camera);
     probe.update(st.snow);

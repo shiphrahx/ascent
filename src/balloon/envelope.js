@@ -147,7 +147,7 @@ attribute vec4 aBal2;  // deflate, unused...
 varying vec4 vBal;
 varying vec3 vBurnerW;
 #endif
-uniform float uBreath, uDent, uRipple, uBurn, uDeflate;
+uniform float uBreath, uDent, uRipple, uBurn, uLying, uGroundY, uInflate;
 uniform vec3 uDentDir;   // local-space horizontal direction the wind comes from
 uniform float uSkirt;
 varying vec3 vWorld, vN, vLocal;
@@ -161,7 +161,8 @@ void main(){
   vec3 n = normal;
   float s = aS;
   float t = uTime;
-  float breath = uBreath, dent = uDent, ripple = uRipple, burn = uBurn, deflate = uDeflate;
+  float breath = uBreath, dent = uDent, ripple = uRipple, burn = uBurn;
+  float lying = uLying, groundY = uGroundY, infl = uInflate;
   vec3 dentDir = uDentDir;
   float seed = 0.;
 #ifdef FLEET
@@ -171,7 +172,7 @@ void main(){
   ripple = 0.05 + 0.04 * sin(t * 0.3 + seed * 9.);
   dent = 0.15 * max(0., sin(t * 0.21 + seed * 31.)) ;
   dentDir = normalize(vec3(cos(seed * 50.), 0., sin(seed * 50.)));
-  deflate = aBal2.x;
+  lying = aBal2.x; groundY = aBal2.y; infl = aBal2.z;
 #endif
   vec2 hr = p.xz;
   float rr = length(hr);
@@ -191,14 +192,11 @@ void main(){
   p -= radial * dent * 2.6 * dm;
   // skirt flutters
   if (s < 0.) p += radial * (0.06 * sin(th * 5. + t * 6. + seed) + 0.04 * sin(th * 11. - t * 9.)) * uSkirt * (-s / 0.06);
-  // deflation: crown folds over and settles on the ground downwind
-  if (deflate > 0.) {
-    float k = deflate;
-    float yy = p.y * (1. - 0.82 * k) ;
-    float side = p.x;
-    p.y = mix(p.y, max(0.2 - 4.6, yy * (0.35 + 0.65 * (1. - k)) + 0.4 * sin(th * 9. + s * 20.) * k), k);
-    p.x = mix(p.x, side * (1. + 0.35 * k) + s * 24. * k, k);
-    p.z *= 1. + 0.4 * k;
+  // partly inflated fabric: slack folds and wrinkles
+  if (infl < 0.999) {
+    float wr = 1. - infl;
+    p -= n * wr * (0.9 + 0.8 * sin(th * 10. + s * 25. + seed * 7.) * sin(s * 13. + th * 3.)) * sm * 2.2;
+    p.y *= 1. - wr * 0.25;
   }
 #ifdef FLEET
   vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.);
@@ -208,6 +206,11 @@ void main(){
   vec4 wp = modelMatrix * vec4(p, 1.);
   vN = normalize(mat3(modelMatrix) * n);
 #endif
+  // envelope lying on the field: fabric settles on the ground
+  if (lying > 0.01) {
+    float gy = groundY + 0.15 + 0.12 * sin(p.x * 1.7 + seed * 5.) * sin(p.z * 1.3);
+    wp.y = max(wp.y, gy);
+  }
   vWorld = wp.xyz; vLocal = p; vGU = aGU; vS = s;
 #ifdef DEPTH_PASS
   vDepthAlpha = 1.;
@@ -337,7 +340,7 @@ export function envelopeMaterial(fleet) {
     uniforms: {
       uPal: { value: PALETTE_TEX }, uPalette: { value: 0 }, uPattern: { value: 0 }, uBurn: { value: 0 }, uFlameI: { value: 6 },
       uBurnerPos: { value: new THREE.Vector3() }, uBreath: { value: 0 }, uDent: { value: 0 }, uRipple: { value: 0.04 },
-      uDentDir: { value: new THREE.Vector3(1, 0, 0) }, uSkirt: { value: 1 }, uDeflate: { value: 0 },
+      uDentDir: { value: new THREE.Vector3(1, 0, 0) }, uSkirt: { value: 1 }, uLying: { value: 0 }, uGroundY: { value: 0 }, uInflate: { value: 1 },
     },
   });
 }

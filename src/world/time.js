@@ -137,7 +137,7 @@ export class Sky {
     const ha = (h - 12) * 15 * DEG;
     const sunAlt = celestial(ha, DEC, this.sunDir);
     // a waning gibbous moon trails the anti-sun point, so it lights the night and lingers into pre-dawn
-    const moonAlt = celestial(ha + Math.PI - 0.42, 10.5 * DEG, this.moonDir);
+    const moonAlt = celestial(ha + Math.PI + 0.12, 10.5 * DEG, this.moonDir);
     s.sunElev = sunAlt; s.moonElev = moonAlt;
 
     // --- weather schedule ---

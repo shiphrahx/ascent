@@ -24923,7 +24923,9 @@ void main(){
         uRipple: { value: 0.04 },
         uDentDir: { value: new Vector3(1, 0, 0) },
         uSkirt: { value: 1 },
-        uDeflate: { value: 0 }
+        uLying: { value: 0 },
+        uGroundY: { value: 0 },
+        uInflate: { value: 1 }
       }
     });
   }
@@ -24967,7 +24969,7 @@ attribute vec4 aBal2;  // deflate, unused...
 varying vec4 vBal;
 varying vec3 vBurnerW;
 #endif
-uniform float uBreath, uDent, uRipple, uBurn, uDeflate;
+uniform float uBreath, uDent, uRipple, uBurn, uLying, uGroundY, uInflate;
 uniform vec3 uDentDir;   // local-space horizontal direction the wind comes from
 uniform float uSkirt;
 varying vec3 vWorld, vN, vLocal;
@@ -24981,7 +24983,8 @@ void main(){
   vec3 n = normal;
   float s = aS;
   float t = uTime;
-  float breath = uBreath, dent = uDent, ripple = uRipple, burn = uBurn, deflate = uDeflate;
+  float breath = uBreath, dent = uDent, ripple = uRipple, burn = uBurn;
+  float lying = uLying, groundY = uGroundY, infl = uInflate;
   vec3 dentDir = uDentDir;
   float seed = 0.;
 #ifdef FLEET
@@ -24991,7 +24994,7 @@ void main(){
   ripple = 0.05 + 0.04 * sin(t * 0.3 + seed * 9.);
   dent = 0.15 * max(0., sin(t * 0.21 + seed * 31.)) ;
   dentDir = normalize(vec3(cos(seed * 50.), 0., sin(seed * 50.)));
-  deflate = aBal2.x;
+  lying = aBal2.x; groundY = aBal2.y; infl = aBal2.z;
 #endif
   vec2 hr = p.xz;
   float rr = length(hr);
@@ -25011,14 +25014,11 @@ void main(){
   p -= radial * dent * 2.6 * dm;
   // skirt flutters
   if (s < 0.) p += radial * (0.06 * sin(th * 5. + t * 6. + seed) + 0.04 * sin(th * 11. - t * 9.)) * uSkirt * (-s / 0.06);
-  // deflation: crown folds over and settles on the ground downwind
-  if (deflate > 0.) {
-    float k = deflate;
-    float yy = p.y * (1. - 0.82 * k) ;
-    float side = p.x;
-    p.y = mix(p.y, max(0.2 - 4.6, yy * (0.35 + 0.65 * (1. - k)) + 0.4 * sin(th * 9. + s * 20.) * k), k);
-    p.x = mix(p.x, side * (1. + 0.35 * k) + s * 24. * k, k);
-    p.z *= 1. + 0.4 * k;
+  // partly inflated fabric: slack folds and wrinkles
+  if (infl < 0.999) {
+    float wr = 1. - infl;
+    p -= n * wr * (0.9 + 0.8 * sin(th * 10. + s * 25. + seed * 7.) * sin(s * 13. + th * 3.)) * sm * 2.2;
+    p.y *= 1. - wr * 0.25;
   }
 #ifdef FLEET
   vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.);
@@ -25028,6 +25028,11 @@ void main(){
   vec4 wp = modelMatrix * vec4(p, 1.);
   vN = normalize(mat3(modelMatrix) * n);
 #endif
+  // envelope lying on the field: fabric settles on the ground
+  if (lying > 0.01) {
+    float gy = groundY + 0.15 + 0.12 * sin(p.x * 1.7 + seed * 5.) * sin(p.z * 1.3);
+    wp.y = max(wp.y, gy);
+  }
   vWorld = wp.xyz; vLocal = p; vGU = aGU; vS = s;
 #ifdef DEPTH_PASS
   vDepthAlpha = 1.;
@@ -26228,7 +26233,9 @@ void main(){
           eu.uRipple.value = 0.03 + 0.05 * F.gust + Math.min(0.08, F.relWind.length() * 0.012);
           this._v.copy(F.dentDir).applyQuaternion(this._q.copy(this.env.quaternion).invert());
           eu.uDentDir.value.copy(this._v).setY(0).normalize();
-          eu.uDeflate.value = this.deflate;
+          eu.uLying.value = this.deflate > 0 ? 1 : 0;
+          eu.uInflate.value = 1 - this.deflate * 0.7;
+          eu.uGroundY.value = this.flight.groundAt(F.p.x, F.p.z);
           this.burnerWorld.copy(this.rig.burners[0]).lerp(this.rig.burners[1], 0.5).applyMatrix4(this.basket.matrixWorld);
           this.burnerWorld.y += 1.2;
           eu.uBurnerPos.value.copy(this.burnerWorld);
@@ -26266,6 +26273,412 @@ void main(){
         }
         get position() {
           return this.flight.p;
+        }
+      };
+    }
+  });
+
+  // src/balloon/fleet.js
+  function envWithSkirt(lod) {
+    const e = buildEnvelope(lod), s = buildSkirt(lod ? 1 : 0);
+    const g = mergeGeometries([e, s]);
+    g.boundingSphere = new Sphere(new Vector3(0, 10, 0), 15);
+    return g;
+  }
+  function fleetBasket() {
+    const parts = [];
+    const L = 2.6, W = 1.7, H = 1.15;
+    const box = new BoxGeometry(L, H, W, 1, 1, 1);
+    box.translate(0, H / 2, 0);
+    parts.push(tag(box, 0, [1, 1, 1], (x, y, z) => [x + z * 1.3, y]));
+    const rim = new BoxGeometry(L + 0.08, 0.1, W + 0.08);
+    rim.translate(0, H, 0);
+    parts.push(tag(rim, 1));
+    for (const [x, z] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
+      const u = new CylinderGeometry(0.05, 0.05, 1.35, 6);
+      u.translate(x * 0.75, H + 0.65, z * 0.45);
+      parts.push(tag(u, 8, [0.08, 0.08, 0.1]));
+    }
+    const fr = new BoxGeometry(1.6, 0.06, 1);
+    fr.translate(0, H + 1.35, 0);
+    parts.push(tag(fr, 2));
+    parts.push(tag(cyl(0.18, 0.2, 0.5, 10, 0, H + 1.38, 0), 2));
+    const cols = [[0.5, 0.1, 0.1], [0.1, 0.2, 0.4], [0.15, 0.3, 0.15], [0.4, 0.3, 0.1], [0.2, 0.2, 0.22], [0.45, 0.4, 0.35]];
+    let k = 0;
+    for (const x of [-0.85, -0.35, 0.35, 0.85]) for (const z of [-0.4, 0.4]) {
+      if (k * 7 % 3 === 0) {
+        k++;
+        continue;
+      }
+      const body = new CylinderGeometry(0.2, 0.22, 0.7, 8);
+      body.translate(x, H + 0.1, z);
+      parts.push(tag(body, 9, cols[k % cols.length]));
+      const head = new SphereGeometry(0.12, 8, 6);
+      head.translate(x, H + 0.6, z);
+      parts.push(tag(head, 10, [0.62, 0.42, 0.32]));
+      const hat = new SphereGeometry(0.125, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2);
+      hat.translate(x, H + 0.63, z);
+      parts.push(tag(hat, 14, cols[(k + 3) % cols.length]));
+      k++;
+    }
+    for (const [x, z] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
+      const a = new Vector3(x * 0.75, H + 1.38, z * 0.45), b = new Vector3(x * 1.55, 5, z * 1.55);
+      const d = b.clone().sub(a);
+      const c = new CylinderGeometry(0.012, 0.012, d.length(), 4, 1, true);
+      c.translate(0, d.length() / 2, 0);
+      c.applyQuaternion(new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), d.normalize()));
+      c.translate(a.x, a.y, a.z);
+      parts.push(tag(c, 2));
+    }
+    const g = merge(parts);
+    g.translate(0, -5, 0);
+    return g;
+  }
+  var FLYERS, LAUNCH, T_EQ2, B_RATE2, COOL2, LIFT_K2, DRAG_K2, Fleet;
+  var init_fleet = __esm({
+    "src/balloon/fleet.js"() {
+      init_three_module();
+      init_envelope();
+      init_props();
+      init_mat();
+      init_flame();
+      init_noise();
+      init_layout();
+      init_BufferGeometryUtils();
+      FLYERS = 34;
+      LAUNCH = 4;
+      T_EQ2 = 52;
+      B_RATE2 = 5.2;
+      COOL2 = 0.021;
+      LIFT_K2 = 0.034;
+      DRAG_K2 = 0.045;
+      Fleet = class {
+        constructor(scene2, data, rocks, wind) {
+          this.data = data;
+          this.rocks = rocks;
+          this.wind = wind;
+          const rng = mulberry32(99);
+          this.rng = rng;
+          this.items = [];
+          const N = FLYERS + LAUNCH;
+          for (let i = 0; i < N; i++) {
+            const it = {
+              p: new Vector3(),
+              v: new Vector3(),
+              x: 0,
+              s: 0.95 + rng() * 0.5,
+              pal: 1 + i % (PALETTES.length - 1),
+              pat: 1 + Math.floor(rng() * 7),
+              seed: rng(),
+              burn: 0,
+              flame: 0,
+              hold: 0,
+              cool: rng() * 10,
+              target: 100,
+              retarget: 0,
+              yaw: rng() * 6.28,
+              mode: "fly",
+              modeT: 0,
+              slot: -1,
+              tilt: 0,
+              inflate: 1,
+              lean: new Vector2()
+            };
+            this.items.push(it);
+          }
+          for (let i = 0; i < FLYERS; i++) this.spawn(this.items[i], true);
+          this.slots = [];
+          for (let k = 0; k < LAUNCH; k++) {
+            const a = -0.6 + k * 0.45;
+            const x = SITES.launch.x - 60 + Math.cos(a) * 85 - k * 18, z = SITES.launch.z + Math.sin(a) * 85 - 30 + k * 22;
+            this.slots.push({ x, z, dir: 0.4 + k * 0.25, busy: null });
+          }
+          for (let k = 0; k < LAUNCH; k++) this.toLaunch(this.items[FLYERS + k], k, rng() * 60);
+          this.envMat = envelopeMaterial(true);
+          this.lods = [0, 1, 2].map((l) => {
+            const geo2 = envWithSkirt(l);
+            const bal = new InstancedBufferAttribute(new Float32Array(N * 4), 4);
+            bal.setUsage(DynamicDrawUsage);
+            const bal2 = new InstancedBufferAttribute(new Float32Array(N * 4), 4);
+            bal2.setUsage(DynamicDrawUsage);
+            geo2.setAttribute("aBal", bal);
+            geo2.setAttribute("aBal2", bal2);
+            const m = new InstancedMesh(geo2, this.envMat, N);
+            m.instanceMatrix.setUsage(DynamicDrawUsage);
+            m.frustumCulled = false;
+            m.count = 0;
+            m.layers.enable(2);
+            m.layers.enable(3);
+            addCaster(m);
+            scene2.add(m);
+            return { m, bal, bal2 };
+          });
+          this.propMat = propMaterial(false);
+          this.baskets = new InstancedMesh(fleetBasket(), this.propMat, N);
+          this.baskets.instanceMatrix.setUsage(DynamicDrawUsage);
+          this.baskets.frustumCulled = false;
+          this.baskets.layers.enable(2);
+          this.baskets.layers.enable(3);
+          addCaster(this.baskets);
+          scene2.add(this.baskets);
+          const fg = FLAME_GEO.clone();
+          this.flameAttr = new InstancedBufferAttribute(new Float32Array(N * 4), 4);
+          this.flameAttr.setUsage(DynamicDrawUsage);
+          fg.setAttribute("aFlame", this.flameAttr);
+          const fm = flameMaterial(true);
+          fm.uniforms.uLen.value = 3.6;
+          fm.uniforms.uWid.value = 0.42;
+          this.flames = new InstancedMesh(fg, fm, N);
+          this.flames.instanceMatrix.setUsage(DynamicDrawUsage);
+          this.flames.frustumCulled = false;
+          this.flames.layers.set(4);
+          this.flames.renderOrder = 10;
+          scene2.add(this.flames);
+          this._m = new Matrix4();
+          this._q = new Quaternion();
+          this._q2 = new Quaternion();
+          this._s = new Vector3();
+          this._w = new Vector3();
+          this._e = new Euler();
+          this._p = new Vector3();
+          this._f = new Frustum();
+          this._pm = new Matrix4();
+          this._sph = new Sphere();
+          this.hero = null;
+        }
+        spawn(it, anywhere) {
+          const r = this.rng;
+          const x = anywhere ? -2300 + r() * 4600 : -2600 - r() * 300;
+          const z = -900 + r() * 1800;
+          const g = this.data.height(x, z);
+          const alt = Math.max(g + 40, 60 + r() * 480);
+          it.p.set(x, alt, z);
+          it.v.set(0, 0, 0);
+          it.x = 0;
+          it.target = alt;
+          it.retarget = 20 + r() * 60;
+          it.mode = "fly";
+          it.inflate = 1;
+          it.tilt = 0;
+        }
+        toLaunch(it, k, t0 = 0) {
+          const sl = this.slots[k];
+          sl.busy = it;
+          it.slot = k;
+          it.mode = "lying";
+          it.modeT = t0;
+          it.inflate = 0.45;
+          const g = this.data.height(sl.x, sl.z);
+          it.p.set(sl.x, g, sl.z);
+          it.v.set(0, 0, 0);
+          it.x = 0;
+          it.yaw = sl.dir;
+        }
+        update(dt, t, camera) {
+          const R = this.rng;
+          for (const it of this.items) {
+            it.modeT += dt;
+            if (it.mode === "fly") this.fly(it, dt, t);
+            else this.launchStep(it, dt, t);
+            it.flame += ((it.burn ? 1 : 0) - it.flame) * Math.min(1, dt * (it.burn ? 8 : 12));
+          }
+          for (const sl of this.slots) {
+            if (sl.busy) continue;
+            let cand = null;
+            for (const it of this.items) if (it.mode === "fly" && it.p.x > 2400 && it.p.distanceTo(camera.position) > 1500) {
+              cand = it;
+              break;
+            }
+            if (!cand) {
+              for (const it of this.items) if (it.mode === "fly" && (Math.abs(it.p.z) > 1250 || it.p.x > 2700) && it.p.distanceTo(camera.position) > 1500) {
+                cand = it;
+                break;
+              }
+            }
+            if (cand) this.toLaunch(cand, this.slots.indexOf(sl));
+          }
+          this.render(camera, t);
+        }
+        fly(it, dt, t) {
+          const R = this.rng;
+          it.retarget -= dt;
+          const g = this.data.height(it.p.x, it.p.z);
+          if (it.retarget < 0) {
+            it.target = Math.max(g + 45, 50 + R() * 500);
+            it.retarget = 50 + R() * 90;
+          }
+          let minAlt = g + 32;
+          for (let s = 10; s <= 30; s += 10) minAlt = Math.max(minAlt, this.data.height(it.p.x + it.v.x * s, it.p.z + it.v.z * s) + 34);
+          for (const o of this.rocks.near(it.p.x, it.p.z)) minAlt = Math.max(minAlt, o.y + o.h + 14);
+          const target = Math.max(it.target, minAlt);
+          const err = target - it.p.y;
+          const dvy = Math.max(-2.5, Math.min(3, err * 0.05));
+          const needX = dvy * Math.abs(dvy) * DRAG_K2 / LIFT_K2 + (dvy - it.v.y) * 4;
+          it.cool -= dt;
+          if (it.hold > 0) {
+            it.hold -= dt;
+            it.burn = 1;
+            if (it.hold <= 0) {
+              it.burn = 0;
+              it.cool = 2 + R() * 6;
+            }
+          } else if (it.cool <= 0 && it.x < needX - 2) {
+            it.hold = 2 + R() * 3;
+            it.burn = 1;
+          }
+          const vent = it.x > needX + 8 && err < -15 ? 1 : 0;
+          it.x += (B_RATE2 * it.burn - COOL2 * (it.x + T_EQ2) - 6 * vent) * dt;
+          it.x = Math.max(-30, Math.min(45, it.x));
+          const w = this.wind.at(it.p.x, it.p.y + 8, it.p.z, this._w);
+          let ay = LIFT_K2 * it.x - DRAG_K2 * it.v.y * Math.abs(it.v.y);
+          let ax = (w.x - it.v.x) / 6, az = (w.z - it.v.z) / 6;
+          for (const o of this.items) {
+            if (o === it || o.mode !== "fly") continue;
+            const dx = it.p.x - o.p.x, dy = it.p.y - o.p.y, dz = it.p.z - o.p.z;
+            const d2 = dx * dx + dy * dy * 0.6 + dz * dz;
+            const md = 24 * (it.s + o.s) * 0.5;
+            if (d2 < md * md) {
+              const d = Math.sqrt(d2) + 1e-3, k = (md - d) * 0.8;
+              ax += dx / d * k;
+              ay += dy / d * k * 0.5;
+              az += dz / d * k;
+            }
+          }
+          if (this.hero) {
+            const hp = this.hero.flight.p;
+            const dx = it.p.x - hp.x, dy = it.p.y - hp.y, dz = it.p.z - hp.z, d = Math.hypot(dx, dy * 0.8, dz) + 1e-3;
+            if (d < 26) {
+              const k = (26 - d) * 0.8;
+              ax += dx / d * k;
+              ay += dy / d * k * 0.5;
+              az += dz / d * k;
+            }
+          }
+          if (it.p.y - 5 * it.s < g + 2) {
+            ay += (g + 2 - (it.p.y - 5 * it.s)) * 4;
+          }
+          it.v.x += ax * dt;
+          it.v.y += ay * dt;
+          it.v.z += az * dt;
+          it.p.addScaledVector(it.v, dt);
+          it.yaw += Math.sin(t * 0.03 + it.seed * 20) * 0.02 * dt;
+          it.lean.set(Math.sin(t * 0.2 + it.seed * 9) * 0.02, Math.cos(t * 0.17 + it.seed * 5) * 0.02);
+        }
+        launchStep(it, dt, t) {
+          const sl = this.slots[it.slot];
+          const g = this.data.height(sl.x, sl.z);
+          if (it.mode === "lying") {
+            it.burn = it.modeT % 6 < 2.4 && it.modeT > 3 ? 1 : 0;
+            it.inflate = Math.min(1, 0.45 + it.modeT / 70);
+            if (it.modeT > 70) {
+              it.mode = "rising";
+              it.modeT = 0;
+            }
+          } else if (it.mode === "rising") {
+            it.burn = it.modeT % 3 < 2 ? 1 : 0;
+            it.tilt = Math.min(1, it.modeT / 9);
+            if (it.modeT > 9) {
+              it.mode = "standing";
+              it.modeT = 0;
+            }
+          } else if (it.mode === "standing") {
+            it.burn = it.modeT % 4 < 1.8 ? 1 : 0;
+            it.tilt = 1;
+            if (it.modeT > 14) {
+              it.mode = "fly";
+              it.modeT = 0;
+              it.x = 6;
+              it.target = 80 + this.rng() * 300;
+              it.retarget = 60;
+              sl.busy = null;
+              it.slot = -1;
+              it.p.y = g + 5 * it.s;
+            }
+          }
+          if (it.mode !== "fly") {
+            it.p.set(sl.x, g, sl.z);
+          }
+        }
+        render(camera, t) {
+          this._pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+          this._f.setFromProjectionMatrix(this._pm);
+          const counts = [0, 0, 0];
+          let nb = 0, nf = 0;
+          for (const it of this.items) {
+            const s = it.s;
+            let pos = this._p.copy(it.p);
+            const q = this._q;
+            let deflate = 0, lying = 0, ground = 0;
+            if (it.mode === "fly") {
+              this._e.set(it.lean.y, it.yaw, it.lean.x, "YXZ");
+              q.setFromEuler(this._e);
+            } else {
+              const g = it.p.y;
+              const tilt = it.tilt;
+              const ang = (1 - tilt) * Math.PI / 2;
+              this._e.set(0, it.yaw, 0, "YXZ");
+              q.setFromEuler(this._e);
+              this._q2.setFromAxisAngle(this._s.set(0, 0, 1), -ang);
+              q.multiply(this._q2);
+              const mouthY = g + 2.4 * s * (1 - tilt) + 5 * s * tilt;
+              pos.set(it.p.x, mouthY, it.p.z);
+              lying = 1 - tilt;
+              ground = g;
+              if (it.mode === "standing") pos.y = g + 5 * s;
+            }
+            this._sph.center.copy(pos).y += 10 * s;
+            this._sph.radius = 16 * s;
+            const dist = camera.position.distanceTo(this._sph.center);
+            const vis = this._f.intersectsSphere(this._sph) || dist < 400;
+            if (vis) {
+              const l = dist < 280 ? 0 : dist < 1300 ? 1 : 2;
+              const L = this.lods[l];
+              const k = counts[l]++;
+              const sx = it.mode === "lying" ? s * (0.75 + 0.25 * it.inflate) : s;
+              this._m.compose(pos, q, this._s.set(sx, s * (it.mode === "lying" ? 0.9 + 0.1 * it.inflate : 1), sx));
+              L.m.setMatrixAt(k, this._m);
+              L.bal.setXYZW(k, it.pal, it.pat, it.flame, it.seed);
+              L.bal2.setXYZW(k, lying, ground, it.inflate, 0);
+            }
+            if (vis || dist < 2500) {
+              if (it.mode === "fly" || it.mode === "standing") {
+                this._e.set(0, it.yaw, 0, "YXZ");
+                q.setFromEuler(this._e);
+                this._m.compose(pos, q, this._s.set(s, s, s));
+                this.baskets.setMatrixAt(nb++, this._m);
+                const fp = this._s.set(0, -5 * s + 2.75 * s, 0).applyQuaternion(q).add(pos);
+                this._m.compose(fp, q, this._w.set(s, s, s));
+                this.flames.setMatrixAt(nf, this._m);
+                this.flameAttr.setXYZW(nf++, it.flame, it.seed * 10, 0, 0);
+              } else {
+                this._e.set(0, it.yaw, 0, "YXZ");
+                const qy = new Quaternion().setFromEuler(this._e);
+                const qs = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -Math.PI / 2 * (1 - it.tilt));
+                const qq = qy.clone().multiply(qs);
+                const back = new Vector3(-(5 * s), 0, 0).applyQuaternion(qy);
+                const bp = new Vector3(it.p.x, it.p.y + 0.9, it.p.z).add(back);
+                const bpos = bp.clone().add(new Vector3(0, 5 * s, 0).applyQuaternion(qq));
+                this._m.compose(bpos, qq, this._s.set(s, s, s));
+                this.baskets.setMatrixAt(nb++, this._m);
+                const fp = new Vector3(0, -5 * s + 2.75 * s, 0).applyQuaternion(qq).add(bpos);
+                this._m.compose(fp, qq, this._w.set(s * 1.3, s * 1.3, s * 1.3));
+                this.flames.setMatrixAt(nf, this._m);
+                this.flameAttr.setXYZW(nf++, it.flame, it.seed * 10, 0, 0);
+              }
+            }
+          }
+          for (let l = 0; l < 3; l++) {
+            const L = this.lods[l];
+            L.m.count = counts[l];
+            L.m.instanceMatrix.needsUpdate = true;
+            L.bal.needsUpdate = true;
+            L.bal2.needsUpdate = true;
+          }
+          this.baskets.count = nb;
+          this.baskets.instanceMatrix.needsUpdate = true;
+          this.flames.count = nf;
+          this.flames.instanceMatrix.needsUpdate = true;
+          this.flameAttr.needsUpdate = true;
         }
       };
     }
@@ -26664,6 +27077,7 @@ void main(){
       init_volumetrics();
       init_rocks();
       init_hero();
+      init_fleet();
       init_input();
       init_cameras();
       var canvas = document.getElementById("view");
@@ -26723,8 +27137,13 @@ void main(){
         const wind = new Wind(U.uNoise2D.value);
         G.wind = wind;
         hero.flight.wind = wind;
+        const fleet = new Fleet(scene2, data, rocks, wind);
+        fleet.hero = hero;
+        hero.flight.fleet = fleet;
+        G.fleet = fleet;
         const input = new Input(canvas);
         const cams = new Cameras(camera, hero, data, rocks, input);
+        cams.fleet = fleet;
         G.cams = cams;
         input.onCamera = (m) => cams.setMode(m);
         const pipe = new Pipeline(renderer);
@@ -26762,6 +27181,7 @@ void main(){
             const s = dbg.freeze ? st0 : sky.update(0.1, 1);
             wind.update(0.1, s);
             hero.update(0.1, i * 0.1, input, s);
+            fleet.update(0.1, i * 0.1, camera);
           }
           if (dbg.h !== void 0) sky.cycleT = cycleForHour(parseFloat(dbg.h));
         }
@@ -26815,6 +27235,7 @@ void main(){
           const fast = input.fast ? 14 : 1;
           hero.update(dt, time, input, st);
           cams.update(dt, time);
+          fleet.update(dt, time, camera);
           dome.update(sky, camera);
           probe.update(st.snow);
           {
