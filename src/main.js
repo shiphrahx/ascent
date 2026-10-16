@@ -20,6 +20,7 @@ import { Vegetation } from './world/vegetation.js';
 import { Particles } from './fx/particles.js';
 import { Birds } from './life/birds.js';
 import { Horses } from './life/horses.js';
+import { Sound } from './audio/sound.js';
 import { Hero } from './balloon/hero.js';
 import { Fleet } from './balloon/fleet.js';
 import { Crew } from './balloon/crew.js';
@@ -103,6 +104,10 @@ async function boot() {
   cams.fleet = fleet;
   G.cams = cams;
   input.onCamera = m => cams.setMode(m);
+  const sound = new Sound();
+  input.onMute = () => sound.toggleMute();
+  input.onFirstGesture = () => sound.start();
+  window.addEventListener('pointerdown', () => sound.start(), { once: true });
   const pipe = new Pipeline(renderer);
   const probe = new Probe(renderer);
   const vol = new Volumetrics(renderer);
@@ -183,6 +188,7 @@ async function boot() {
     parts.update(dt, st, wind);
     birds.update(dt, time);
     horses.update(dt, time, hero, parts);
+    sound.update(dt, st, hero, fleet, cams.mode, camera);
     // cold breath from the crew on each exhale
     if (hero.crew) for (const P of hero.crew.people) {
       P.puffT = (P.puffT || 0) - dt;
