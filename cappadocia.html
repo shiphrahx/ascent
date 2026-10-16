@@ -29129,9 +29129,16 @@ void main(){
             this.wp++;
             return;
           }
-          if (last && (dist < 120 || along > 0.92) && this.mode === "flying") {
+          if (last && (dist < 140 || along > 1) && this.mode === "flying") {
             this.mode = "landing";
             this.modeT = 0;
+          }
+          if (last && dist < 750) {
+            const g = this.groundAt(w.x, w.z);
+            const slope = g + HANG + Math.max(8, dist * 0.13);
+            this.targetAlt = Math.min(this.targetAlt, slope);
+            this.altControl(dt, Math.max(this.targetAlt, this.groundAt(this.p.x, this.p.z) + HANG + 6));
+            return;
           }
           let ax = w.x, az = w.z;
           if (!last) {
@@ -29220,7 +29227,8 @@ void main(){
             const g = this.groundAt(p.x, p.z) + HANG;
             const target = g - 2;
             const err = target - p.y;
-            const dvy = Math.max(-1.4, Math.min(0.4, err * 0.05));
+            const agl = p.y - g;
+            const dvy = Math.max(agl > 25 ? -2.6 : -0.9 - agl * 0.06, Math.min(0.4, err * 0.08));
             this.burn = 0;
             if (v.y < dvy - 0.4 && this.x < 2 && this.burnCooldown <= 0) {
               this.burnHold = 1.2;
@@ -31026,6 +31034,7 @@ void main(){
           G,
           U,
           sky,
+          loop: () => loop,
           setHour: (h) => {
             sky.cycleT = cycleForHour(h);
           },
@@ -31083,6 +31092,12 @@ void main(){
           U.uCloudOffset.value.y -= dt * 3;
           U.uCloudBase.value = 1500 - 520 * st.storm;
           U.uCloudTop.value = 2600 - 250 * st.storm;
+          for (let k = 1; k < (dbg.ts | 0); k++) {
+            const s2 = sky.update(dt, 1);
+            wind.update(dt, s2);
+            hero.update(dt, time, input, s2);
+            fleet.update(dt, time, camera);
+          }
           hero.update(dt, time, input, st);
           {
             const F = hero.flight;
@@ -31096,6 +31111,8 @@ void main(){
                 cams.inited = false;
                 cams.shot = null;
                 loop.phase = "in";
+                const hr = sky.hour;
+                if (hr > 18.6 || hr < 6.4) sky.cycleT = 0;
               }
             } else if (loop.phase === "in") {
               loop.fade = Math.max(0, loop.fade - dt / 3.5);

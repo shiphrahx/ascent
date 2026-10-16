@@ -165,7 +165,7 @@ async function boot() {
   const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3();
   const look = {};
   const loop = { phase: null, fade: 0 };
-  window.__dbg = { G, U, sky, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
+  window.__dbg = { G, U, sky, loop: () => loop, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
     extra: () => ({ fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16 };
@@ -201,6 +201,8 @@ async function boot() {
     U.uCloudOffset.value.x += dt * 9; U.uCloudOffset.value.y -= dt * 3;
     U.uCloudBase.value = 1500 - 520 * st.storm; U.uCloudTop.value = 2600 - 250 * st.storm;
 
+    // test hook: ts=N runs the world N times faster (extra substeps, rendered once)
+    for (let k = 1; k < (dbg.ts | 0); k++) { const s2 = sky.update(dt, 1); wind.update(dt, s2); hero.update(dt, time, input, s2); fleet.update(dt, time, camera); }
     hero.update(dt, time, input, st);
     // journey loop: once the envelope is down, fade into morning fog and start again at the launch field
     {
@@ -209,7 +211,12 @@ async function boot() {
       if (!loop.phase && ((F.mode === 'landed' && hero.deflate >= 1) || F.modeT > 1500)) loop.phase = 'out';
       if (loop.phase === 'out') {
         loop.fade = Math.min(1, loop.fade + dt / 3);
-        if (loop.fade >= 1) { F.reset(); hero.deflate = 0; cams.inited = false; cams.shot = null; loop.phase = 'in'; }
+        if (loop.fade >= 1) {
+          F.reset(); hero.deflate = 0; cams.inited = false; cams.shot = null; loop.phase = 'in';
+          // landing in the night: the veil carries us on to the next pre-dawn so every flight meets the sunrise
+          const hr = sky.hour;
+          if (hr > 18.6 || hr < 6.4) sky.cycleT = 0;
+        }
       } else if (loop.phase === 'in') {
         loop.fade = Math.max(0, loop.fade - dt / 3.5);
         if (loop.fade <= 0) loop.phase = null;

@@ -69,7 +69,15 @@ export class Flight {
     const segx = w.x - prev.x, segz = w.z - prev.z;
     const along = ((this.p.x - prev.x) * segx + (this.p.z - prev.z) * segz) / (segx * segx + segz * segz);
     if (!last && (dist < 110 || along > 1.0)) { this.wp++; return; }
-    if (last && (dist < 120 || along > 0.92) && this.mode === 'flying') { this.mode = 'landing'; this.modeT = 0; }
+    if (last && (dist < 140 || along > 1.0) && this.mode === 'flying') { this.mode = 'landing'; this.modeT = 0; }
+    // final approach: glide down toward the field so touchdown lands on it, not past it
+    if (last && dist < 750) {
+      const g = this.groundAt(w.x, w.z);
+      const slope = g + HANG + Math.max(8, dist * 0.13);
+      this.targetAlt = Math.min(this.targetAlt, slope);
+      this.altControl(dt, Math.max(this.targetAlt, this.groundAt(this.p.x, this.p.z) + HANG + 6));
+      return;
+    }
 
     // desired heading: aim a little past the waypoint toward the next one
     let ax = w.x, az = w.z;
@@ -143,7 +151,9 @@ export class Flight {
       const g = this.groundAt(p.x, p.z) + HANG;
       const target = g - 2;
       const err = target - p.y;
-      const dvy = Math.max(-1.4, Math.min(0.4, err * 0.05));
+      // brisk descent, flaring to a soft touchdown in the last few metres
+      const agl = p.y - g;
+      const dvy = Math.max(agl > 25 ? -2.6 : -0.9 - agl * 0.06, Math.min(0.4, err * 0.08));
       this.burn = 0;
       if (v.y < dvy - 0.4 && this.x < 2 && this.burnCooldown <= 0) { this.burnHold = 1.2; }
       if (this.burnHold > 0) { this.burnHold -= dt; this.burn = 1; if (this.burnHold <= 0) this.burnCooldown = 2.5; }
