@@ -2,6 +2,7 @@
 // multi-headed columns and cone dwellings with carved doors, windows and steps.
 // Instanced per variant with two LODs; collision list for the balloon and cameras.
 import * as THREE from 'three';
+import { G } from '../core/shared.js';
 import { mulberry32, simplex3, simplex2 } from '../core/noise.js';
 import { VCOMMON, COMMON, ROCK } from '../glsl/common.js';
 import { makeMaterial, addCaster } from '../core/mat.js';
@@ -254,7 +255,7 @@ function dwelling(rng, lod) {
     return { dr: lod ? 0 : dr, mat: lod ? (mat ? 2 : 0) : mat, ao };
   };
   const body = lathe({
-    NR: lod ? 24 : 220, NY: lod ? 22 : 170, H, sink: 3,
+    NR: lod ? 24 : 150, NY: lod ? 22 : 120, H, sink: 3,
     ydist: u => u,
     profile: (u) => prof(u),
     rn: (th, y, r) => rills(seed, 0.07, 9)(th, y, r) * 0.6,
@@ -518,12 +519,12 @@ export class Rocks {
       for (const o of v.list) {
         this._sph.center.set(o.x, o.y + o.h * 0.5, o.z); this._sph.radius = Math.max(o.h, o.rb * 2);
         const dist = cp.distanceTo(this._sph.center);
-        if (dist > 5200) continue;
+        if (dist > (G.tier === 'lite' ? 1400 : 5200)) continue;
         // keep shadow casters just outside the view
         if (!this._f.intersectsSphere(this._sph) && dist > 220) continue;
         this._q.setFromAxisAngle(this._p.set(0, 1, 0), o.rot);
         this._m.compose(this._p.set(o.x, o.y, o.z), this._q, this._s.set(o.s, o.sy, o.s));
-        if (dist < 420) { this._m.toArray(mh, nh * 16); ih[nh * 4] = o.seed; nh++; }
+        if (dist < (G.tier === 'lite' ? 60 : 230)) { this._m.toArray(mh, nh * 16); ih[nh * 4] = o.seed; nh++; }
         else { this._m.toArray(ml, nl * 16); il[nl * 4] = o.seed; nl++; }
       }
       v.hiMesh.count = nh; v.loMesh.count = nl;

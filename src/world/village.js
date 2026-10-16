@@ -155,9 +155,8 @@ function wallSegment(rng) {
     let x = -2;
     while (x < 2) {
       const l = 0.35 + rng() * 0.35;
-      const g = new THREE.IcosahedronGeometry(0.5, 0);
-      g.scale(l, 0.26 + rng() * 0.08, 0.32 + rng() * 0.12);
-      g.rotateY((rng() - 0.5) * 0.3);
+      const g = new THREE.BoxGeometry(l * 0.96, 0.24 + rng() * 0.08, 0.34 + rng() * 0.1);
+      g.rotateY((rng() - 0.5) * 0.25); g.rotateZ((rng() - 0.5) * 0.12);
       g.translate(x + l / 2, -0.3 + c * 0.3 + (c === 2 ? 0.05 : 0), (rng() - 0.5) * 0.06);
       const v = 0.75 + rng() * 0.3;
       parts.push(tag(g, 15, [v, v * 0.95, v * 0.88]));
@@ -279,15 +278,46 @@ export class Village {
         segs.push({ x, z, y: data.height(x, z) - 0.05, ang, k: Math.floor(rng() * 3) });
       }
     }
-    for (let k = 0; k < 3; k++) {
-      const list = segs.filter(s => s.k === k);
-      if (!list.length) continue;
-      const im = new THREE.InstancedMesh(segGeo[k], this.mat, list.length);
-      list.forEach((s, i) => { q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -s.ang); m4.compose(new THREE.Vector3(s.x, s.y + 0.3, s.z), q, new THREE.Vector3(1, 1, 1)); im.setMatrixAt(i, m4); });
-      im.layers.enable(2);
-      addCaster(im);
-      this.group.add(im);
+    // walls are tiled so far tiles can drop to a plain low wall and distant ones vanish
+    const lowGeo = tag(box(4, 0.85, 0.42, 0, -0.42, 0), 15, [0.88, 0.84, 0.78]);
+    this.wallTiles = new Map();
+    for (const s of segs) {
+      const key = Math.floor(s.x / 400) + ',' + Math.floor(s.z / 400);
+      if (!this.wallTiles.has(key)) this.wallTiles.set(key, []);
+      this.wallTiles.get(key).push(s);
+    }
+    const up = new THREE.Vector3(0, 1, 0);
+    this.tiles = [];
+    for (const list of this.wallTiles.values()) {
+      const tile = { hi: [], lo: null, c: new THREE.Vector3() };
+      for (const s of list) tile.c.add(new THREE.Vector3(s.x, s.y, s.z));
+      tile.c.divideScalar(list.length);
+      for (let k = 0; k < 3; k++) {
+        const sub = list.filter(s => s.k === k);
+        if (!sub.length) continue;
+        const im = new THREE.InstancedMesh(segGeo[k], this.mat, sub.length);
+        sub.forEach((s, i) => { q.setFromAxisAngle(up, -s.ang); m4.compose(new THREE.Vector3(s.x, s.y + 0.3, s.z), q, new THREE.Vector3(1, 1, 1)); im.setMatrixAt(i, m4); });
+        im.computeBoundingSphere();
+        im.layers.enable(2);
+        addCaster(im);
+        this.group.add(im);
+        tile.hi.push(im);
+      }
+      const lo = new THREE.InstancedMesh(lowGeo, this.mat, list.length);
+      list.forEach((s, i) => { q.setFromAxisAngle(up, -s.ang); m4.compose(new THREE.Vector3(s.x, s.y + 0.3, s.z), q, new THREE.Vector3(1, 1, 1)); lo.setMatrixAt(i, m4); });
+      lo.computeBoundingSphere();
+      this.group.add(lo);
+      tile.lo = lo;
+      this.tiles.push(tile);
     }
     this.wallCount = segs.length;
+  }
+  update(camera) {
+    for (const t of this.tiles) {
+      const d = camera.position.distanceTo(t.c);
+      const near = d < 380;
+      for (const m of t.hi) m.visible = near;
+      t.lo.visible = !near && d < 2600;
+    }
   }
 }

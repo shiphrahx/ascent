@@ -2,6 +2,7 @@
 // envelopes lie on their sides being hot-inflated, stand up, and lift off to join the sky.
 // Instanced envelopes in three LODs, instanced baskets and flames.
 import * as THREE from 'three';
+import { G } from '../core/shared.js';
 import { buildEnvelope, buildSkirt, envelopeMaterial, PALETTES } from './envelope.js';
 import { propMaterial, tag, merge, cyl } from './props.js';
 import { addCaster } from '../core/mat.js';
@@ -260,7 +261,7 @@ export class Fleet {
       const dist = camera.position.distanceTo(this._sph.center);
       const vis = this._f.intersectsSphere(this._sph) || dist < 400;
       if (vis) {
-        const l = dist < 280 ? 0 : dist < 1300 ? 1 : 2;
+        const l = G.tier === 'lite' ? (dist < 150 ? 1 : 2) : dist < 280 ? 0 : dist < 1300 ? 1 : 2;
         const L = this.lods[l];
         const k = counts[l]++;
         const sx = it.mode === 'lying' ? s * (0.75 + 0.25 * it.inflate) : s;

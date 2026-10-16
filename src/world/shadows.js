@@ -3,11 +3,11 @@ import * as THREE from 'three';
 import { U } from '../core/shared.js';
 import { casters } from '../core/mat.js';
 
-const RES = 2048;
 
 export class Shadows {
-  constructor(renderer) {
+  constructor(renderer, res = 2048) {
     this.renderer = renderer;
+    const RES = this.res = res;
     this.cascades = [];
     const sizes = [55, 900, 6000];
     for (let i = 0; i < 3; i++) {
@@ -55,7 +55,7 @@ export class Shadows {
       cam.position.copy(centers[i]).addScaledVector(L, back);
       cam.lookAt(centers[i]);
       cam.updateMatrixWorld();
-      const texel = (2 * half) / RES;
+      const texel = (2 * half) / this.res;
       this._v.copy(centers[i]).applyMatrix4(cam.matrixWorldInverse);
       const sx = this._v.x - Math.round(this._v.x / texel) * texel;
       const sy = this._v.y - Math.round(this._v.y / texel) * texel;
@@ -71,6 +71,6 @@ export class Shadows {
     }
     scene.background = oldBg;
     for (const m of casters) m.material = m.userData._mat;
-    U.uShadowTexel.value.set(1 / RES, 1 / RES);
+    U.uShadowTexel.value.set(1 / this.res, 1 / this.res);
   }
 }

@@ -49,6 +49,15 @@ async function boot() {
   renderer.autoClear = false;
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   G.renderer = renderer;
+  // quality tier from the GPU the browser actually gave us. Software rasterisers (hardware
+  // acceleration off, or a blocklisted driver) can't run this at full fat, so they get a lite mode.
+  const glc = renderer.getContext();
+  const dri = glc.getExtension('WEBGL_debug_renderer_info');
+  const gpuName = dri ? String(glc.getParameter(dri.UNMASKED_RENDERER_WEBGL)) : '';
+  let tier = /swiftshader|software|llvmpipe|basic render|softpipe/i.test(gpuName) ? 'lite'
+    : /intel|radeon\(tm\)|radeon graphics|\d{3,4}m graphics|apple|mali|adreno|vega \d/i.test(gpuName) && !/rtx|gtx|radeon rx|arc a/i.test(gpuName) ? 'medium' : 'high';
+  if (dbg.q) tier = dbg.q;
+  G.tier = tier;
   setProgress(0.02); await tick();
 
   U.uNoise2D.value = makeNoise2D(256);
@@ -93,7 +102,7 @@ async function boot() {
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer);
-  const shadows = new Shadows(renderer);
+  const shadows = new Shadows(renderer, tier === 'lite' ? 1024 : 2048);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   hero.flight.wind = wind;
@@ -112,17 +121,24 @@ async function boot() {
   const probe = new Probe(renderer);
   const vol = new Volumetrics(renderer);
   pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
-  pipe.hooks.volumetrics = dbg.novol ? null : rt => vol.render(rt, camera);
+  const volHook = rt => vol.render(rt, camera);
+  pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
+  if (tier === 'lite') { river.reflect = false; veg.grass.visible = false; veg.noGrass = true; }
   pipe.hooks.transparent = true;
   let exposure = 1;
   setProgress(0.7); await tick();
 
   let pr = Math.min(window.devicePixelRatio || 1, 2);
-  // high-density displays start a little under native and adapt from there
-  pipe.scale = pr > 1.4 ? 0.8 : 1;
+  // start from a pixel budget that suits the GPU, then the governor below adapts every half second
+  const budget = { high: 3.7e6, medium: 1.6e6, lite: 0.22e6 }[tier] || 1.6e6;
+  const floorScale = tier === 'lite' ? 0.12 : 0.3;
+  const fitScale = () => Math.max(floorScale, Math.min(1, Math.sqrt(budget / (window.innerWidth * window.innerHeight * pr * pr))));
+  pipe.scale = fitScale();
   const resize = () => {
     const w = window.innerWidth, h = window.innerHeight;
-    renderer.setPixelRatio(pr);
+    // in lite mode the canvas itself is small and the browser scales it up: the final pass at
+    // native resolution alone costs more than a software rasteriser can afford
+    renderer.setPixelRatio(G.tier === 'lite' ? pr * pipe.scale : pr);
     renderer.setSize(w, h, false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
     pipe.setSize(w, h, pr);
@@ -166,22 +182,33 @@ async function boot() {
   const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3();
   const look = {};
   const loop = { phase: null, fade: 0 };
-  window.__dbg = { G, U, sky, loop: () => loop, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
-    extra: () => ({ fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
+  const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
+  window.__dbg = { G, U, sky, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
+    extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
-  const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16 };
+  const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
   function frame() {
     const rawDt = clock.getDelta();
-    const dt = Math.min(0.05, rawDt);
-    // adaptive resolution: hold ~50+ fps without visibly dropping quality
-    perf.acc += rawDt; perf.n++; perf.t += rawDt;
-    if (perf.t > 2) {
+    const dt = Math.min(0.1, rawDt);
+    // adaptive resolution: reacts within half a second, drops hard when frames are slow,
+    // creeps back up when there's headroom. If even the floor is too slow, shed the heavy passes.
+    perf.acc += rawDt; perf.n++; perf.t += rawDt; perf.warm++;
+    perf.ema += (rawDt * 1000 - perf.ema) * 0.25;
+    if (perf.t > 0.5 && perf.warm > 3) {
       perf.ms = perf.acc / perf.n * 1000; perf.fps = 1000 / perf.ms;
-      if (window.__dbg.frames > 120 && !dbg.fixres) {
-        const old = pipe.scale;
-        if (perf.ms > 21 && pipe.scale > 0.6) pipe.scale = Math.max(0.6, pipe.scale - 0.08);
-        else if (perf.ms < 13.5 && pipe.scale < 1) pipe.scale = Math.min(1, pipe.scale + 0.05);
-        if (old !== pipe.scale) pipe.setSize(window.innerWidth, window.innerHeight, pr);
+      // ignore the first seconds (shader compiles) unless frames are catastrophically slow
+      perf.age = (perf.age || 0) + perf.t;
+      if (!dbg.fixres && (perf.age > 3 || perf.ms > 250)) {
+        const old = pipe.scale, ms = perf.ms;
+        if (ms > 40) pipe.scale = Math.max(floorScale, pipe.scale * Math.max(0.5, Math.sqrt(22 / ms)));
+        else if (ms > 23) pipe.scale = Math.max(floorScale, pipe.scale * 0.93);
+        // vsync caps us at ~16.7 ms, so "at the cap" counts as headroom to climb into
+        else if (ms < 18.2) { perf.good += perf.t; if (perf.good > 1.5 && pipe.scale < 1) { pipe.scale = Math.min(1, pipe.scale + 0.06); perf.good = 0; } }
+        else perf.good = 0;
+        if (Math.abs(old - pipe.scale) > 1e-3) { if (G.tier === 'lite') resize(); else pipe.setSize(window.innerWidth, window.innerHeight, pr); }
+        // still too slow at the floor: drop volumetrics, reflections and grass
+        if (pipe.scale <= floorScale + 1e-3 && ms > 45) perf.slow += perf.t; else perf.slow = 0;
+        if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
       }
       perf.acc = 0; perf.n = 0; perf.t = 0;
     }
@@ -260,8 +287,10 @@ async function boot() {
       } else u.uHeat.value[0].z = 0;
     }
 
-    dome.update(sky, camera);
-    probe.update(st.snow);
+    const lite = G.tier === 'lite', fN = window.__dbg.frames;
+    // lite mode spreads the slow-changing passes over several frames
+    if (!lite || fN % 8 === 0 || fN < 3) { dome.update(sky, camera); probe.update(st.snow); }
+    dome.mesh.position.copy(camera.position);
     {
       // auto exposure from sky irradiance and the key light; nights stay darker than days
       const up = probe.up, k = sky.keyColor;
@@ -272,7 +301,7 @@ async function boot() {
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
       U.uGlowComp.value = 1 / (1 + 0.14 * exposure);
     }
-    tshadow.update(window.__dbg.frames < 2);
+    if (!lite || fN % 30 === 0) tshadow.update(fN < 2);
     // cascades: basket detail, the area the camera looks at, wide for far balloons
     focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
     if (camera.position.distanceTo(focus) > 140) focus.copy(camera.position);
@@ -282,8 +311,11 @@ async function boot() {
     farC.copy(viewC);
     rocks.update(camera);
     veg.update(camera);
-    if (!dbg.noshadow || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
-    terrain.update(camera);
+    village.update(camera);
+    landmarks.update(camera, lite);
+    // lite mode refreshes the shadow maps every third frame
+    if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
+    terrain.update(camera, lite ? 0.22 : 1);
     if (!dbg.norefl) river.render(scene, camera, st);
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
     window.__dbg.frames++;

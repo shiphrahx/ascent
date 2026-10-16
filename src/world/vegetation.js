@@ -2,7 +2,7 @@
 // apricot orchard, pruned vines on the terraces, scrub and boulders on the plateau, and
 // dry grass tufts around the camera.
 import * as THREE from 'three';
-import { U, WORLD } from '../core/shared.js';
+import { U, WORLD, G } from '../core/shared.js';
 import { VCOMMON, COMMON, WIND } from '../glsl/common.js';
 import { makeMaterial, addCaster } from '../core/mat.js';
 import { mulberry32, simplex2 } from '../core/noise.js';
@@ -363,7 +363,7 @@ export class Vegetation {
     const gg = grassTuft();
     const ig = new THREE.InstancedBufferGeometry();
     ig.index = gg.index; ig.attributes = gg.attributes;
-    this.grid = 110; this.cell = 2.6;
+    this.grid = 90; this.cell = 3.0;
     ig.instanceCount = this.grid * this.grid;
     this.grassMat = makeMaterial({ vertex: VERT, fragment: FRAG, side: THREE.DoubleSide, defines: { GRASS: 1 }, shadow: false,
       uniforms: { uScaleH: { value: 1.6 }, uGrid: { value: this.grid }, uCellSize: { value: this.cell }, uCamGrid: { value: new THREE.Vector3() } } });
@@ -406,7 +406,7 @@ export class Vegetation {
       for (const o of set.list) {
         this._sph.center.set(o.x, o.y + 5 * o.s, o.z); this._sph.radius = 10 * o.s;
         const d = cp.distanceTo(this._sph.center);
-        if (d > set.maxDist * (1 + Math.max(0, cp.y - 200) / 600)) continue;
+        if (d > set.maxDist * (G.tier === 'lite' ? 0.25 : 1) * (1 + Math.max(0, cp.y - 200) / 600)) continue;
         if (!this._f.intersectsSphere(this._sph) && d > 80) continue;
         this._q.setFromAxisAngle(up, o.r);
         this._m.compose(pos.set(o.x, o.y, o.z), this._q, sc.set(o.s, o.s, o.s));
@@ -418,7 +418,7 @@ export class Vegetation {
     }
     // grass only matters when the camera is near the ground
     const ground = this.data.height(cp.x, cp.z);
-    this.grass.visible = cp.y - ground < 140;
+    this.grass.visible = !this.noGrass && cp.y - ground < 140;
     this.grassMat.uniforms.uCamGrid.value.copy(cp);
   }
 }

@@ -3,7 +3,7 @@
 // the wind, dust lifted off ridges by gusts, light pillars over the lamps on cold nights,
 // and a small CPU pool for breath puffs from the crew and the horses.
 import * as THREE from 'three';
-import { U } from '../core/shared.js';
+import { U, G } from '../core/shared.js';
 import { VCOMMON, WIND } from '../glsl/common.js';
 import { mulberry32 } from '../core/noise.js';
 
@@ -198,7 +198,7 @@ function system(kind, n, fill, opts = {}) {
   });
   const m = new THREE.Mesh(g, mat);
   m.frustumCulled = false; m.layers.set(4); m.renderOrder = opts.order || 5;
-  return { mesh: m, mat, aP, aQ, P, Q };
+  return { mesh: m, mat, aP, aQ, P, Q, full: n };
 }
 
 export class Particles {
@@ -247,6 +247,13 @@ export class Particles {
     this.smoke.mat.uniforms.uAmt.value = 0.55 + 0.45 * Math.max(st.night, 1 - Math.min(1, Math.max(0, st.sunElev) * 3));
     this.dust.mat.uniforms.uAmt.value = (1 - st.snow) * (1 - st.wet * 0.8) * (1 - st.storm);
     this.pillars.mat.uniforms.uAmt.value = st.pillars * st.night * 0.16;
+    // systems with nothing to show are skipped entirely; lite mode thins out the rest
+    const lite = G.tier === 'lite';
+    for (const s of [this.snow, this.glitter, this.motes, this.smoke, this.dust, this.pillars]) {
+      const amt = s.mat.uniforms.uAmt.value;
+      s.mesh.visible = amt > 0.003;
+      s.mesh.geometry.instanceCount = lite ? Math.ceil(s.full * 0.15) : s.full;
+    }
     // breath pool
     const P = this.breath.P, Q = this.breath.Q;
     for (let i = 0; i < this.breathN; i++) {

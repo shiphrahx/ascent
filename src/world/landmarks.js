@@ -237,7 +237,7 @@ function doveCarve(u, v, variant) {
 }
 
 // rock castle: lobed tuff mass riddled with rooms, windows, doors and tunnels
-function buildCastle(rng) {
+function buildCastle(rng, lod = 0) {
   const parts = [];
   const lobes = [
     { ox: 0, oz: 0, H: 50, R: 27, k: 1.15 },
@@ -261,7 +261,7 @@ function buildCastle(rng) {
     };
     const rn = rills(seed, 0.09, 13);
     const body = lathe({
-      NR: 300, NY: 200, H: L.H, sink: 6, ydist: u => u,
+      NR: lod ? 96 : 300, NY: lod ? 64 : 200, H: L.H, sink: 6, ydist: u => u,
       profile: (u) => prof(u),
       rn: (th, y, r) => rn(th, y, r) + r * 0.08 * simplex2(Math.cos(th) * 2 + seed, y * 0.08) + (Math.abs(((y % 3.4) + 3.4) % 3.4 - 0.2) < 0.25 ? -0.25 : 0),
       carve: (th, y, r) => {
@@ -291,31 +291,46 @@ export class Landmarks {
     scene.add(this.group);
     const mat = makeMaterial({ vertex: ROCK_VERT, fragment: ROCK_FRAG, defines: { FACADE: 1 } });
     this.mat = mat;
-    for (const f of facades) {
-      const geo = f.kind === 'church' ? buildFacade(f, churchCarve, 0.09) : buildFacade(f, (u, v) => doveCarve(u, v, f === facades[2]), 0.055);
-      const m = new THREE.Mesh(geo, mat);
-      // local x along the wall, y up, z out of the cliff into the valley
+    // each carving has a detailed mesh for close views and a light one for distance
+    this.lods = [];
+    const place = (m, f) => {
       const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(f.tx, 0, f.tz), new THREE.Vector3(0, 1, 0), new THREE.Vector3(f.nx, 0, f.nz));
       m.quaternion.setFromRotationMatrix(basis);
       m.position.set(f.x, f.floorY - 0.15, f.z);
       m.layers.enable(2);
-      addCaster(m);
       this.group.add(m);
+    };
+    for (const f of facades) {
+      const carve = f.kind === 'church' ? churchCarve : (u, v) => doveCarve(u, v, f === facades[2]);
+      const hi = new THREE.Mesh(buildFacade(f, carve, f.kind === 'church' ? 0.11 : 0.065), mat);
+      const lo = new THREE.Mesh(buildFacade(f, carve, f.kind === 'church' ? 0.3 : 0.2), mat);
+      // carved faces are vertical cliffs: their recesses read through AO, no need to cast
+      place(hi, f); place(lo, f);
+      this.lods.push({ hi, lo, c: new THREE.Vector3(f.x, f.floorY + f.H / 2, f.z) });
     }
     // castle on the hill
-    const rng = (() => { let s = 12345; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
-    const cgeo = buildCastle(rng);
+    const seeded = () => { let s = 12345; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
     const castleMat = makeMaterial({ vertex: ROCK_VERT, fragment: ROCK_FRAG, defines: { FACADE: 1 } });
-    const n = cgeo.attributes.position.count;
-    cgeo.setAttribute('aPaint', new THREE.Float32BufferAttribute(new Float32Array(n * 4), 4));
-    const castle = new THREE.Mesh(cgeo, castleMat);
     const c = SITES.castle;
     let gy = 1e9;
     for (let a = 0; a < 8; a++) gy = Math.min(gy, data.height(c.x + Math.cos(a) * 14, c.z + Math.sin(a) * 14));
-    castle.position.set(c.x, gy - 1.5, c.z);
-    castle.layers.enable(2);
-    addCaster(castle);
-    this.group.add(castle);
+    const castles = [0, 1].map(lod => {
+      const g = buildCastle(seeded(), lod);
+      g.setAttribute('aPaint', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 4), 4));
+      const m = new THREE.Mesh(g, castleMat);
+      m.position.set(c.x, gy - 1.5, c.z);
+      m.layers.enable(2);
+      addCaster(m);
+      this.group.add(m);
+      return m;
+    });
+    this.lods.push({ hi: castles[0], lo: castles[1], c: new THREE.Vector3(c.x, gy + 25, c.z) });
     this.castle = { x: c.x, z: c.z, y: gy - 1.5, h: 52, r: 30 };
+  }
+  update(camera, lite) {
+    for (const L of this.lods) {
+      const near = !lite && camera.position.distanceTo(L.c) < 480;
+      L.hi.visible = near; L.lo.visible = !near;
+    }
   }
 }

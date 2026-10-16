@@ -1,6 +1,6 @@
 // The hero balloon: envelope + skirt + crown, basket rig, flying wires, flames, crew.
 import * as THREE from 'three';
-import { U } from '../core/shared.js';
+import { U, G } from '../core/shared.js';
 import { addCaster } from '../core/mat.js';
 import { buildEnvelope, buildSkirt, buildCrown, envelopeMaterial, ENV } from './envelope.js';
 import { buildRig, BASKET, segment } from './rig.js';
@@ -17,7 +17,7 @@ export class Hero {
     this.env = new THREE.Group();
     this.root.add(this.env);
     this.envMat = envelopeMaterial(false);
-    this.envMesh = new THREE.Mesh(buildEnvelope(0), this.envMat);
+    this.envMesh = new THREE.Mesh(buildEnvelope(G.tier === 'lite' ? 1 : 0), this.envMat);
     this.skirt = new THREE.Mesh(buildSkirt(0), this.envMat);
     this.propMat = propMaterial(false);
     this.crown = new THREE.Mesh(tag(buildCrown(), 2), this.propMat);

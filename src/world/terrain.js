@@ -268,7 +268,7 @@ export class Terrain {
       // spacing of a vertex at this LOD vs. distance
       let l;
       if (c.core) l = d < 700 * lodBias ? 0 : d < 1600 * lodBias ? 1 : d < 3200 * lodBias ? 2 : 3;
-      else l = c.s <= 640 ? (d < 3000 ? 1 : 2) : (d < 9000 ? 0 : d < 20000 ? 1 : 2);
+      else l = c.s <= 640 ? (d < 2500 * lodBias ? 1 : d < 6000 * lodBias ? 2 : 3) : (d < 6000 * lodBias ? 1 : d < 16000 * lodBias ? 2 : 3);
       const L = this.levels[l];
       const k = counts[l]++;
       const a = L.inst.array;

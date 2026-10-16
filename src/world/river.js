@@ -23,7 +23,7 @@ ${COMMON}
 ${WIND}
 uniform sampler2D tReflect;
 uniform mat4 uTexMat;
-uniform float uIce;
+uniform float uIce, uReflOn;
 varying vec3 vWorld;
 varying vec2 vFlow, vRiver;
 vec2 flowN(vec2 p, float spd, float sc){
@@ -53,7 +53,8 @@ void main(){
   // reflection
   vec4 rc = uTexMat * vec4(P, 1.);
   vec2 ruv = rc.xy / rc.w + N.xz * 0.035;
-  vec3 refl = texture(tReflect, ruv).rgb;
+  // without the mirrored pass (lite mode) the sky stands in for the reflection
+  vec3 refl = uReflOn > 0.5 ? texture(tReflect, ruv).rgb : skyLut(reflect(-V, N)) * 0.9;
   float cosT = max(dot(N, V), 0.);
   float F = 0.02 + 0.98 * pow(1. - cosT, 5.);
   // the bed: depth from the terrain, absorbed toward green-blue
@@ -118,12 +119,13 @@ export class River {
     g.computeBoundingBox(); g.computeBoundingSphere();
     this.box = g.boundingBox.clone().expandByScalar(5);
     this.mat = new THREE.ShaderMaterial({
-      uniforms: Object.assign({}, U, { tReflect: { value: null }, uTexMat: { value: new THREE.Matrix4() }, uIce: { value: 1 } }),
+      uniforms: Object.assign({}, U, { tReflect: { value: null }, uTexMat: { value: new THREE.Matrix4() }, uIce: { value: 1 }, uReflOn: { value: 1 } }),
       vertexShader: VERT, fragmentShader: FRAG,
     });
     this.mesh = new THREE.Mesh(g, this.mat);
     this.mesh.frustumCulled = false;
     scene.add(this.mesh);
+    this.reflect = true;
     this.rcam = new THREE.PerspectiveCamera();
     this.rcam.layers.set(2);
     this.rt = null;
@@ -143,7 +145,8 @@ export class River {
     this.mesh.visible = this.visible;
     // ice is thickest after cold nights and through the storm, thins in the afternoon sun
     this.mat.uniforms.uIce.value = Math.min(1, st.frost * 0.9 + st.snow * 0.6 + st.night * 0.5 + 0.15);
-    if (!this.visible) return;
+    this.mat.uniforms.uReflOn.value = this.reflect ? 1 : 0;
+    if (!this.visible || !this.reflect) return;
     // the reflection only needs refreshing every other frame
     if ((this.frame++ & 1) && this.rendered) return;
     this.rendered = true;
