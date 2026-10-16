@@ -24301,14 +24301,17 @@ void main(){
       init_shared();
       D = Math.PI / 180;
       LAYERS = [
-        { y: -20, hdg: 32, spd: 5.6 },
-        { y: 95, hdg: 30, spd: 6.4 },
-        { y: 150, hdg: -27, spd: 7.6 },
-        { y: 235, hdg: -25, spd: 8.4 },
-        { y: 300, hdg: 4, spd: 9.6 },
-        { y: 400, hdg: 8, spd: 10.4 },
-        { y: 470, hdg: -14, spd: 8.2 },
-        { y: 1200, hdg: -16, spd: 9.5 }
+        // in the valleys the cold air drains along them; above the plateau the layers alternate
+        { y: -20, hdg: -20, spd: 6 },
+        { y: 72, hdg: -18, spd: 6.6 },
+        { y: 112, hdg: 28, spd: 8.3 },
+        { y: 165, hdg: 27, spd: 9 },
+        { y: 215, hdg: -28, spd: 10.2 },
+        { y: 285, hdg: -25, spd: 10.9 },
+        { y: 345, hdg: 6, spd: 12.4 },
+        { y: 420, hdg: 10, spd: 13.2 },
+        { y: 485, hdg: -14, spd: 10.7 },
+        { y: 1200, hdg: -16, spd: 12.4 }
       ];
       Wind = class {
         constructor(noiseTex) {
@@ -29070,7 +29073,7 @@ void main(){
             this.wp++;
             return;
           }
-          if (last && dist < 70 && this.mode === "flying") {
+          if (last && (dist < 120 || along > 0.92) && this.mode === "flying") {
             this.mode = "landing";
             this.modeT = 0;
           }
@@ -29382,10 +29385,21 @@ void main(){
           F.dawnHold = st.valleyFog > 0.6 && st.sunElev < 1.2 * Math.PI / 180 && st.sunElev > -12 * Math.PI / 180 ? 52 : null;
           F.step(dt, t, input);
           const p = F.p;
+          if (F.mode === "landed") this.deflate = Math.min(1, this.deflate + dt / 20);
+          else this.deflate = 0;
+          const tip = Math.min(1, this.deflate / 0.5);
+          const tipA = tip * tip * (3 - 2 * tip) * (Math.PI / 2 - 0.12);
+          if (F.mode === "landed" && !this.tipAxis) {
+            const w = F.wind.at(p.x, p.y, p.z);
+            this.tipAxis = new Vector3(w.z, 0, -w.x).normalize();
+            if (this.tipAxis.lengthSq() < 0.5) this.tipAxis.set(0, 0, 1);
+          }
+          if (F.mode !== "landed") this.tipAxis = null;
           this.root.position.set(0, 0, 0);
           this.env.position.copy(p);
           this._e.set(F.lean.y * 0.6, F.yaw, -F.lean.x * 0.6, "YXZ");
           this.env.quaternion.setFromEuler(this._e);
+          if (this.tipAxis) this.env.quaternion.premultiply(this._q.setFromAxisAngle(this.tipAxis, tipA));
           this._e.set(F.swing.y, F.yaw, -F.swing.x, "YXZ");
           this.basket.quaternion.setFromEuler(this._e);
           this._v.set(0, -HANG, 0).applyQuaternion(this.basket.quaternion);
@@ -29406,7 +29420,7 @@ void main(){
           this._v.copy(F.dentDir).applyQuaternion(this._q.copy(this.env.quaternion).invert());
           eu.uDentDir.value.copy(this._v).setY(0).normalize();
           eu.uLying.value = this.deflate > 0 ? 1 : 0;
-          eu.uInflate.value = 1 - this.deflate * 0.7;
+          eu.uInflate.value = 1 - Math.max(0, this.deflate - 0.25) * 0.85;
           eu.uGroundY.value = this.flight.groundAt(F.p.x, F.p.z);
           this.burnerWorld.copy(this.rig.burners[0]).lerp(this.rig.burners[1], 0.5).applyMatrix4(this.basket.matrixWorld);
           this.burnerWorld.y += 1.2;
@@ -30893,6 +30907,7 @@ void main(){
         let time = 0;
         const focus = new Vector3(), viewC = new Vector3(), farC = new Vector3();
         const look = {};
+        const loop = { phase: null, fade: 0 };
         window.__dbg = {
           G,
           U,
@@ -30901,7 +30916,7 @@ void main(){
             sky.cycleT = cycleForHour(h);
           },
           frames: 0,
-          extra: () => ({ exposure: +exposure.toFixed(3), up: probe.up.toArray().map((v) => +v.toFixed(4)), key: sky.keyColor.toArray().map((v) => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp })
+          extra: () => ({ exposure: +exposure.toFixed(3), up: probe.up.toArray().map((v) => +v.toFixed(4)), key: sky.keyColor.toArray().map((v) => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) })
         };
         function frame() {
           const dt = Math.min(0.05, clock.getDelta());
@@ -30936,8 +30951,28 @@ void main(){
           U.uCloudOffset.value.y -= dt * 3;
           U.uCloudBase.value = 1500 - 520 * st.storm;
           U.uCloudTop.value = 2600 - 250 * st.storm;
-          const fast = input.fast ? 14 : 1;
           hero.update(dt, time, input, st);
+          {
+            const F = hero.flight;
+            const u = pipe.post.comp.uniforms;
+            if (!loop.phase && (F.mode === "landed" && hero.deflate >= 1 || F.modeT > 1500)) loop.phase = "out";
+            if (loop.phase === "out") {
+              loop.fade = Math.min(1, loop.fade + dt / 3);
+              if (loop.fade >= 1) {
+                F.reset();
+                hero.deflate = 0;
+                cams.inited = false;
+                cams.shot = null;
+                loop.phase = "in";
+              }
+            } else if (loop.phase === "in") {
+              loop.fade = Math.max(0, loop.fade - dt / 3.5);
+              if (loop.fade <= 0) loop.phase = null;
+            }
+            const a = sky.skyAmb;
+            u.uFadeColor.value.setRGB(Math.min(1, 0.55 + a.r), Math.min(1, 0.58 + a.g), Math.min(1, 0.64 + a.b));
+            u.uFade.value = loop.fade * loop.fade * (3 - 2 * loop.fade);
+          }
           cams.update(dt, time);
           fleet.update(dt, time, camera);
           parts.update(dt, st, wind);

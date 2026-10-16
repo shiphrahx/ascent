@@ -69,7 +69,7 @@ export class Flight {
     const segx = w.x - prev.x, segz = w.z - prev.z;
     const along = ((this.p.x - prev.x) * segx + (this.p.z - prev.z) * segz) / (segx * segx + segz * segz);
     if (!last && (dist < 110 || along > 1.0)) { this.wp++; return; }
-    if (last && dist < 70 && this.mode === 'flying') { this.mode = 'landing'; this.modeT = 0; }
+    if (last && (dist < 120 || along > 0.92) && this.mode === 'flying') { this.mode = 'landing'; this.modeT = 0; }
 
     // desired heading: aim a little past the waypoint toward the next one
     let ax = w.x, az = w.z;

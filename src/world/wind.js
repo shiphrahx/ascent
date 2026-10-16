@@ -7,14 +7,17 @@ import { U } from '../core/shared.js';
 const D = Math.PI / 180;
 // heading: degrees from +x (east) toward +z (south)
 export const LAYERS = [
-  { y: -20, hdg: 32, spd: 5.6 },
-  { y: 95, hdg: 30, spd: 6.4 },
-  { y: 150, hdg: -27, spd: 7.6 },
-  { y: 235, hdg: -25, spd: 8.4 },
-  { y: 300, hdg: 4, spd: 9.6 },
-  { y: 400, hdg: 8, spd: 10.4 },
-  { y: 470, hdg: -14, spd: 8.2 },
-  { y: 1200, hdg: -16, spd: 9.5 },
+  // in the valleys the cold air drains along them; above the plateau the layers alternate
+  { y: -20, hdg: -20, spd: 6.0 },
+  { y: 72, hdg: -18, spd: 6.6 },
+  { y: 112, hdg: 28, spd: 8.3 },
+  { y: 165, hdg: 27, spd: 9.0 },
+  { y: 215, hdg: -28, spd: 10.2 },
+  { y: 285, hdg: -25, spd: 10.9 },
+  { y: 345, hdg: 6, spd: 12.4 },
+  { y: 420, hdg: 10, spd: 13.2 },
+  { y: 485, hdg: -14, spd: 10.7 },
+  { y: 1200, hdg: -16, spd: 12.4 },
 ];
 
 export class Wind {

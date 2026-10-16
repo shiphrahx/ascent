@@ -159,8 +159,9 @@ async function boot() {
   let time = 0;
   const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3();
   const look = {};
+  const loop = { phase: null, fade: 0 };
   window.__dbg = { G, U, sky, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
-    extra: () => ({ exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp }) };
+    extra: () => ({ exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
   function frame() {
     const dt = Math.min(0.05, clock.getDelta());
@@ -181,8 +182,24 @@ async function boot() {
     U.uCloudOffset.value.x += dt * 9; U.uCloudOffset.value.y -= dt * 3;
     U.uCloudBase.value = 1500 - 520 * st.storm; U.uCloudTop.value = 2600 - 250 * st.storm;
 
-    const fast = input.fast ? 14 : 1;
     hero.update(dt, time, input, st);
+    // journey loop: once the envelope is down, fade into morning fog and start again at the launch field
+    {
+      const F = hero.flight;
+      const u = pipe.post.comp.uniforms;
+      if (!loop.phase && ((F.mode === 'landed' && hero.deflate >= 1) || F.modeT > 1500)) loop.phase = 'out';
+      if (loop.phase === 'out') {
+        loop.fade = Math.min(1, loop.fade + dt / 3);
+        if (loop.fade >= 1) { F.reset(); hero.deflate = 0; cams.inited = false; cams.shot = null; loop.phase = 'in'; }
+      } else if (loop.phase === 'in') {
+        loop.fade = Math.max(0, loop.fade - dt / 3.5);
+        if (loop.fade <= 0) loop.phase = null;
+      }
+      // the veil takes the colour of the fog at this hour
+      const a = sky.skyAmb;
+      u.uFadeColor.value.setRGB(Math.min(1, 0.55 + a.r), Math.min(1, 0.58 + a.g), Math.min(1, 0.64 + a.b));
+      u.uFade.value = loop.fade * loop.fade * (3 - 2 * loop.fade);
+    }
     cams.update(dt, time);
     fleet.update(dt, time, camera);
     parts.update(dt, st, wind);

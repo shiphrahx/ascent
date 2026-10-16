@@ -56,11 +56,23 @@ export class Hero {
     F.dawnHold = (st.valleyFog > 0.6 && st.sunElev < 1.2 * Math.PI / 180 && st.sunElev > -12 * Math.PI / 180) ? 52 : null;
     F.step(dt, t, input);
     const p = F.p;
+    // after touchdown the crown line pulls the envelope over downwind and it settles on the field
+    if (F.mode === 'landed') this.deflate = Math.min(1, this.deflate + dt / 20);
+    else this.deflate = 0;
+    const tip = Math.min(1, this.deflate / 0.5);
+    const tipA = (tip * tip * (3 - 2 * tip)) * (Math.PI / 2 - 0.12);
+    if (F.mode === 'landed' && !this.tipAxis) {
+      const w = F.wind.at(p.x, p.y, p.z);
+      this.tipAxis = new THREE.Vector3(w.z, 0, -w.x).normalize();
+      if (this.tipAxis.lengthSq() < 0.5) this.tipAxis.set(0, 0, 1);
+    }
+    if (F.mode !== 'landed') this.tipAxis = null;
     this.root.position.set(0, 0, 0);
     // envelope: yaw + lean around the mouth
     this.env.position.copy(p);
     this._e.set(F.lean.y * 0.6, F.yaw, -F.lean.x * 0.6, 'YXZ');
     this.env.quaternion.setFromEuler(this._e);
+    if (this.tipAxis) this.env.quaternion.premultiply(this._q.setFromAxisAngle(this.tipAxis, tipA));
     // basket: yaw + pendulum swing, hanging HANG below
     this._e.set(F.swing.y, F.yaw, -F.swing.x, 'YXZ');
     this.basket.quaternion.setFromEuler(this._e);
@@ -84,7 +96,7 @@ export class Hero {
     eu.uRipple.value = 0.03 + 0.05 * F.gust + Math.min(0.08, F.relWind.length() * 0.012);
     this._v.copy(F.dentDir).applyQuaternion(this._q.copy(this.env.quaternion).invert());
     eu.uDentDir.value.copy(this._v).setY(0).normalize();
-    eu.uLying.value = this.deflate > 0 ? 1 : 0; eu.uInflate.value = 1 - this.deflate * 0.7;
+    eu.uLying.value = this.deflate > 0 ? 1 : 0; eu.uInflate.value = 1 - Math.max(0, this.deflate - 0.25) * 0.85;
     eu.uGroundY.value = this.flight.groundAt(F.p.x, F.p.z);
     this.burnerWorld.copy(this.rig.burners[0]).lerp(this.rig.burners[1], 0.5).applyMatrix4(this.basket.matrixWorld);
     this.burnerWorld.y += 1.2;
