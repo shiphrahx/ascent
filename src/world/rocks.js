@@ -386,12 +386,13 @@ export class Rocks {
     const rng = mulberry32(7);
     this.mat = makeMaterial({ vertex: VERT, fragment: FRAG });
     // variants: [builder, count]
-    const kinds = [[mushroom, 9], [cone, 6], [column, 4], [multiHead, 3], [dwelling, 5]];
+    // explicit names: function names don't survive minification
+    const kinds = [[mushroom, 9, 'mushroom'], [cone, 6, 'cone'], [column, 4, 'column'], [multiHead, 3, 'multiHead'], [dwelling, 5, 'dwelling']];
     this.variants = [];
-    for (const [fn, n] of kinds) for (let k = 0; k < n; k++) {
+    for (const [fn, n, name] of kinds) for (let k = 0; k < n; k++) {
       const seed = Math.floor(rng() * 1e9);
       const hi = fn(mulberry32(seed), 0), lo = fn(mulberry32(seed), 1);
-      this.variants.push({ kind: fn.name, hi, lo, list: [] });
+      this.variants.push({ kind: name, hi, lo, list: [] });
     }
     this.place(rng);
     this.group = new THREE.Group();

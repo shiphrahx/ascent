@@ -294,4 +294,4 @@ async function boot() {
   setTimeout(() => loader.classList.add('gone'), 300);
 }
 
-boot().catch(e => { console.error(e); });
+boot().catch(e => { console.error(String((e && e.stack) || e)); });
