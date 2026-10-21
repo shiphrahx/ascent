@@ -250,6 +250,9 @@ export class Terrain {
       ig.index = geo.index; ig.attributes = geo.attributes; ig.instanceCount = 0;
       const mesh = new THREE.Mesh(ig, this.mat);
       mesh.frustumCulled = false;
+      // the ground has the heaviest shader: draw it after the chimneys, buildings and balloons
+      // so everything standing on it has already claimed its pixels in the depth buffer
+      mesh.renderOrder = 50;
       mesh.layers.enable(2);
       this.group.add(mesh);
       this.levels.push({ geo: ig, inst, mesh });
@@ -319,10 +322,18 @@ export class Terrain {
     this._frustum.setFromProjectionMatrix(this._m);
     const counts = [0, 0, 0, 0];
     const cp = camera.position;
+    // nearest chunks first, so the ground in front hides the ground behind before it's shaded
+    const vis = this._vis || (this._vis = []);
+    vis.length = 0;
     for (const c of this.chunks) {
       if (!this._frustum.intersectsBox(c.box)) continue;
       c.box.clampPoint(cp, this._v);
-      const d = this._v.distanceTo(cp);
+      c.d = this._v.distanceTo(cp);
+      vis.push(c);
+    }
+    vis.sort((a, b) => a.d - b.d);
+    for (const c of vis) {
+      const d = c.d;
       // spacing of a vertex at this LOD vs. distance
       let l;
       if (c.core) l = d < 700 * lodBias ? 0 : d < 1600 * lodBias ? 1 : d < 3200 * lodBias ? 2 : 3;
