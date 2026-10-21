@@ -1,6 +1,6 @@
 // Three light-space cascades: basket detail, the valley around the camera, and far balloons.
 import * as THREE from 'three';
-import { U } from '../core/shared.js';
+import { U, G } from '../core/shared.js';
 import { casters } from '../core/mat.js';
 
 
@@ -43,8 +43,9 @@ export class Shadows {
     this.frame++;
     for (let i = 0; i < 3; i++) {
       const c = this.cascades[i];
-      // the wide cascades refresh on alternate frames; the basket detail one every frame
-      if (this.frame > 4 && ((i === 1 && (this.frame & 1)) || (i === 2 && !(this.frame & 1)))) continue;
+      // the near and main cascades refresh every frame: on alternate frames a moving balloon's shadow
+      // stepped along at half rate. Only the far one, for distant balloons, can skip.
+      if (this.frame > 4 && i === 2 && (this.frame & 1)) continue;
       const cam = c.cam;
       const half = c.size;
       const back = i === 0 ? 400 : i === 1 ? 3000 : 9000;
@@ -65,6 +66,7 @@ export class Shadows {
       mats[i].multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
       K.setComponent(i, 1 / (cam.far - cam.near));
       WT.setComponent(i, texel);
+      G.prof && G.prof.begin('shadow' + i);
       r.setRenderTarget(c.rt);
       r.setClearColor(0x000000, 0);
       r.clear(true, true, false);

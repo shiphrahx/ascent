@@ -199,7 +199,15 @@ float cascadeShadow(vec3 P, vec3 N, out float cover){
   float sb = 1.0 + 2.5 * (1. - ndl);
   cover = 1.;
   float s0 = sampleCascade(uShadow0, uShadowM0, P + N * uShadowWT.x * 1.5, uShadowK.x * uShadowWT.x * sb, 1.8, rot);
-  if (s0 >= 0.) return s0;
+  if (s0 >= 0.) {
+    // fade into the main cascade over the outer edge, so its coarser shadows don't pop in
+    vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+    vec2 e0 = min(c0.xy, 1. - c0.xy);
+    float k = smoothstep(0.0, 0.12, min(e0.x, e0.y));
+    if (k >= 1.) return s0;
+    float s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
+    return s1 >= 0. ? mix(s1, s0, k) : s0;
+  }
   // the middle cascade has the ground in it; fade to the coarse terrain shadow at its edges
   vec3 c1 = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
   vec2 e = min(c1.xy, 1. - c1.xy);
