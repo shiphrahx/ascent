@@ -233,30 +233,32 @@ varying vec2 vGU;
 varying float vS;
 vec3 pal(float p, int i){ return texelFetch(uPal, ivec2(i, int(p)), 0).rgb; }
 
-// returns colour index 0..4 for a gore/height location
+// returns colour index 0..4 for a gore/height location. One exit, written as a chain: the D3D
+// compiler warned about the early returns once the shader around it grew.
 int patternIndex(float pat, float g, float u, float s){
   int gi = int(g);
   float gf = g;
+  int r;
   if (pat < 0.5) {
-    // hero: saffron crown, chevron band, alternating gores below, plum mouth
     // hero: saffron crown, cream chevron band, deep jewel gores, plum mouth
-    if (s > 0.87) return 1;
     float chev = abs(u - 0.5) * 0.10;
-    if (s > 0.63 + chev && s < 0.69 + chev) return 3;
-    if (s > 0.69 + chev) return (gi % 2 == 0) ? 0 : 2;
-    if (s < 0.13) return 4;
-    if (s > 0.56 + chev) return 1;
-    if (s > 0.535 + chev) return 3;
     int k = gi % 3;
-    return k == 0 ? 0 : (k == 1 ? 2 : 4);
+    r = s > 0.87 ? 1
+      : s > 0.63 + chev && s < 0.69 + chev ? 3
+      : s > 0.69 + chev ? ((gi % 2 == 0) ? 0 : 2)
+      : s < 0.13 ? 4
+      : s > 0.56 + chev ? 1
+      : s > 0.535 + chev ? 3
+      : (k == 0 ? 0 : (k == 1 ? 2 : 4));
   }
-  if (pat < 1.5) return gi % 2 == 0 ? 0 : 1;                                   // alternating gores
-  if (pat < 2.5) return int(mod(floor(s * 9.), 4.));                           // horizontal bands
-  if (pat < 3.5) { float z = abs(fract(gf * 0.5) - 0.5) * 0.25; return int(mod(floor((s + z) * 7.), 3.)); } // zigzag
-  if (pat < 4.5) { float dd = abs(fract(gf) - 0.5) + abs(fract(s * 10.) - 0.5); return dd < 0.5 ? (gi % 2 == 0 ? 0 : 1) : 2; } // harlequin
-  if (pat < 5.5) { return s > 0.8 ? 1 : (int(mod(gf * 2., 3.)) ); }            // sunburst rays
-  if (pat < 6.5) { return int(mod(gf / 4. + floor(s * 3.), 5.)); }           // patchwork quadrants
-  return s > 0.5 ? (gi % 3 == 0 ? 2 : 0) : (gi % 2 == 0 ? 3 : 4);               // split
+  else if (pat < 1.5) r = gi % 2 == 0 ? 0 : 1;                                  // alternating gores
+  else if (pat < 2.5) r = int(mod(floor(s * 9.), 4.));                          // horizontal bands
+  else if (pat < 3.5) { float z = abs(fract(gf * 0.5) - 0.5) * 0.25; r = int(mod(floor((s + z) * 7.), 3.)); } // zigzag
+  else if (pat < 4.5) { float dd = abs(fract(gf) - 0.5) + abs(fract(s * 10.) - 0.5); r = dd < 0.5 ? (gi % 2 == 0 ? 0 : 1) : 2; } // harlequin
+  else if (pat < 5.5) r = s > 0.8 ? 1 : int(mod(gf * 2., 3.));                 // sunburst rays
+  else if (pat < 6.5) r = int(mod(gf / 4. + floor(s * 3.), 5.));               // patchwork quadrants
+  else r = s > 0.5 ? (gi % 3 == 0 ? 2 : 0) : (gi % 2 == 0 ? 3 : 4);             // split
+  return r;
 }
 
 void main(){
