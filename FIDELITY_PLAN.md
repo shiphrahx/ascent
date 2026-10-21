@@ -28,6 +28,25 @@ Work through this file top to bottom. Phase 1 fixes the shadow flicker the playe
 
 **Done when:** the script prints two stable numbers you can compare after each fix.
 
+**Baseline (2026-10-21, RTX 5070 Ti laptop, headless, 1600×900, res pinned at 1).** `node tools/shimmer.mjs`, shadow-only view, church cliffs from 150 m (`at=church&d=150&up=55`), crop = top 60% of the frame. Three runs each agreed to ±0.01.
+
+| test | frame | crop |
+|---|---|---|
+| A: camera sliding 5 m/s, sun frozen at 15:00 | 1.39 | 1.33 |
+| B: camera still, sun moving from 15:00 | 0.52 | 0.58 |
+| C: nothing moving (floor) | 0.45 | 0.53 |
+| A, full image (`FULL=1`) | 3.32 | 2.34 |
+| B, full image | 0.69 | 0.74 |
+
+The floor isn't zero: the per-pixel rotating Poisson pattern fizzes even with nothing moving. The full-image A number is mostly textures sliding past, which is why the shadow-only view is the one to track.
+
+## Screenshot review: problems the plan missed
+
+- **A fresh browser profile drops to the lite tier on first load.** Shader compiles stall the first seconds, the governor sees >55 ms frames at the scale floor and sheds volumetrics, AO, grass and reflections for the rest of the session. Every first headless shot came back `tier: lite`, and so would a player's first visit.
+- **Blotchy dark patches on lit cliff faces** (church facade at 15:00): large mottled self-shadowing, not the soft relief. Points at caster terrain vs rendered terrain mismatch and bias (1.3).
+- **A hard straight shadow edge on the right of the church cliff**: the edge of the shadow-caster grid or a cascade.
+- **Shadow noise with nothing moving** (floor above): the shadow term isn't converged even on a still frame.
+
 ---
 
 ## Phase 1 — Shadow stability (the flicker)
