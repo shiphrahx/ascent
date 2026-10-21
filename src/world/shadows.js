@@ -11,6 +11,7 @@ export class Shadows {
   constructor(renderer, tier = 'high') {
     this.renderer = renderer;
     this.slices = SLICES[tier] || SLICES.high;
+    this.high = tier === 'high';
     const lite = tier === 'lite';
     // basket, slices, far balloons. The last slice carries the ground and cliffs out to the haze, so it
     // gets the most texels.
@@ -83,9 +84,10 @@ export class Shadows {
     const last = this.cascades.length - 1;
     for (let i = 0; i <= last; i++) {
       const c = this.cascades[i];
-      // everything near refreshes every frame: on alternate frames a moving balloon's shadow stepped
-      // along at half rate. Only the far one, for distant balloons, can skip.
-      if (this.frame > 4 && i === last && (this.frame & 1)) continue;
+      // everything refreshes every frame on high: on alternate frames a moving balloon's shadow
+      // stepped along at half rate, and the sun's sweep did too. Below high the far one, for distant
+      // balloons only, can skip.
+      if (!this.high && this.frame > 4 && i === last && (this.frame & 1)) continue;
       const cam = c.cam, half = c.half, back = c.back, center = c.center;
       // The light's view sits on a line through a fixed anchor, so its texel grid is fixed in the
       // world and only the window over it moves; the centre is snapped to whole texels in that grid.
