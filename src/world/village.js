@@ -315,9 +315,17 @@ export class Village {
   update(camera) {
     for (const t of this.tiles) {
       const d = camera.position.distanceTo(t.c);
-      const near = d < 380;
-      for (const m of t.hi) m.visible = near;
-      t.lo.visible = !near && d < 2600;
+      // whole tiles dither from detailed to simple over 360-400 m instead of swapping in one frame
+      const f = Math.max(0, Math.min(1, (d - 360) / 40));
+      for (const m of t.hi) m.visible = f < 1;
+      t.lo.visible = f > 0 && d < 2600;
+      if (f !== t.fade) { t.fade = f; for (const m of t.hi) this.setFade(m, f, 1); this.setFade(t.lo, f, -1); }
     }
+  }
+  // the fade rides in each instance matrix's unused bottom row (see props.js); only rewritten when it changes
+  setFade(mesh, f, side) {
+    const a = mesh.instanceMatrix.array;
+    for (let i = 0; i < mesh.count; i++) { a[i * 16 + 3] = f; a[i * 16 + 7] = f > 0 && f < 1 ? side : 0; }
+    mesh.instanceMatrix.needsUpdate = true;
   }
 }

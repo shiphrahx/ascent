@@ -204,14 +204,15 @@ const VERT = /* glsl */`
 ${VCOMMON}
 ${WIND}
 attribute float aSway, aKind;
-uniform float uScaleH, uGrid, uCellSize;
+uniform float uScaleH, uGrid, uCellSize, uLodHi;
 uniform vec3 uCamGrid;
 varying vec3 vWorld, vN;
-varying float vKind, vSway, vSeed;
+varying float vKind, vSway, vSeed, vLodT;
 #ifdef DEPTH_PASS
 varying float vDepthAlpha;
 #endif
 void main(){
+  vLodT = 0.;
   vec3 p = position;
   vec3 n = normal;
   vec4 wp;
@@ -238,9 +239,12 @@ void main(){
   wp = vec4(xz.x + p.x, heightAt(xz) + p.y - 0.02, xz.y + p.z, 1.);
   vec3 root = vec3(xz.x, 0., xz.y);
 #else
-  wp = modelMatrix * instanceMatrix * vec4(p, 1.);
-  n = mat3(modelMatrix) * mat3(instanceMatrix) * n;
-  vec3 root = (modelMatrix * instanceMatrix * vec4(0, 0, 0, 1)).xyz;
+  // the LOD cross-fade rides in the instance matrix's unused corner (see update)
+  mat4 IM = instanceMatrix;
+  vLodT = IM[0][3]; IM[0][3] = 0.;
+  wp = modelMatrix * IM * vec4(p, 1.);
+  n = mat3(modelMatrix) * mat3(IM) * n;
+  vec3 root = (modelMatrix * IM * vec4(0, 0, 0, 1)).xyz;
   seed = fract(root.x * 0.137 + root.z * 0.371);
 #endif
   // wind: whole plant leans with the local gust, tips flutter
@@ -253,7 +257,7 @@ void main(){
   wp.y -= length(w) * 0.01 * bend * s;
   vWorld = wp.xyz; vN = normalize(n); vKind = aKind; vSway = aSway; vSeed = seed;
 #ifdef DEPTH_PASS
-  vDepthAlpha = 1.;
+  vDepthAlpha = (uLodHi > 0.5) == (vLodT < 0.5) ? 1. : 0.;
 #endif
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
@@ -261,10 +265,14 @@ void main(){
 const FRAG = /* glsl */`
 ${COMMON}
 varying vec3 vWorld, vN;
-varying float vKind, vSway, vSeed;
+varying float vKind, vSway, vSeed, vLodT;
+uniform float uLodHi;
 void main(){
   vec3 P = vWorld;
   if (P.y < uClipY) discard;
+  // LOD cross-fade, as the rocks do it: each model keeps its share of the pixels in the band
+  float dn = fract(texelFetch(uNoise2D, ivec2(gl_FragCoord.xy) & 255, 0).a + uTAAFrame * 0.618034);
+  if (vLodT > 0. && vLodT < 1. && (uLodHi > 0.5 ? dn < vLodT : dn >= vLodT)) discard;
   vec3 V = normalize(cameraPosition - P);
   vec3 N = normalize(vN);
   if (!gl_FrontFacing) N = -N;
@@ -446,8 +454,8 @@ export class Vegetation {
     const n = list.length;
     const set = { hi: [], lo: [], crowns: [], list, maxDist, loDist: loGeos ? 140 : 1e9 };
     list.forEach((o, i) => { o.v = i % hiGeos.length; });
-    const mk = (geo, cnt) => {
-      const mat = makeMaterial({ vertex: VERT, fragment: FRAG, side: THREE.DoubleSide, uniforms: { uScaleH: { value: swayH }, uGrid: { value: 0 }, uCellSize: { value: 0 }, uCamGrid: { value: new THREE.Vector3() } } });
+    const mk = (geo, cnt, hi) => {
+      const mat = makeMaterial({ vertex: VERT, fragment: FRAG, side: THREE.DoubleSide, uniforms: { uScaleH: { value: swayH }, uGrid: { value: 0 }, uCellSize: { value: 0 }, uCamGrid: { value: new THREE.Vector3() }, uLodHi: { value: hi ? 1 : 0 } } });
       const m = new THREE.InstancedMesh(geo, mat, Math.max(1, cnt));
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       m.frustumCulled = false; m.count = 0;
@@ -458,8 +466,8 @@ export class Vegetation {
     };
     for (let v = 0; v < hiGeos.length; v++) {
       const cnt = list.filter(o => o.v === v).length;
-      set.hi.push(mk(hiGeos[v].geo || hiGeos[v], cnt));
-      if (loGeos) set.lo.push(mk(loGeos[v].geo || loGeos[v], cnt));
+      set.hi.push(mk(hiGeos[v].geo || hiGeos[v], cnt, true));
+      if (loGeos) set.lo.push(mk(loGeos[v].geo || loGeos[v], cnt, false));
       if (crowns) {
         const mat = makeMaterial({ vertex: CROWN_VERT, fragment: CROWN_FRAG, shadow: false, uniforms: { uCrown: { value: crowns[v].userData.crown } } });
         const m = new THREE.InstancedMesh(crowns[v], mat, Math.max(1, cnt));
@@ -486,8 +494,13 @@ export class Vegetation {
         if (!this._f.intersectsSphere(this._sph) && d > 80) continue;
         this._q.setFromAxisAngle(up, o.r);
         this._m.compose(pos.set(o.x, o.y, o.z), this._q, sc.set(o.s, o.s, o.s));
-        if (d < set.loDist || !set.lo.length) set.hi[o.v].setMatrixAt(ch[o.v]++, this._m);
-        else set.lo[o.v].setMatrixAt(cl[o.v]++, this._m);
+        // both models across a 30 m band, dithering from one to the other; how far through the band
+        // rides in the matrix's bottom-left corner, which a scale/rotate/translate never uses
+        const t = set.lo.length ? Math.max(0, Math.min(1, (d - set.loDist + 15) / 30)) : 0;
+        this._m.elements[3] = t;
+        if (t < 1) set.hi[o.v].setMatrixAt(ch[o.v]++, this._m);
+        if (t > 0) set.lo[o.v].setMatrixAt(cl[o.v]++, this._m);
+        this._m.elements[3] = 0;
         if (set.crowns.length) set.crowns[o.v].setMatrixAt(cc[o.v]++, this._m);
       }
       set.crowns.forEach((m, i) => { m.count = cc[i]; m.instanceMatrix.needsUpdate = true; });
