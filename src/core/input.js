@@ -1,9 +1,10 @@
 // Keyboard and pointer input. No on-screen hints by design; keys:
-// Space/W/Up burner, S/Down vent, A/D or Left/Right rotation vent, C camera, T hold fast-forward, M mute.
+// W/Up forward, S/Down brake and reverse, A/D or Left/Right turn, Space/E climb, Shift/Q descend,
+// C camera, T hold fast-forward, M mute.
 export class Input {
   constructor(el) {
     this.keys = new Set();
-    this.burn = false; this.vent = false; this.left = false; this.right = false; this.fast = false;
+    this.burn = false; this.vent = false; this.fwd = false; this.back = false; this.left = false; this.right = false; this.fast = false;
     this.drag = { active: false, dx: 0, dy: 0, lastX: 0, lastY: 0, idle: 99 };
     this.wheel = 0;
     this.onCamera = null; this.onMute = null; this.onFirstGesture = null;
@@ -44,11 +45,13 @@ export class Input {
   gesture() { if (this.onFirstGesture) { const f = this.onFirstGesture; this.onFirstGesture = null; f(); } }
   sync() {
     const k = this.keys;
-    this.burn = k.has('Space') || k.has('KeyW') || k.has('ArrowUp');
-    this.vent = k.has('KeyS') || k.has('ArrowDown');
+    this.burn = k.has('Space') || k.has('KeyE');
+    this.vent = k.has('ShiftLeft') || k.has('ShiftRight') || k.has('KeyQ');
+    this.fwd = k.has('KeyW') || k.has('ArrowUp');
+    this.back = k.has('KeyS') || k.has('ArrowDown');
     this.left = k.has('KeyA') || k.has('ArrowLeft');
     this.right = k.has('KeyD') || k.has('ArrowRight');
-    this.fast = k.has('KeyT') || k.has('KeyF');
+    this.fast = k.has('KeyT');
   }
   consumeDrag() { const d = { x: this.drag.dx, y: this.drag.dy }; this.drag.dx = 0; this.drag.dy = 0; return d; }
   consumeWheel() { const w = this.wheel; this.wheel = 0; return w; }

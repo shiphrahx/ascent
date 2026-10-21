@@ -11,6 +11,10 @@ export const HANG = 5.0;          // mouth to basket floor
 const T_EQ = 52, B_RATE = 5.2, COOL = 0.021, VENT_RATE = 7.5;
 const LIFT_K = 0.034, DRAG_K = 0.045;
 const MAN_B = 18, MAN_V = 24;
+// Hand flying is arcade, not physics: it should feel like driving. Speeds in m/s, rates in 1/s.
+const HAND = { fwd: 24, rev: 6, accel: 9, brake: 16, drift: 3, coast: 0.15, turn: 1.0, turnResp: 6, climb: 7, sink: 7, vResp: 3, hResp: 2.5, idle: 90, ceiling: 1400 };
+// the core of the world, where the detailed terrain is; hand flying stays inside it
+const BOUND_X = 2450, BOUND_Z = 1180;
 
 export class Flight {
   constructor(data, rocks, wind) {
@@ -43,7 +47,8 @@ export class Flight {
     this.targetAlt = this.p.y;
     this.mode = 'flying';       // flying -> landing -> landed
     this.modeT = 0;
-    this.manualT = 99;
+    this.manualT = 999;
+    this.handSpd = 0; this.turnV = 0; this.holdAlt = null; this.vyT = null; this.manual = false; this.wasManual = false;
     this.touchdown = 0;
     this.prevVh = new THREE.Vector2();
     this.accH = new THREE.Vector2();
@@ -138,17 +143,21 @@ export class Flight {
     this.modeT += dt;
     const p = this.p, v = this.v;
     // --- control ---
-    const manualActive = input.burn || input.vent || input.left || input.right;
+    const manualActive = input.burn || input.vent || input.fwd || input.back || input.left || input.right;
     if (manualActive) this.manualT = 0; else this.manualT += dt;
-    const manual = this.manualT < 12 && this.mode === 'flying';
+    // once you've touched the controls the balloon stays yours until you leave it alone for a while
+    const manual = this.manualT < HAND.idle && this.mode === 'flying';
+    if (manual && !this.wasManual) this.handSpd = Math.hypot(v.x, v.z);
     // handing back to the autopilot: pick up the route at the nearest landmark ahead
     if (this.wasManual && !manual) {
       let bi = this.wp, bd = 1e9;
       for (let i = 1; i < ROUTE.length; i++) { const d = Math.hypot(ROUTE[i].x - p.x, ROUTE[i].z - p.z); if (d < bd) { bd = d; bi = i; } }
       if (bi < ROUTE.length - 1) { const a = ROUTE[bi], b = ROUTE[bi + 1]; if ((p.x - a.x) * (b.x - a.x) + (p.z - a.z) * (b.z - a.z) > 0) bi++; }
       this.wp = Math.max(1, bi);
+      this.targetAlt = p.y;
     }
     this.wasManual = manual;
+    this.manual = manual;
     const turnIn = (input.left ? 1 : 0) - (input.right ? 1 : 0);
     if (this.mode === 'prelaunch') {
       this.burn = 0; this.vent = 0;
@@ -159,19 +168,30 @@ export class Flight {
     } else if (this.mode === 'flying') {
       if (manual) {
         this.burnHold = 0;
-        if (input.burn || input.vent) {
-          this.burn = input.burn ? 1 : 0; this.vent = input.vent ? 1 : 0;
-          this.holdAlt = null;
-        } else {
-          // keys released: level off and hold this height, short burner blips as needed
-          if (this.holdAlt == null) this.holdAlt = p.y + v.y * 0.7;
-          const dvy = Math.max(-2, Math.min(2, (this.holdAlt - p.y) * 0.6));
-          const needX = dvy * Math.abs(dvy) * DRAG_K / LIFT_K + (dvy - v.y) * 10;
-          this.burn = needX > this.x + 1.5 ? 1 : 0;
-          this.vent = needX < this.x - 3 ? 1 : 0;
+        // throttle: W pushes on, S brakes then reverses, let go and it eases back to a drift
+        if (input.fwd) this.handSpd = Math.min(HAND.fwd, this.handSpd + (this.handSpd < 0 ? HAND.brake : HAND.accel) * dt);
+        else if (input.back) this.handSpd = Math.max(-HAND.rev, this.handSpd - (this.handSpd > 0 ? HAND.brake : HAND.accel * 0.6) * dt);
+        else this.handSpd += (Math.sign(this.handSpd || 1) * HAND.drift - this.handSpd) * Math.min(1, dt * HAND.coast);
+        // climb and descend straight away; let go and it holds the height it's at
+        const agl = p.y - HANG - this.groundAt(p.x, p.z);
+        let vyT;
+        if (input.burn) { vyT = HAND.climb; this.holdAlt = null; }
+        else if (input.vent) { vyT = -HAND.sink * Math.min(1, Math.max(0.15, agl / 12)); this.holdAlt = null; }
+        else {
+          if (this.holdAlt == null) this.holdAlt = p.y + v.y * 0.25;
+          // ride up over rising ground and chimneys two seconds ahead instead of stopping dead
+          let lift = -1e9;
+          for (const k of [0.6, 1.2, 2]) lift = Math.max(lift, this.obstacleTop(p.x + v.x * k, p.z + v.z * k, 7));
+          this.holdAlt = Math.max(this.holdAlt, lift + HANG + 6);
+          vyT = Math.max(-3, Math.min(6, (this.holdAlt - p.y) * 1.5));
         }
+        vyT = Math.min(vyT, (HAND.ceiling - p.y) * 0.5);
+        this.vyT = vyT;
+        // the flame and the vent follow what the balloon is being asked to do
+        this.burn = input.burn || vyT > v.y + 0.8 ? 1 : 0;
+        this.vent = input.vent ? 1 : 0;
         this.targetAlt = p.y;
-      } else { this.holdAlt = null; this.autopilot(dt, t); }
+      } else { this.holdAlt = null; this.vyT = null; this.autopilot(dt, t); }
     } else if (this.mode === 'landing') {
       // ease down onto the field
       const g = this.groundAt(p.x, p.z) + HANG;
@@ -205,18 +225,33 @@ export class Flight {
     const w = this.wind.at(p.x, p.y + 8, p.z, this._w);
     this.gust = this.wind.gust(p.x, p.z);
     let ay = LIFT_K * this.x - DRAG_K * v.y * Math.abs(v.y) + w.y * 0.3 + (this._surge || 0);
+    if (handRates && this.vyT != null) {
+      // hand flying drives the climb rate directly; keep the envelope heat in step so nothing else
+      // (grounding, the burner glow) sees a cold balloon
+      ay = (this.vyT - v.y) * HAND.vResp;
+      this.x = 10 + Math.max(0, v.y) * 3;
+    }
     // horizontal: carried by the air with a few seconds of lag
     let ax, az;
     if (this.mode === 'flying' && !this.grounded) {
       // the balloon holds its own heading: A/D turn it by hand, the autopilot turns it toward the next landmark
-      if (manual) this.heading -= turnIn * 0.55 * dt;
-      else if (this.apHeading != null) {
+      if (manual) {
+        // turn rate builds up quickly and is a touch gentler when crawling
+        const tT = turnIn * HAND.turn * (0.55 + 0.45 * Math.min(1, Math.abs(this.handSpd) / 10));
+        this.turnV += (tT - this.turnV) * Math.min(1, dt * HAND.turnResp);
+        this.heading -= this.turnV * dt;
+      } else if (this.apHeading != null) {
         let d = this.apHeading - this.heading; d = Math.atan2(Math.sin(d), Math.cos(d));
         this.heading += Math.max(-0.22 * dt, Math.min(0.22 * dt, d * 0.8 * dt));
       }
-      const spd = Math.max(5.5, Math.hypot(w.x, w.z)) * (manual ? 1.1 : 1);
-      const tau = manual ? 1.0 : 2.5;
-      ax = (Math.cos(this.heading) * spd - v.x) / tau; az = (Math.sin(this.heading) * spd - v.z) / tau;
+      if (manual) {
+        // straight where it's pointed, with a breath of wind drift so it still feels like air
+        const tx = Math.cos(this.heading) * this.handSpd + w.x * 0.12, tz = Math.sin(this.heading) * this.handSpd + w.z * 0.12;
+        ax = (tx - v.x) * HAND.hResp; az = (tz - v.z) * HAND.hResp;
+      } else {
+        const spd = Math.max(5.5, Math.hypot(w.x, w.z));
+        ax = (Math.cos(this.heading) * spd - v.x) / 2.5; az = (Math.sin(this.heading) * spd - v.z) / 2.5;
+      }
     } else {
       const tau = this.grounded ? 0.5 : 5.5;
       ax = (w.x - v.x) / tau; az = (w.z - v.z) / tau;
@@ -239,7 +274,14 @@ export class Flight {
       for (const [rad, hy] of [[9.6, 12], [6.2, 4.5], [1.6, -HANG + 0.3]]) {
         const h = this.groundAt(p.x + cx * rad, p.z + cz * rad);
         const pen = h - (p.y + hy - (hy > 0 ? 3 : 0));
-        if (pen > 0) { f.x -= cx * pen * 4; f.z -= cz * pen * 4; f.y += pen * 1.5; }
+        if (pen > 0) {
+          f.x -= cx * pen * 4; f.z -= cz * pen * 4; f.y += pen * 1.5;
+          // at hand-flying speeds a spring alone lets you plough into the cliff: stop the push into it
+          const vn = v.x * cx + v.z * cz;
+          if (vn > 0) { v.x -= cx * vn; v.z -= cz * vn; }
+          const k = Math.min(pen, 0.5) * Math.min(1, dt * 6);
+          p.x -= cx * k; p.z -= cz * k;
+        }
       }
     }
     // rocks: chimney cones against the envelope belly and the basket
@@ -258,9 +300,10 @@ export class Flight {
         if (gap < 0) {
           f.x += dx / d * -gap * 5; f.z += dz / d * -gap * 5;
           if (hy > 0) f.y += -gap * 0.6; else f.y += -gap * 2.5;
-          // damp approach velocity
+          // stop the approach outright and ease back out, so speed can't carry it through
           const vn = (v.x * dx + v.z * dz) / d;
-          if (vn < 0) { f.x -= dx / d * vn * 2; f.z -= dz / d * vn * 2; }
+          if (vn < 0) { v.x -= dx / d * vn; v.z -= dz / d * vn; }
+          p.x += dx / d * -gap * Math.min(1, dt * 6); p.z += dz / d * -gap * Math.min(1, dt * 6);
         }
       }
     }
@@ -269,7 +312,11 @@ export class Flight {
       const dx = p.x - b.p.x, dy = (p.y) - (b.p.y), dz = p.z - b.p.z;
       const d = Math.hypot(dx, dy * 0.8, dz) + 1e-3;
       const gap = d - 21;
-      if (gap < 0) { f.x += dx / d * -gap * 1.2; f.y += dy / d * -gap * 0.8; f.z += dz / d * -gap * 1.2; }
+      if (gap < 0) {
+        f.x += dx / d * -gap * 1.2; f.y += dy / d * -gap * 0.8; f.z += dz / d * -gap * 1.2;
+        const vn = (v.x * dx + v.y * dy + v.z * dz) / d;
+        if (vn < 0) { v.x -= dx / d * vn; v.y -= dy / d * vn; v.z -= dz / d * vn; }
+      }
     }
     ax += f.x; ay += f.y; az += f.z;
     if (this.mode === 'prelaunch' || this.mode === 'landed') { ax = -v.x * 4 + f.x; az = -v.z * 4 + f.z; }
@@ -277,6 +324,10 @@ export class Flight {
     if (this.mode === 'landed') { v.multiplyScalar(Math.max(0, 1 - dt * 3)); }
     p.addScaledVector(v, dt);
     if (p.y - HANG < ground - 0.1) { p.y = ground - 0.1 + HANG; if (v.y < 0) v.y = 0; }
+    // a soft wall at the edge of the detailed world: slide along it, never through
+    for (const [k, B] of [['x', BOUND_X], ['z', BOUND_Z]]) {
+      if (Math.abs(p[k]) > B) { const sg = Math.sign(p[k]); p[k] = sg * B; if (v[k] * sg > 0) v[k] = 0; }
+    }
     // tethered until the crew lets go
     if (this.mode === 'prelaunch') { p.y = ground + HANG + 0.02; v.set(0, 0, 0); }
 
@@ -284,7 +335,8 @@ export class Flight {
     const turn = (input.left ? 1 : 0) - (input.right ? 1 : 0);
     // the basket swings round to face the way it's travelling
     let dyaw = (Math.PI / 2 - this.heading) - this.yaw; dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw));
-    this.yawRate += ((dyaw * 1.6 + turn * 0.0) - this.yawRate) * Math.min(1, dt * 3);
+    const yk = this.manual ? 4 : 1.6;
+    this.yawRate += ((dyaw * yk + turn * 0.0) - this.yawRate) * Math.min(1, dt * (this.manual ? 8 : 3));
     this.yaw += this.yawRate * dt;
 
     // --- basket swing: pendulum driven by horizontal acceleration and gusts ---
@@ -305,6 +357,8 @@ export class Flight {
     this.relWind.set(wTop.x - v.x, 0, wTop.z - v.z);
     const rel = this.relWind.length();
     const targetLean = new THREE.Vector2(this.relWind.x, this.relWind.z).multiplyScalar(0.012);
+    // flying fast by hand would lay the envelope right over; keep the lean to a lively tilt
+    if (targetLean.length() > 0.12) targetLean.setLength(0.12);
     this.lean.lerp(targetLean, Math.min(1, dt * 1.5));
     const targetDent = Math.min(0.5, rel * rel * 0.02 + this.gust * 0.08 * (this.grounded ? 0 : 1));
     this.dentV += ((targetDent - this.dent) * 6 - this.dentV * 2.5) * dt;

@@ -248,7 +248,7 @@ async function boot() {
     {
       const F = hero.flight;
       const u = pipe.post.comp.uniforms;
-      if (!loop.phase && ((F.mode === 'landed' && hero.deflate >= 1) || F.modeT > 1500)) loop.phase = 'out';
+      if (!loop.phase && ((F.mode === 'landed' && hero.deflate >= 1) || (F.modeT > 1500 && F.manualT > 120))) loop.phase = 'out';
       if (loop.phase === 'out') {
         loop.fade = Math.min(1, loop.fade + dt / 3);
         if (loop.fade >= 1) {
