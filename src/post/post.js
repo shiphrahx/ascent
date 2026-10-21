@@ -165,7 +165,7 @@ export class Post {
       uVignette: { value: 0.32 }, uFade: { value: 0 }, uFadeColor: { value: new THREE.Color(0.75, 0.78, 0.84) },
       uShadowTint: { value: new THREE.Vector3() }, uHighTint: { value: new THREE.Vector3(1, 1, 1) },
       uHeat: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uHeatUp: { value: [new THREE.Vector2(0, 1), new THREE.Vector2(0, 1)] },
-      tLum: { value: null }, uLumAvg: { value: 0 }, uLocalShadow: { value: 0 }, uLocalHigh: { value: 0 },
+      tLum: { value: null }, uLumAvg: { value: 0 }, uLocalShadow: { value: 0.25 }, uLocalHigh: { value: 0.2 },
     });
     this.lumMat = fsMaterial(LUM, { tSrc: { value: null }, uCell: { value: new THREE.Vector2(1 / 64, 1 / 36) } });
     this.lumRT = makeRT(64, 36);
