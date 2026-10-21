@@ -80,9 +80,12 @@ void main(){
   float ma = max(a.x, max(a.y, a.z));
   if (ma > 1.) hist = cen + v / ma;
 
-  // trust this frame more when a sample landed close, or the view moved a lot
+  // trust this frame more when a sample landed close, when the history had to be clipped hard (it
+  // was wrong: something moved or came into view), and a little when the view moves, to keep the
+  // resampled history from going soft. Static ground that reprojects well keeps a long history, so
+  // shadow noise still averages out while flying.
   vec2 vel = (vUv - puv) * uOutRes;
-  float alpha = 0.04 + 0.1 * wmax + clamp(length(vel) * 0.01, 0., 0.12);
+  float alpha = 0.04 + 0.1 * wmax + clamp(length(vel) * 0.004, 0., 0.04) + 0.12 * clamp(ma - 1., 0., 1.);
   vec3 o = mix(fromYC(hist), cur, alpha);
   gl_FragColor = vec4(itm(o), 1.);
 }
