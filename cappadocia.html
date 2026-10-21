@@ -4025,23 +4025,44 @@ vec3 applyHaze(vec3 col, vec3 P){
 
 struct Surf { vec3 albedo; vec3 N; float rough; float spec; float ao; float wrap; float sss; };
 
+// Physically based shading in the shape UE uses: Lambert diffuse, GGX specular with height-correlated
+// Smith visibility and Schlick Fresnel for the key light; the sky as diffuse irradiance plus a
+// roughness-blurred reflection weighted by the split-sum Fresnel. uKeyColor is irradiance (pi * L),
+// so the 1/pi of Lambert and the pi of the light cancel.
+// wrap: only thin, translucent things (leaves, grass, fabric) keep a little wrap-around light.
+vec3 envSpecular(vec3 R, float rough){
+  // sky above the horizon, a dim ground-tinted bounce below it, blurring toward irradiance as it roughens
+  vec3 sky = skyLut(normalize(vec3(R.x, max(R.y, 0.02), R.z)));
+  vec3 below = ambCube(vec3(0., -1., 0.)) * 1.2;
+  vec3 sharp = mix(below, sky, smoothstep(-0.12, 0.05, R.y));
+  return mix(sharp, ambCube(R), smoothstep(0.15, 0.85, rough));
+}
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
-  vec3 L = uKeyDir;
-  float ndl = dot(s.N, L);
-  float diff = max(0., (ndl + s.wrap) / (1. + s.wrap));
+  vec3 L = uKeyDir, N = s.N;
+  float ndlRaw = dot(N, L);
+  float ndl = max(ndlRaw, 0.);
+  float ndv = max(dot(N, V), 1e-3);
+  float w = max(0., s.wrap - 0.2);
+  float diff = max(0., (ndlRaw + w) / ((1. + w) * (1. + w)));
   vec3 key = uKeyColor * diff * shadow;
-  // translucency / subsurface through thin things lit from behind
+  // translucency through thin things lit from behind
   key += uKeyColor * s.sss * pow(sat(dot(-V, L)), 3.) * (0.35 + 0.65 * shadow) * 0.6;
-  vec3 amb = ambCube(s.N);
-  vec3 col = s.albedo * (key + amb * s.ao);
-  // specular
+  float rough = clamp(s.rough, 0.04, 1.);
+  float a = rough * rough, a2 = a * a;
   vec3 H = normalize(L + V);
-  float sp = pow(max(dot(s.N, H), 0.), mix(8., 180., 1. - s.rough)) * (1. - s.rough) * s.spec;
-  float fres = pow(1. - max(dot(s.N, V), 0.), 5.);
-  col += uKeyColor * sp * shadow * (0.3 + fres);
-  // painterly rim light along silhouettes facing the key
-  float rim = pow(1. - max(dot(s.N, V), 0.), 4.) * sat(dot(-V, L) * 0.6 + 0.4);
-  col += uKeyColor * rim * 0.22 * (0.4 + 0.6 * shadow) * mix(vec3(1), s.albedo * 1.8, 0.5);
+  float ndh = max(dot(N, H), 0.), ldh = max(dot(L, H), 0.);
+  float dd = ndh * ndh * (a2 - 1.) + 1.;
+  float D = a2 / (3.14159 * dd * dd);
+  float vis = 0.5 / (ndl * sqrt(ndv * ndv * (1. - a2) + a2) + ndv * sqrt(ndl * ndl * (1. - a2) + a2) + 1e-5);
+  // spec scales reflectance: 0.04 is any common dielectric, wet and icy surfaces push past it
+  float F0 = 0.02 + 0.06 * s.spec;
+  float F = F0 + (1. - F0) * pow(1. - ldh, 5.);
+  vec3 col = s.albedo * (key + ambCube(N) * s.ao) * (1. - F0);
+  col += uKeyColor * (D * vis * F * ndl * shadow);
+  // sky reflection, darkened where the surface is occluded (specular occlusion from AO)
+  float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);
+  float so = sat(pow(ndv + s.ao, exp2(-16. * a - 1.)) - 1. + s.ao);
+  col += envSpecular(reflect(-V, N), rough) * Fe * so;
   return col;
 }
 `,$g=`
@@ -4726,9 +4747,10 @@ void main(){
   float L = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col *= mix(vec3(1.), uHighTint, smoothstep(0.05, 1.2, L));
   col += uShadowTint * (1. - smoothstep(0.0, 0.35, L)) * 0.6;
+  // contrast in log space around 18% grey before the curve, as UE grades: it steepens the midtones
+  // without clipping the shadows (linear contrast after the curve crushed everything under 5% to black)
+  col = 0.18 * exp2(log2(max(col, vec3(1e-6)) / 0.18) * uCon);
   col = aces(col * 1.05);
-  // contrast around mid grey and saturation
-  col = clamp((col - 0.42) * uCon + 0.42, 0., 1.);
   float l2 = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = max(mix(vec3(l2), col, uSat), 0.);
   // vignette

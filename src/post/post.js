@@ -90,9 +90,10 @@ void main(){
   float L = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col *= mix(vec3(1.), uHighTint, smoothstep(0.05, 1.2, L));
   col += uShadowTint * (1. - smoothstep(0.0, 0.35, L)) * 0.6;
+  // contrast in log space around 18% grey before the curve, as UE grades: it steepens the midtones
+  // without clipping the shadows (linear contrast after the curve crushed everything under 5% to black)
+  col = 0.18 * exp2(log2(max(col, vec3(1e-6)) / 0.18) * uCon);
   col = aces(col * 1.05);
-  // contrast around mid grey and saturation
-  col = clamp((col - 0.42) * uCon + 0.42, 0., 1.);
   float l2 = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = max(mix(vec3(l2), col, uSat), 0.);
   // vignette
