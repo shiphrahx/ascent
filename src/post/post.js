@@ -93,14 +93,18 @@ vec3 filmUE(vec3 x){
   return clamp(fromAP1 * o, 0., 1.);
 }
 vec3 toSRGB(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1. / 2.4)) - 0.055, step(0.0031308, c)); }
-// light unsharp mask: the temporal resolve softens a touch, this gives the edges back
+// light unsharp mask: the temporal resolve softens a touch, this gives the edges back. Clamped to
+// the range of the pixels it was built from, which stops it drawing a dark rim round every cliff
+// against the sky (unclamped it took 60% off the edge pixel).
 vec3 sceneAt(vec2 uv){
   vec2 t = 1. / uRes;
   vec3 c = texture(tScene, uv).rgb;
-  vec3 n = texture(tScene, uv + vec2(t.x, 0)).rgb + texture(tScene, uv - vec2(t.x, 0)).rgb + texture(tScene, uv + vec2(0, t.y)).rgb + texture(tScene, uv - vec2(0, t.y)).rgb;
-  vec3 d = c - n * 0.25;
-  // scale by local brightness so the halo stays proportional in HDR
-  return max(c + d * 0.6 / (1. + abs(d) / (c + 1e-3)), 0.);
+  vec3 a = texture(tScene, uv + vec2(t.x, 0)).rgb, b = texture(tScene, uv - vec2(t.x, 0)).rgb;
+  vec3 e = texture(tScene, uv + vec2(0, t.y)).rgb, f = texture(tScene, uv - vec2(0, t.y)).rgb;
+  vec3 d = c - (a + b + e + f) * 0.25;
+  // scale by local brightness so the sharpening stays proportional in HDR
+  vec3 s = c + d * 0.6 / (1. + abs(d) / (c + 1e-3));
+  return clamp(s, min(c, min(min(a, b), min(e, f))), max(c, max(max(a, b), max(e, f))));
 }
 void main(){
   vec2 uv = vUv;
