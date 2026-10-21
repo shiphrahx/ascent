@@ -410,7 +410,10 @@ async function boot() {
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
-    pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
+    // depth of field only for close-ups of the balloon: focused on it, fading in under 50 m
+    const focusD = camera.position.distanceTo(hero.env.position);
+    const dofK = cams.mode === 1 || lite ? 0 : Math.min(1, Math.max(0, (50 - focusD) / 25));
+    pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi, dof: dofK, focus: focusD }, time);
     prof.collect();
     ftimer.end();
     shimmer.grab(pipe.resolved.texture, pipe.main.depthTexture, camera, exposure);

@@ -63,7 +63,9 @@ varying vec2 vUv;
 uniform sampler2D tScene, tBloom, tLum;
 uniform float uLumAvg, uLocalShadow, uLocalHigh;
 uniform vec2 uRes;
-uniform float uExposure, uBloom, uTime, uSat, uCon, uVignette, uFade, uLevels;
+uniform float uExposure, uBloom, uTime, uSat, uCon, uVignette, uFade, uLevels, uDof, uFocus, uGrain;
+uniform highp sampler2D tDepth;
+uniform mat4 uProj;
 uniform vec3 uShadowTint, uHighTint, uFadeColor;
 uniform vec4 uHeat[2];     // xy screen pos of flame, z strength, w radius
 uniform vec2 uHeatUp[2];   // screen-space up direction
@@ -106,6 +108,23 @@ vec3 sceneAt(vec2 uv){
   vec3 s = c + d * 0.6 / (1. + abs(d) / (c + 1e-3));
   return clamp(s, min(c, min(min(a, b), min(e, f))), max(c, max(max(a, b), max(e, f))));
 }
+// Depth of field for close-up shots only (Pipeline sets uDof from the camera): a small disc gather
+// sized by the thin-lens circle of confusion, a few pixels at most.
+float linZ(float d){ float z = d * 2. - 1.; return uProj[3][2] / (z * uProj[2][3] - uProj[2][2]); }
+vec3 dof(vec3 c, vec2 uv){
+  float z = -linZ(texture(tDepth, uv).r);
+  float coc = min(abs(1. / uFocus - 1. / max(z, 0.1)) * 100. * uDof, 3.);
+  if (coc < 0.5) return c;
+  vec3 acc = c; float ws = 1.;
+  for (int i = 0; i < 8; i++) {
+    float a = float(i) * 2.39996 + uTime * 7.1, r = sqrt((float(i) + 0.5) / 8.) * coc;
+    vec2 q = uv + vec2(cos(a), sin(a)) * r / uRes;
+    // nearer things don't bleed into what's behind them in focus
+    float zq = -linZ(texture(tDepth, q).r), w = zq < z - 1. && abs(1. / uFocus - 1. / max(zq, 0.1)) * 100. * uDof < 0.5 ? 0. : 1.;
+    acc += texture(tScene, q).rgb * w; ws += w;
+  }
+  return acc / ws;
+}
 void main(){
   vec2 uv = vUv;
   // heat shimmer above burner flames
@@ -122,6 +141,13 @@ void main(){
     uv += off;
   }
   vec3 col = sceneAt(uv);
+  if (uDof > 0.) col = dof(col, uv);
+  // a touch of lateral chromatic aberration toward the frame's edges, as a real lens has
+  vec2 qc = uv - 0.5;
+  float ca = dot(qc, qc) * 0.0035;
+  col.r += texture(tScene, 0.5 + qc * (1. + ca)).r - texture(tScene, uv).r;
+  col.b += texture(tScene, 0.5 + qc * (1. - ca)).b - texture(tScene, uv).b;
+  col = max(col, 0.);
   // Local exposure, as UE5 has it: lift what sits in a darker neighbourhood than the frame as a whole
   // and pull down what sits in a brighter one, so shaded cliffs stay readable next to sky and snow.
   // It backs off where a pixel doesn't belong to its neighbourhood (a silhouette against the sky),
@@ -154,6 +180,10 @@ void main(){
   vec2 q = vUv - 0.5;
   col *= 1. - uVignette * dot(q, q) * 1.6;
   col = toSRGB(col);
+  // light film grain, strongest in the mid-tones and gone in the highlights; it changes every frame
+  // and comes after the temporal pass, so nothing tries to average it away
+  float gl = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col += (hash(vUv * uRes + fract(uTime * 7.3) * 91.) - 0.5) * 0.016 * gl * (1. - gl) * 4. * uGrain;
   col = mix(col, uFadeColor, uFade);
   // dither the 8-bit output so gradients don't band
   col += (hash(vUv * uRes + fract(uTime * 13.) * 100.) - 0.5) / 255.;
@@ -170,7 +200,8 @@ export class Post {
     this.up = fsMaterial(UP, { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uRadius: { value: 1 } }, { blending: THREE.AdditiveBlending });
     this.comp = fsMaterial(COMPOSITE, {
       tScene: { value: null }, tBloom: { value: null }, uRes: { value: new THREE.Vector2() },
-      uExposure: { value: 1 }, uBloom: { value: 1 }, uLevels: { value: 7 }, uTime: { value: 0 }, uSat: { value: 1 }, uCon: { value: 1 },
+      uExposure: { value: 1 }, uBloom: { value: 1 }, uLevels: { value: 7 }, uDof: { value: 0 }, uFocus: { value: 50 }, uGrain: { value: 1 },
+      tDepth: { value: null }, uProj: { value: new THREE.Matrix4() }, uTime: { value: 0 }, uSat: { value: 1 }, uCon: { value: 1 },
       uVignette: { value: 0.32 }, uFade: { value: 0 }, uFadeColor: { value: new THREE.Color(0.75, 0.78, 0.84) },
       uShadowTint: { value: new THREE.Vector3() }, uHighTint: { value: new THREE.Vector3(1, 1, 1) },
       uHeat: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uHeatUp: { value: [new THREE.Vector2(0, 1), new THREE.Vector2(0, 1)] },

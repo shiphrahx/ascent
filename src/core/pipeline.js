@@ -62,6 +62,9 @@ export class Pipeline {
     P && P.begin('blur');
     const out = this.taa.blur(res);
     P && P.begin('post');
+    const cu = this.post.comp.uniforms;
+    cu.tDepth.value = this.main.depthTexture; cu.uProj.value.copy(camera.projectionMatrix);
+    cu.uDof.value = look.dof || 0; cu.uFocus.value = look.focus || 50;
     this.post.render(out.texture, look, time);
   }
 }
