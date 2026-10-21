@@ -146,21 +146,32 @@ vec3 ambCube(vec3 n){
 }
 float hgPhase(float c, float g){ float g2 = g*g; return (1. - g2) / (12.566 * pow(1. + g2 - 2.*g*c, 1.5)); }
 
-// Aerial perspective: exponential height haze lit by the sky in the view direction.
+// Aerial perspective, in the sky LUT's own terms (world/skydome.js): Rayleigh air with an 8 km scale
+// height, which takes blue out fastest, plus the hour's aerosol haze (1.5 km, grey), each integrated in
+// closed form along the view ray. So distant ridges go blue-grey and keep some of their warmth, and
+// fade per channel toward the sky behind them, which is exactly the LUT's colour at the horizon.
+// The sun's share of the in-scatter is cut where the air along the way sits in terrain shadow, so
+// shaded valleys stay cooler and darker in the haze.
+float layerDepth(float Cy, float dy, float dist, float H){
+  float k = dy / H;
+  return exp(-Cy / H) * dist * (abs(k) > 1e-3 ? (1. - exp(-k)) / k : 1.);
+}
 vec3 applyHaze(vec3 col, vec3 P){
   vec3 C = cameraPosition;
   vec3 dv = P - C;
   float dist = length(dv);
   vec3 dir = dv / max(dist, 1e-3);
-  float H = 1500.;
-  float rho0 = uHaze / 32000.;
-  float k = dv.y / H;
-  float f = abs(k) > 1e-3 ? (1. - exp(-k)) / k : 1.;
-  float od = rho0 * exp(-(C.y + 40.) / H) * dist * f;
-  float T = exp(-od);
-  vec3 sky = skyLut(normalize(vec3(dir.x, max(dir.y, 0.015) , dir.z)));
+  // world y = 0 sits about 1100 m above sea level, where the LUT puts its observer
+  vec3 odR = vec3(5.802e-6, 13.558e-6, 33.1e-6) * exp(-1100. / 8000.) * layerDepth(C.y, dv.y, dist, 8000.);
+  float odA = uHaze / 32000. * 0.7 * exp(-40. / 1500.) * layerDepth(C.y, dv.y, dist, 1500.);
+  vec3 T = exp(-(odR + odA));
+  vec3 sky = skyLut(normalize(vec3(dir.x, max(dir.y, 0.015), dir.z)));
+  // how much of the air on the way is in the sun: three looks along the ray
+  float lit = 1.;
+  if (dist > 400.) lit = (terrainShadow(C + dv * 0.3) + terrainShadow(C + dv * 0.6) + terrainShadow(C + dv * 0.9)) / 3.;
+  float aer = odA / (odA + luma(odR) + 1e-9);
   float mie = hgPhase(dot(dir, uKeyDir), 0.72) * 6.0;
-  vec3 ins = sky * 0.95 + uKeyColor * mie * 0.06 * keyHorizon(P);
+  vec3 ins = sky * 0.95 * mix(0.35, 1., lit) + uKeyColor * mie * 0.06 * keyHorizon(P) * aer * lit;
   ins = mix(ins, vec3(luma(ins)) * vec3(0.94, 0.98, 1.04), uStorm * 0.6);
   return col * T + ins * (1. - T);
 }
