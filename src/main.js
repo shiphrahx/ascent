@@ -143,6 +143,10 @@ async function boot() {
   if (tier === 'lite') { river.reflect = false; veg.grass.visible = false; veg.noGrass = true; }
   pipe.hooks.transparent = true;
   let exposure = 1;
+  // histogram exposure: smoothed log2 frame luminance, the correction it last asked for, and the log2
+  // of what exposure times frame luminance should come to (set so a clear afternoon needs none)
+  let aeLog = null, aeCorr = 0, aeB = 0;
+  const AE_KEY = dbg.aekey !== undefined ? +dbg.aekey : -0.75;
   setProgress(0.7); await tick();
 
   let pr = Math.min(window.devicePixelRatio || 1, 2);
@@ -225,7 +229,7 @@ async function boot() {
   const shimmer = new ShimmerProbe(renderer);
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
   window.__dbg = { G, U, sky, shimmer: (n, crop, sky) => { shimmer.start(n, crop, 30, sky); if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, shimmerMap: () => shimmer.heatmap(), loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
-    extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
+    extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), aeLog: aeLog === null ? null : +aeLog.toFixed(2), aeCorr: +aeCorr.toFixed(2), aeB: +Math.log2(Math.max(aeB, 1e-5)).toFixed(2), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
   function frame() {
@@ -360,7 +364,21 @@ async function boot() {
       const B = (0.2126 * up.r + 0.7152 * up.g + 0.0722 * up.b) + (0.2126 * k.r + 0.7152 * k.g + 0.0722 * k.b) * 0.3 * Math.min(1, Math.max(0.15, sky.keyDir.y * 4 + 0.15));
       const e = st.sunElev * 180 / Math.PI;
       const nightDim = 1 - 0.7 * Math.min(1, Math.max(0, (-e - 2) / 12));
-      const target = st.grade.exp * 0.55 * nightDim / Math.pow(Math.max(B, 1e-5), 0.74);
+      let target = st.grade.exp * 0.55 * nightDim / Math.pow(Math.max(B, 1e-5), 0.74);
+      // then the histogram says how bright the frame really is (post.js, middle 80% of it). Compared
+      // with what this hour's light ought to make of the land (B), it tells a shaded canyon or a view
+      // full of sky or snow from the hour itself. Pull 40% of the way toward it, a third of a stop at
+      // most, the way UE's eye adaptation does, and leave each hour's own exposure (its mood) alone.
+      // The key is that frame-to-light ratio averaged over 7, 14, 16.2 and 20 h: low suns make darker
+      // frames than their light suggests, and that's the mood, not an error.
+      const la = pipe.post.lumAvg;
+      if (la !== null) {
+        aeLog = aeLog === null ? la : aeLog + (la - aeLog) * Math.min(1, dt * 1.5);
+        aeCorr = Math.max(-0.8, Math.min(0.8, Math.log2(Math.max(B, 1e-5)) + AE_KEY - aeLog)) * 0.4;
+        aeB = B;
+        target *= Math.pow(2, aeCorr);
+        pipe.post.comp.uniforms.uLumAvg.value = aeLog;
+      }
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
       U.uGlowComp.value = 1 / (1 + 0.14 * exposure);
     }

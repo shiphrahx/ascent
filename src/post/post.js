@@ -1,6 +1,7 @@
 // HDR post: bloom mip chain, heat shimmer, exposure, UE5's filmic curve, per-hour grade, vignette, dither.
 import * as THREE from 'three';
 import { fsMaterial, renderFS, makeRT } from '../core/fsq.js';
+import { AsyncReader } from '../core/readback.js';
 
 const DOWN = /* glsl */`
 precision highp float;
@@ -39,10 +40,28 @@ void main(){
 }
 `;
 
+// 64x36 log luminance of the resolved frame (before exposure): the histogram for auto exposure reads
+// it back, and local exposure samples it as each pixel's neighbourhood
+const LUM = /* glsl */`
+precision highp float;
+varying vec2 vUv;
+uniform sampler2D tSrc;
+uniform vec2 uCell;
+void main(){
+  float s = 0.;
+  for (int j = 0; j < 4; j++) for (int i = 0; i < 4; i++) {
+    vec3 c = texture(tSrc, vUv + (vec2(i, j) - 1.5) * 0.25 * uCell).rgb;
+    s += log2(max(dot(c, vec3(0.2126, 0.7152, 0.0722)), 1e-6));
+  }
+  gl_FragColor = vec4(s / 16., 0., 0., 1.);
+}
+`;
+
 const COMPOSITE = /* glsl */`
 precision highp float;
 varying vec2 vUv;
-uniform sampler2D tScene, tBloom;
+uniform sampler2D tScene, tBloom, tLum;
+uniform float uLumAvg, uLocalShadow, uLocalHigh;
 uniform vec2 uRes;
 uniform float uExposure, uBloom, uTime, uSat, uCon, uVignette, uFade;
 uniform vec3 uShadowTint, uHighTint, uFadeColor;
@@ -99,6 +118,15 @@ void main(){
     uv += off;
   }
   vec3 col = sceneAt(uv);
+  // Local exposure, as UE5 has it: lift what sits in a darker neighbourhood than the frame as a whole
+  // and pull down what sits in a brighter one, so shaded cliffs stay readable next to sky and snow.
+  // It backs off where a pixel doesn't belong to its neighbourhood (a silhouette against the sky),
+  // which is what keeps the coarse neighbourhood from drawing halos.
+  if (uLocalShadow + uLocalHigh > 0.) {
+    float ll = texture(tLum, uv).r, lp = log2(max(dot(col, vec3(0.2126, 0.7152, 0.0722)), 1e-6));
+    float d = ll - uLumAvg, w = exp(-(lp - ll) * (lp - ll) * 0.5);
+    col *= exp2(-clamp(d, -4., 4.) * (d < 0. ? uLocalShadow : uLocalHigh) * w);
+  }
   vec3 bloom = texture(tBloom, uv).rgb;
   col = mix(col, bloom, 0.06 * uBloom) + bloom * 0.03 * uBloom;
   col *= uExposure;
@@ -137,7 +165,14 @@ export class Post {
       uVignette: { value: 0.32 }, uFade: { value: 0 }, uFadeColor: { value: new THREE.Color(0.75, 0.78, 0.84) },
       uShadowTint: { value: new THREE.Vector3() }, uHighTint: { value: new THREE.Vector3(1, 1, 1) },
       uHeat: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uHeatUp: { value: [new THREE.Vector2(0, 1), new THREE.Vector2(0, 1)] },
+      tLum: { value: null }, uLumAvg: { value: 0 }, uLocalShadow: { value: 0 }, uLocalHigh: { value: 0 },
     });
+    this.lumMat = fsMaterial(LUM, { tSrc: { value: null }, uCell: { value: new THREE.Vector2(1 / 64, 1 / 36) } });
+    this.lumRT = makeRT(64, 36);
+    this.comp.uniforms.tLum.value = this.lumRT.texture;
+    this.reader = new AsyncReader(renderer, this.lumRT);
+    // mean log2 luminance of the middle 80% of the frame, once the first read lands
+    this.lumAvg = null;
     this.chain = [];
   }
   setSize(w, h) {
@@ -152,6 +187,17 @@ export class Post {
   }
   render(src, look, time) {
     const r = this.renderer;
+    // luminance for exposure: the histogram ignores the darkest and brightest tenth, as UE's does
+    this.lumMat.uniforms.tSrc.value = src;
+    renderFS(r, this.lumMat, this.lumRT);
+    if (this.reader.poll()) {
+      const b = this.reader.buf, v = new Float32Array(64 * 36);
+      for (let i = 0; i < v.length; i++) v[i] = b[i * 4];
+      v.sort();
+      let m = 0, n = 0;
+      for (let i = Math.floor(v.length * 0.1); i < Math.ceil(v.length * 0.9); i++) { m += v[i]; n++; }
+      this.lumAvg = m / n;
+    }
     // bloom: progressive downsample then tent upsample
     let prev = src;
     for (let i = 0; i < this.levels; i++) {
