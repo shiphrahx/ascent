@@ -41,7 +41,7 @@ void main(){
   vec3 V = normalize(cameraPosition - P);
   float dist = length(cameraPosition - P);
   // ripples: running with the current, plus wind-stirred catspaws in gusts
-  vec2 n = flowN(P.xz, 0.9, 7.) * 0.22 + flowN(P.xz, 1.6, 2.2) * 0.12;
+  vec2 n = flowN(P.xz, 0.9, 7.) * 0.26 + flowN(P.xz, 1.6, 2.2) * 0.14 + flowN(P.xz * 1.37 + 11.3, 2.4, 0.83) * 0.08 * (1. - smoothstep(20., 120., dist));
   float gust = gustAt(P.xz);
   n += (texture(uNoise2D, (P.xz - uGustOffset * 1.3) / 3.).rg - 0.5) * gust * 0.5 * uWindStrength;
   n *= mix(1., 0.35, smoothstep(80., 600., dist));
@@ -57,15 +57,19 @@ void main(){
   vec3 refl = uReflOn > 0.5 ? texture(tReflect, ruv).rgb : skyLut(reflect(-V, N)) * 0.9;
   float cosT = max(dot(N, V), 0.);
   float F = 0.02 + 0.98 * pow(1. - cosT, 5.);
-  // the bed: depth from the terrain, absorbed toward green-blue
+  // The Kizilirmak is silty: the bed vanishes within half a metre and the water itself scatters a
+  // dull olive-brown. Light slips under the shallows at the bank, so the edge isn't a hard line.
   float depth = max(0., P.y - heightAt(P.xz));
   vec3 bed = mix(vec3(0.34, 0.30, 0.24), vec3(0.45, 0.40, 0.33), texture(uNoise2D, P.xz / 2.).r);
   bed *= 0.75 + 0.35 * texture(uNoise2D, P.xz * 1.3).b;
-  vec3 absorb = exp(-depth * vec3(0.9, 0.45, 0.32) * 1.4);
+  vec3 absorb = exp(-depth * vec3(2.6, 2.9, 3.6));
+  float shL = keyShadow(P, vec3(0, 1, 0));
   Surf sb; sb.albedo = bed; sb.N = vec3(0, 1, 0); sb.rough = 1.; sb.spec = 0.; sb.ao = 1.; sb.wrap = 0.; sb.sss = 0.;
-  vec3 bedLit = shadeSurf(sb, P, V, keyShadow(P, vec3(0, 1, 0))) * absorb;
-  vec3 scatter = ambCube(vec3(0, 1, 0)) * vec3(0.05, 0.08, 0.08) * (1. - absorb.g);
-  vec3 col = mix(bedLit + scatter, refl, F);
+  vec3 bedLit = shadeSurf(sb, P, V, shL) * absorb;
+  vec3 silt = vec3(0.16, 0.14, 0.09);
+  vec3 scatter = (ambCube(vec3(0, 1, 0)) * 0.8 + uKeyColor * max(uKeyDir.y, 0.) * shL * 0.5) * silt * (1. - absorb);
+  float shallow = smoothstep(0.0, 0.35, depth);
+  vec3 col = mix(bedLit + scatter, refl, F * mix(0.35, 1., shallow));
   // sun glint
   vec3 H = normalize(uKeyDir + V);
   float gl = pow(max(dot(N, H), 0.), 600.) * 60. + pow(max(dot(N, H), 0.), 80.) * 0.6;
@@ -133,7 +137,7 @@ export class River {
   }
   setSize(W, H) {
     if (this.rt) this.rt.dispose();
-    this.rt = makeRT(Math.max(2, Math.floor(W / 3)), Math.max(2, Math.floor(H / 3)), { depth: true });
+    this.rt = makeRT(Math.max(2, Math.floor(W / 2)), Math.max(2, Math.floor(H / 2)), { depth: true });
     this.frame = 0;
     this.mat.uniforms.tReflect.value = this.rt.texture;
   }
