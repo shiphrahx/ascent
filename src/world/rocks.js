@@ -376,7 +376,7 @@ void main(){
   alb = mix(alb, vec3(0.82, 0.86, 0.92), frost * 0.18);
 
   Surf s;
-  s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.15; s.sss = 0.;
+  s.albedo = alb; s.N = N; s.rough = specAA(N, rough); s.spec = spec; s.ao = ao; s.wrap = 0.15; s.sss = 0.;
   float sh = keyShadow(P, N);
   vec3 col = shadeSurf(s, P, V, sh);
   // lit windows after dusk

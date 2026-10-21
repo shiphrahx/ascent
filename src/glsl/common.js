@@ -394,6 +394,15 @@ float tuffRelief(vec3 P, vec3 N, float px, int octaves, vec3 dPx, vec3 dPy, out 
   }
   return h;
 }
+// Specular anti-aliasing (Kaplanyan and Tokuyoshi): where the shading normal turns a lot inside one
+// pixel, widen the highlight to cover the spread instead of letting it flash on and off between
+// frames. Call with the final normal, in uniform control flow (it takes derivatives).
+float specAA(vec3 N, float rough){
+  vec3 dx = dFdx(N), dy = dFdy(N);
+  float v = 0.25 * (dot(dx, dx) + dot(dy, dy));
+  float a2 = rough * rough * rough * rough;
+  return sqrt(sqrt(min(a2 + min(2. * v, 0.18), 1.)));
+}
 // bump from a scalar height via screen derivatives (Mikkelsen's surface gradient)
 vec3 bumpNormal(vec3 N, vec3 P, float h){
   vec3 dpdx = dFdx(P), dpdy = dFdy(P);

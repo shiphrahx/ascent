@@ -246,7 +246,7 @@ void main(){
   alb = mix(alb, vec3(0.80, 0.84, 0.90), frost * 0.25);
 
   Surf s;
-  s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.12; s.sss = 0.;
+  s.albedo = alb; s.N = N; s.rough = specAA(N, rough); s.spec = spec; s.ao = ao; s.wrap = 0.12; s.sss = 0.;
   float sh = keyShadow(P, N);
   gHag = 0.;
   vec3 col = shadeSurf(s, P, V, sh);
