@@ -28,6 +28,7 @@ import { Crew } from './balloon/crew.js';
 import { Input } from './core/input.js';
 import { Cameras } from './core/cameras.js';
 import { GpuProf, FrameTimer } from './core/gpuprof.js';
+import { ShimmerProbe } from './core/shimmer.js';
 
 const canvas = document.getElementById('view');
 const loadFill = document.getElementById('loadFill');
@@ -168,6 +169,7 @@ async function boot() {
   sky.cycleT = cycleForHour(dbg.h !== undefined ? parseFloat(dbg.h) : START_HOUR);
   const fixedCam = dbg.cam ? dbg.cam.split(',').map(Number) : null;
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
+  if (dbg.shadowview) U.uDbgShadow.value = 1;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
   if (dbg.fp) { const [a, b] = dbg.fp.split(',').map(Number); cams.fpYaw = a; cams.fpPitch = b; }
@@ -188,6 +190,17 @@ async function boot() {
   }
   if (dbg.bcam) { const v = dbg.bcam.split(',').map(Number); cams.fixed = (cam) => { const b = hero.basket; cam.position.set(v[0], v[1], v[2]).applyMatrix4(b.matrixWorld); cam.lookAt(new THREE.Vector3(0, 1.3, 0).applyMatrix4(b.matrixWorld)); cam.near = 0.1; cam.updateProjectionMatrix(); }; }
   if (fixedCam) cams.fixed = (cam) => { cam.position.fromArray(fixedCam); cam.lookAt(new THREE.Vector3().fromArray(fixedLook || [0, 0, 0])); };
+  // test hook: pan=right,up,forward slides a fixed camera at that many m/s without turning it.
+  // hold keeps the sun and the pan still until a shimmer capture starts, so every run starts alike.
+  const hold = { on: !!dbg.hold, t: 0 };
+  if (dbg.pan && cams.fixed) {
+    const pv = new THREE.Vector3().fromArray(dbg.pan.split(',').map(Number)), f = cams.fixed, ax = new THREE.Vector3();
+    cams.fixed = (cam, time) => {
+      f(cam, time);
+      const t = hold.on ? 0 : time - hold.t;
+      cam.position.addScaledVector(ax.set(1, 0, 0).applyQuaternion(cam.quaternion), pv.x * t).addScaledVector(ax.set(0, 1, 0).applyQuaternion(cam.quaternion), pv.y * t).addScaledVector(ax.set(0, 0, -1).applyQuaternion(cam.quaternion), pv.z * t);
+    };
+  }
   // fast-forward the flight for testing: sim=seconds
   if (dbg.sim) {
     const n = Math.floor(parseFloat(dbg.sim) / 0.1);
@@ -201,15 +214,17 @@ async function boot() {
   const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3();
   const look = {};
   const loop = { phase: null, fade: 0 };
+  const shimmer = new ShimmerProbe(glc);
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
-  window.__dbg = { G, U, sky, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
+  window.__dbg = { G, U, sky, shimmer: (n, crop) => { shimmer.start(n, crop); pipe.post.comp.uniforms.uDither.value = 0; if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
     extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
   function frame() {
     const cpu0 = performance.now();
     const rawDt = clock.getDelta();
-    const dt = Math.min(0.1, rawDt);
+    // test hook: fixdt steps the world exactly one 60th of a second per frame, however slow the frame
+    const dt = dbg.fixdt ? 1 / 60 : Math.min(0.1, rawDt);
     // adaptive resolution: reacts within half a second, drops hard when frames are slow,
     // creeps back up when there's headroom. If even the floor is too slow, shed the heavy passes.
     perf.acc += rawDt; perf.n++; perf.t += rawDt; perf.warm++;
@@ -246,7 +261,7 @@ async function boot() {
       perf.acc = 0; perf.n = 0; perf.t = 0;
     }
     time += dt;
-    const freeze = !!dbg.freeze;
+    const freeze = !!dbg.freeze || hold.on;
     const st = sky.update(freeze ? 0 : dt, input.fast ? 14 : 1);
     wind.update(dt, st);
     U.uTime.value = time;
@@ -359,6 +374,7 @@ async function boot() {
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
     prof.collect();
     ftimer.end();
+    shimmer.grab(pipe.OW, pipe.OH);
     perf.cpu = (perf.cpu || 0) + (performance.now() - cpu0 - (perf.cpu || 0)) * 0.05;
     window.__dbg.frames++;
     requestAnimationFrame(frame);

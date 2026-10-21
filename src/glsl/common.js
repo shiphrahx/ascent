@@ -20,7 +20,7 @@ uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
-uniform float uGlowComp;
+uniform float uGlowComp, uDbgShadow;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
@@ -166,6 +166,8 @@ vec3 envSpecular(vec3 R, float rough){
   return mix(sharp, ambCube(R), smoothstep(0.15, 0.85, rough));
 }
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
+  // test hook: shadowview shows only the key light's shadow term, grey on grey
+  if (uDbgShadow > 0.5) return vec3(0.04 + 0.5 * shadow);
   vec3 L = uKeyDir, N = s.N;
   float ndlRaw = dot(N, L);
   float ndl = max(ndlRaw, 0.);
