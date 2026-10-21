@@ -126,7 +126,25 @@ function tileWorley3(x, y, z, p, seed) {
 }
 
 // RGBA 2D tileable noise: r,g = value fbm at two scales, b = worley, a = white hash.
+// Blue noise by largest void: start with one point and keep adding the empty texel furthest from
+// everything placed so far (lowest gaussian energy, wrapping round). The order a texel was filled in
+// is its value, so any threshold of it is evenly spread. Good enough for dither and rotations.
+function blueNoise(n = 64) {
+  const N = n * n, E = new Float32Array(N), rank = new Float32Array(N).fill(-1);
+  const R = 6, sig = 1.9, K = [];
+  for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) K.push([dx, dy, Math.exp(-(dx * dx + dy * dy) / (2 * sig * sig))]);
+  let p = 0;
+  for (let k = 0; k < N; k++) {
+    if (k > 0) { let m = Infinity; for (let i = 0; i < N; i++) if (rank[i] < 0 && E[i] < m) { m = E[i]; p = i; } }
+    rank[p] = k / N;
+    const px = p % n, py = (p / n) | 0;
+    for (const [dx, dy, w] of K) E[((py + dy + n) % n) * n + ((px + dx + n) % n)] += w;
+  }
+  return rank;
+}
+
 export function makeNoise2D(size = 256) {
+  const bn = blueNoise(64);
   const data = new Uint8Array(size * size * 4);
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const u = x / size, v = y / size;
@@ -139,7 +157,8 @@ export function makeNoise2D(size = 256) {
     data[i] = Math.min(255, a / 0.97 * 255);
     data[i + 1] = Math.min(255, b / 0.875 * 255);
     data[i + 2] = w * 255;
-    data[i + 3] = tileHash(x, y, 0, size, 99) * 255;
+    // alpha: tiled blue noise, for per-pixel rotations and jitter that the temporal pass averages well
+    data[i + 3] = bn[(y & 63) * 64 + (x & 63)] * 255;
   }
   const t = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;

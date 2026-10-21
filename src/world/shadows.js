@@ -12,6 +12,7 @@ export class Shadows {
     this.renderer = renderer;
     this.slices = SLICES[tier] || SLICES.high;
     this.high = tier === 'high';
+    U.uShadowHQ.value = this.high ? 1 : 0;
     const lite = tier === 'lite';
     // basket, slices, far balloons. The last slice carries the ground and cliffs out to the haze, so it
     // gets the most texels.

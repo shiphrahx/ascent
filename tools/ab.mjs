@@ -8,7 +8,7 @@ const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const W = +(process.env.W || 2525), H = +(process.env.H || 1295);
 const [hash, pass, A, B, rounds = 4] = process.argv.slice(2);
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: false,
-  args: [`--window-size=${W},${H + 80}`, '--disable-features=CalculateNativeWinOcclusion', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding'],
+  args: [...(process.env.HP ? ['--force_high_performance_gpu'] : []), `--window-size=${W},${H + 80}`, '--disable-features=CalculateNativeWinOcclusion', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding'],
   defaultViewport: { width: W, height: H } });
 const page = await browser.newPage();
 await page.goto(pathToFileURL(path.resolve('cappadocia.html')).href + hash + `&gpuprof&res=${process.env.RES || 1}`);

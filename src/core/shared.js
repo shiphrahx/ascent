@@ -46,6 +46,7 @@ export const U = {
   uShadowWT: { value: new THREE.Vector4(0.1, 1, 1, 4) },
   uShadowSplit: { value: new THREE.Vector2(250, 900) },
   uShadowEye: { value: new THREE.Vector3() },
+  uShadowHQ: { value: 1 },
   uTerrShadow: { value: null },
   uTerrShadowOuter: { value: null },
   uTerrBlend: { value: 1 },

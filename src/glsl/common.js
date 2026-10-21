@@ -13,6 +13,7 @@ uniform sampler2D uShadow0, uShadow1, uShadow2, uShadow3;
 uniform mat4 uShadowM0, uShadowM1, uShadowM2, uShadowM3;
 uniform vec4 uShadowK, uShadowWT;
 uniform vec2 uShadowSplit;
+uniform float uShadowHQ;
 uniform vec3 uShadowEye;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
 uniform float uTerrBlend;
@@ -208,57 +209,83 @@ vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
 `;
 
 export const SHADOW_F = /* glsl */`
-const vec2 POISSON[8] = vec2[8](vec2(-0.613,0.617), vec2(0.170,-0.040), vec2(-0.299,-0.791), vec2(0.645,0.493),
-  vec2(-0.651,-0.088), vec2(0.421,-0.665), vec2(-0.069,0.997), vec2(0.962,-0.194));
-float sampleCascade(sampler2D map, mat4 m, vec3 P, float bias, float radius, float rot){
-  vec4 sc = m * vec4(P, 1.);
+// Soft shadows the way UE does them on high: a blocker search finds how far the occluder is, and the
+// filter widens with that distance, so shadows are sharp where things touch the ground and soften
+// away from it (PCSS). Taps lie on a Vogel disc turned by blue noise that steps each frame, which the
+// temporal pass averages far better than the white noise it replaced. Filter sizes are in metres,
+// with a floor that grows with distance from the camera only, so softness doesn't jump where one
+// cascade hands over to the next. Below high: 8 taps at the floor size, no search.
+const float PENUMBRA = 0.008;   // filter radius per metre from blocker to receiver: a slightly soft sun
+vec2 vogel(int i, int n, float rot){
+  float r = sqrt((float(i) + 0.5) / float(n)), a = float(i) * 2.39996 + rot;
+  return r * vec2(cos(a), sin(a));
+}
+// texW: metres per texel, K: 1 / depth range in metres, floorW / searchW: smallest filter and widest
+// search radius in metres. -1 when P is outside this map.
+// One exit per function throughout: the D3D compiler warns about early returns from these.
+float sampleCascade(sampler2D map, mat4 m, vec3 P, vec3 N, float ndl, float texW, float K, float floorW, float searchW, float rot){
+  vec4 sc = m * vec4(P + N * texW * 1.5, 1.);
   vec3 c = sc.xyz / sc.w * 0.5 + 0.5;
-  if (c.x < 0.002 || c.x > 0.998 || c.y < 0.002 || c.y > 0.998 || c.z > 1.) return -1.;
-  float s = 0.;
-  vec2 texel = 1. / vec2(textureSize(map, 0));
-  float cr = cos(rot), sr = sin(rot);
-  mat2 R = mat2(cr, sr, -sr, cr);
-  for (int i = 0; i < 8; i++) {
-    vec2 o = R * POISSON[i] * radius * texel;
-    float d = texture(map, c.xy + o).r;
-    s += step(c.z - bias, d);
+  float res = -1.;
+  if (c.x > 0.002 && c.x < 0.998 && c.y > 0.002 && c.y < 0.998 && c.z <= 1.) {
+    float texel = 1. / float(textureSize(map, 0).x);
+    float tanT = min(sqrt(max(1. - ndl * ndl, 0.)) / max(ndl, 0.05), 4.);
+    float rw = floorW;
+    int n = 8;
+    bool lit = false;
+    if (uShadowHQ > 0.5) {
+      n = 16;
+      float sw = max(floorW, searchW), bias = K * (texW + sw * tanT * 0.25);
+      float sum = 0., cnt = 0.;
+      for (int i = 0; i < 8; i++) {
+        float d = textureLod(map, c.xy + vogel(i, 8, rot + 1.3) * (sw / texW * texel), 0.).r;
+        if (d < c.z - bias) { sum += d; cnt += 1.; }
+      }
+      // nothing in the way anywhere it could matter
+      lit = cnt < 0.5;
+      rw = clamp((c.z - sum / max(cnt, 1.)) / K * PENUMBRA, floorW, sw);
+    }
+    // slope-scaled: a wider filter on a slope reaches deeper into the surface it sits on
+    float bias = K * (texW * (1. + 2.5 * (1. - ndl)) + rw * tanT * 0.25);
+    float s = 0., r = rw / texW * texel;
+    for (int i = 0; i < 16; i++) {
+      if (i >= n || lit) break;
+      s += step(c.z - bias, textureLod(map, c.xy + vogel(i, n, rot) * r, 0.).r);
+    }
+    res = lit ? 1. : s / float(n);
   }
-  return s / 8.;
+  return res;
 }
 // the view slices, picked by distance from the camera rather than by which map holds the point, so
 // turning the camera never moves a point from one slice to another
-float sliceShadow(vec3 P, vec3 N, float sb, float rot){
-  float d = distance(P, uShadowEye);
+float sliceShadow(vec3 P, vec3 N, float ndl, float d, float rot){
   float s1 = -1., s2 = -1.;
   float k = uShadowSplit.y > 0. ? smoothstep(uShadowSplit.x * 0.85, uShadowSplit.x, d) : 0.;
-  if (k < 1.) s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
-  if (k > 0. && d < uShadowSplit.y) s2 = sampleCascade(uShadow2, uShadowM2, P + N * uShadowWT.z * 1.5, uShadowK.z * uShadowWT.z * sb, 1.4, rot);
+  float fl = d * 0.002;
+  if (k < 1.) s1 = sampleCascade(uShadow1, uShadowM1, P, N, ndl, uShadowWT.y, uShadowK.y, max(fl, uShadowWT.y), 2., rot);
+  if (k > 0. && d < uShadowSplit.y) s2 = sampleCascade(uShadow2, uShadowM2, P, N, ndl, uShadowWT.z, uShadowK.z, max(fl, uShadowWT.z), 2., rot);
   // a point outside a map (reflections see past the view) takes the other slice
   if (s1 < 0.) { s1 = s2; k = 1.; }
   if (s2 < 0.) { s2 = s1; k = 0.; }
-  if (s1 < 0.) return -1.;
-  return mix(s1, s2, k);
+  return s1 < 0. ? -1. : mix(s1, s2, k);
 }
 float cascadeShadow(vec3 P, vec3 N){
-  // rotates every frame so the temporal pass averages the pattern away
-  float rot = ign(gl_FragCoord.xy + 5.588238 * uTAAFrame) * 6.283;
+  float rot = fract(texelFetch(uNoise2D, ivec2(gl_FragCoord.xy) & 255, 0).a + uTAAFrame * 0.618034) * 6.283;
   float ndl = abs(dot(N, uKeyDir));
-  float sb = 1.0 + 2.5 * (1. - ndl);
-  float s0 = sampleCascade(uShadow0, uShadowM0, P + N * uShadowWT.x * 1.5, uShadowK.x * uShadowWT.x * sb, 1.8, rot);
-  if (s0 >= 0.) {
-    // fade into the slices over the outer edge, so their coarser shadows don't pop in
-    vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-    vec2 e0 = min(c0.xy, 1. - c0.xy);
-    float k = smoothstep(0.0, 0.12, min(e0.x, e0.y));
-    if (k >= 1.) return s0;
-    float s1 = sliceShadow(P, N, sb, rot);
-    return s1 >= 0. ? mix(s1, s0, k) : s0;
+  float d = distance(P, uShadowEye);
+  float s0 = sampleCascade(uShadow0, uShadowM0, P, N, ndl, uShadowWT.x, uShadowK.x, max(d * 0.002, uShadowWT.x * 1.5), 0.5, rot);
+  // fade from the basket cascade into the slices over its outer edge, so their coarser shadows don't pop in
+  vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  vec2 e0 = min(c0.xy, 1. - c0.xy);
+  float k = s0 >= 0. ? smoothstep(0.0, 0.12, min(e0.x, e0.y)) : 0.;
+  float s = s0;
+  if (k < 1.) {
+    float s1 = sliceShadow(P, N, ndl, d, rot);
+    if (s1 < 0.) s1 = sampleCascade(uShadow3, uShadowM3, P, N, ndl, uShadowWT.w, uShadowK.w, uShadowWT.w * 1.2, 0., rot);
+    s1 = s1 < 0. ? 1. : s1;
+    s = s0 >= 0. ? mix(s1, s0, k) : s1;
   }
-  float s1 = sliceShadow(P, N, sb, rot);
-  if (s1 >= 0.) return s1;
-  float s3 = sampleCascade(uShadow3, uShadowM3, P + N * uShadowWT.w * 1.0, uShadowK.w * uShadowWT.w * sb, 1.2, rot);
-  if (s3 >= 0.) return s3;
-  return 1.;
+  return s;
 }
 // The coarse terrain shadow is always in, even where the cascades cover: ridges outside the shadow
 // grid cast nowhere else, and fading it out under the cascade made big ridge shadows come and go as
