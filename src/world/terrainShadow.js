@@ -83,7 +83,7 @@ export class TerrainShadow {
     this.publish();
     this.last = new THREE.Vector3(9, 9, 9);
     // how many frames one rebuild is spread over: every frame on high
-    this.every = lite ? 30 : tier === 'medium' ? 2 : 1;
+    this.every = lite ? 30 : tier === 'medium' ? 3 : 1;
     this.age = 0;
   }
   publish() {
