@@ -1,4 +1,4 @@
-// HDR post: bloom mip chain, heat shimmer, exposure, filmic curve, per-hour grade, vignette, dither.
+// HDR post: bloom mip chain, heat shimmer, exposure, UE5's filmic curve, per-hour grade, vignette, dither.
 import * as THREE from 'three';
 import { fsMaterial, renderFS, makeRT } from '../core/fsq.js';
 
@@ -49,13 +49,29 @@ uniform vec3 uShadowTint, uHighTint, uFadeColor;
 uniform vec4 uHeat[2];     // xy screen pos of flame, z strength, w radius
 uniform vec2 uHeatUp[2];   // screen-space up direction
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-vec3 aces(vec3 x){
-  const mat3 I = mat3(0.59719, 0.07600, 0.02840, 0.35458, 0.90834, 0.13383, 0.04823, 0.01566, 0.83777);
-  const mat3 O = mat3(1.60475, -0.10208, -0.00327, -0.53108, 1.10813, -0.07276, -0.07367, -0.00605, 1.07602);
-  vec3 v = I * x;
-  vec3 a = v * (v + 0.0245786) - 0.000090537;
-  vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
-  return clamp(O * (a / b), 0., 1.);
+// UE5's filmic tone curve at its default settings (slope 0.88, toe 0.55, shoulder 0.26, black clip 0,
+// white clip 0.04), worked in ACEScg with UE's 0.96 pre and 0.93 post desaturation. With these settings
+// the toe and shoulder overlap, which UE handles by running the blend backwards; so does this.
+// The constants are UE's own derivation (0.18 in maps to 0.18 out), worked out ahead.
+vec3 filmUE(vec3 x){
+  const mat3 toAP1 = mat3(0.6131, 0.0702, 0.0206, 0.3395, 0.9164, 0.1096, 0.0474, 0.0134, 0.8698);
+  const mat3 fromAP1 = mat3(1.7051, -0.1303, -0.0240, -0.6218, 1.1408, -0.1290, -0.0833, -0.0105, 1.1530);
+  const vec3 Y = vec3(0.2722, 0.6741, 0.0537);
+  const float S = 0.88, W = 0.04, toeS = 0.45, shS = 0.78;
+  const float toeM = -0.390277, straightM = 0.901641, shM = -0.606186;
+  vec3 c = max(toAP1 * x, 0.);
+  c = mix(vec3(dot(c, Y)), c, 0.96);
+  vec3 L = log2(max(c, vec3(1e-10))) * 0.30103;
+  vec3 straight = S * (L + straightM);
+  vec3 toe = 2. * toeS / (1. + exp(-2. * S / toeS * (L - toeM)));
+  vec3 sh = (1. + W) - 2. * shS / (1. + exp(2. * S / shS * (L - shM)));
+  toe = mix(straight, toe, vec3(lessThan(L, vec3(toeM))));
+  sh = mix(straight, sh, vec3(greaterThan(L, vec3(shM))));
+  vec3 t = 1. - clamp((L - toeM) / (shM - toeM), 0., 1.);
+  t = (3. - 2. * t) * t * t;
+  vec3 o = max(mix(toe, sh, t), 0.);
+  o = mix(vec3(dot(o, Y)), o, 0.93);
+  return clamp(fromAP1 * o, 0., 1.);
 }
 vec3 toSRGB(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1. / 2.4)) - 0.055, step(0.0031308, c)); }
 // light unsharp mask: the temporal resolve softens a touch, this gives the edges back
@@ -93,7 +109,9 @@ void main(){
   // contrast in log space around 18% grey before the curve, as UE grades: it steepens the midtones
   // without clipping the shadows (linear contrast after the curve crushed everything under 5% to black)
   col = 0.18 * exp2(log2(max(col, vec3(1e-6)) / 0.18) * uCon);
-  col = aces(col * 1.05);
+  // the scene's exposure was set up against the fitted ACES curve, which puts 18% grey out at 0.11;
+  // UE's puts it at 0.18. Scaling in by 0.72 keeps each hour's brightness and takes UE's shape.
+  col = filmUE(col * 0.72);
   float l2 = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = max(mix(vec3(l2), col, uSat), 0.);
   // vignette
