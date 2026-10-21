@@ -265,14 +265,21 @@ MatS matPlanar(float L, vec2 uv, vec2 gx, vec2 gy){
   m.h = nh.z;
   return m;
 }
-// ground layers seen from above. A second, rotated sample at a much larger scale breaks up the tiling.
-MatS matTop(float L, vec3 P, float scale, vec3 dPx, vec3 dPy, float mixBig){
-  MatS m = matPlanar(L, P.xz / scale, dPx.xz / scale, dPy.xz / scale);
-  m.dn = vec3(m.dn.x, 0., m.dn.y);
-  const mat2 R = mat2(0.8, 0.6, -0.6, 0.8);
-  float sb = scale * 3.7;
-  vec3 big = textureGrad(uSurfAlb, vec3(R * P.xz / sb + 0.37, L), R * dPx.xz / sb, R * dPy.xz / sb).rgb;
-  m.alb = mix(m.alb, big, mixBig);
+// ground layers seen from above, with no visible repeat: two copies at random offsets picked by a
+// slow noise and blended where it changes over (iq's texture repetition trick). The noise index is
+// shared by every layer so they stay in step.
+MatS matTop(float L, vec3 P, float scale, vec3 dPx, vec3 dPy, float k){
+  vec2 uv = P.xz / scale, gx = dPx.xz / scale, gy = dPy.xz / scale;
+  float l = k * 8., f = fract(l), ia = floor(l);
+  vec2 oa = sin(vec2(3., 7.) * ia), ob = sin(vec2(3., 7.) * (ia + 1.));
+  vec3 aA = textureGrad(uSurfAlb, vec3(uv + oa, L), gx, gy).rgb, bA = textureGrad(uSurfAlb, vec3(uv + ob, L), gx, gy).rgb;
+  vec3 aN = textureGrad(uSurfNH, vec3(uv + oa, L), gx, gy).rgb, bN = textureGrad(uSurfNH, vec3(uv + ob, L), gx, gy).rgb;
+  float t = smoothstep(0.2, 0.8, f - 0.1 * (aA.r + aA.g + aA.b - bA.r - bA.g - bA.b));
+  MatS m;
+  m.alb = mix(aA, bA, t);
+  vec3 nh = mix(aN, bN, t);
+  m.dn = vec3(nh.x * 2. - 1., 0., nh.y * 2. - 1.);
+  m.h = nh.z;
   return m;
 }
 // biplanar (two dominant axes) for cliffs and chimneys

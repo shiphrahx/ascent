@@ -121,10 +121,10 @@ void main(){
   vec3 groundDn = vec3(0);
   float groundH = 0.5;
   if (soilAmt > 0.001) {
-    float big = 0.25 + 0.3 * nz.g;
-    MatS st = matTop(L_STEPPE, P, 3.4, dPx, dPy, big);
-    MatS so = matTop(L_SOIL, P, 2.6, dPx, dPy, big);
-    MatS pl = matTop(L_PLOWED, P, 3.0, dPx, dPy, big);
+    float rep = texture(uNoise2D, P.xz / 23.).r;
+    MatS st = matTop(L_STEPPE, P, 3.4, dPx, dPy, rep);
+    MatS so = matTop(L_SOIL, P, 2.6, dPx, dPy, rep);
+    MatS pl = matTop(L_PLOWED, P, 3.0, dPx, dPy, rep);
     vec3 stD = st.alb / vec3(0.22, 0.18, 0.105), soD = so.alb / vec3(0.27, 0.15, 0.07), plD = pl.alb / vec3(0.10, 0.06, 0.03);
     vec3 dryGrass = mix(vec3(0.52, 0.47, 0.30), vec3(0.42, 0.40, 0.26), nz2.g) * mix(vec3(luma(stD)), stD, 0.6);
     vec3 tuffSoil = mix(vec3(0.60, 0.51, 0.39), vec3(0.50, 0.41, 0.31), nz.g) * mix(vec3(luma(soD)), soD, 0.35);
