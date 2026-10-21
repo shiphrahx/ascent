@@ -288,7 +288,6 @@ async function boot() {
     U.uFrost.value = st.frost; U.uWet.value = st.wet; U.uStorm.value = st.storm; U.uNight.value = st.night;
     U.uCloud.value = st.cloud; U.uPillars.value = st.pillars; U.uDiamond.value = st.diamondDust;
     U.uSunDogs.value = st.sunDogs; U.uMoonVis.value = st.moonVis; U.uSunVis.value = st.sunVis;
-    U.uCloudOffset.value.x += dt * 9; U.uCloudOffset.value.y -= dt * 3;
     U.uCloudBase.value = 1500 - 520 * st.storm; U.uCloudTop.value = 2600 - 250 * st.storm;
 
     // test hook: ts=N runs the world N times faster (extra substeps, rendered once)

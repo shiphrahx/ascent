@@ -27,6 +27,10 @@ export class Wind {
     this.strength = 1;
     this.storm = 0;
     this.groundDir = new THREE.Vector2(Math.cos(LAYERS[0].hdg * D), Math.sin(LAYERS[0].hdg * D));
+    // the top layer carries the clouds
+    const top = LAYERS[LAYERS.length - 1];
+    this.cloudDir = new THREE.Vector2(Math.cos(top.hdg * D), Math.sin(top.hdg * D));
+    this.cloudSpd = top.spd;
     this.t = 0;
   }
   sampleNoise(u, v, ch) {
@@ -73,6 +77,11 @@ export class Wind {
     this.offset.x += this.groundDir.x * spd * dt;
     this.offset.y += this.groundDir.y * spd * dt;
     U.uGustOffset.value.copy(this.offset);
+    // clouds and their shadows sample at xz + offset, so the offset runs against the wind to carry
+    // them with it (it used to run with it, and the clouds drifted upwind of the balloons)
+    const cs = this.cloudSpd * (0.6 + 0.6 * state.wind) * (1 + 0.5 * this.storm);
+    U.uCloudOffset.value.x -= this.cloudDir.x * cs * dt;
+    U.uCloudOffset.value.y -= this.cloudDir.y * cs * dt;
     U.uWindDir.value.copy(this.groundDir);
     U.uWindStrength.value = this.strength;
   }
