@@ -63,7 +63,7 @@ varying vec2 vUv;
 uniform sampler2D tScene, tBloom, tLum;
 uniform float uLumAvg, uLocalShadow, uLocalHigh;
 uniform vec2 uRes;
-uniform float uExposure, uBloom, uTime, uSat, uCon, uVignette, uFade;
+uniform float uExposure, uBloom, uTime, uSat, uCon, uVignette, uFade, uLevels;
 uniform vec3 uShadowTint, uHighTint, uFadeColor;
 uniform vec4 uHeat[2];     // xy screen pos of flame, z strength, w radius
 uniform vec2 uHeatUp[2];   // screen-space up direction
@@ -127,8 +127,12 @@ void main(){
     float d = ll - uLumAvg, w = exp(-(lp - ll) * (lp - ll) * 0.5);
     col *= exp2(-clamp(d, -4., 4.) * (d < 0. ? uLocalShadow : uLocalHigh) * w);
   }
-  vec3 bloom = texture(tBloom, uv).rgb;
-  col = mix(col, bloom, 0.06 * uBloom) + bloom * 0.03 * uBloom;
+  // Bloom, energy conserving and with no threshold, the way UE does it: the upsampled chain is the
+  // sum of every level, so dividing by their count gives the average blur, and a few percent of the
+  // pixel trades for it. The old mix plus an added share came to over half the blurred image laid on
+  // top, which read as haze rather than glow.
+  vec3 bloom = texture(tBloom, uv).rgb / uLevels;
+  col = mix(col, bloom, 0.05 * uBloom);
   col *= uExposure;
   // split-tone before the curve: tint the shadows, warm or cool the highlights
   float L = dot(col, vec3(0.2126, 0.7152, 0.0722));
@@ -156,12 +160,13 @@ void main(){
 export class Post {
   constructor(renderer) {
     this.renderer = renderer;
-    this.levels = 6;
+    // seven levels: the widest is 1/128 of the frame, for a soft wide skirt around the sun
+    this.levels = 7;
     this.down = fsMaterial(DOWN, { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uFirst: { value: 0 } });
     this.up = fsMaterial(UP, { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uRadius: { value: 1 } }, { blending: THREE.AdditiveBlending });
     this.comp = fsMaterial(COMPOSITE, {
       tScene: { value: null }, tBloom: { value: null }, uRes: { value: new THREE.Vector2() },
-      uExposure: { value: 1 }, uBloom: { value: 1 }, uTime: { value: 0 }, uSat: { value: 1 }, uCon: { value: 1 },
+      uExposure: { value: 1 }, uBloom: { value: 1 }, uLevels: { value: 7 }, uTime: { value: 0 }, uSat: { value: 1 }, uCon: { value: 1 },
       uVignette: { value: 0.32 }, uFade: { value: 0 }, uFadeColor: { value: new THREE.Color(0.75, 0.78, 0.84) },
       uShadowTint: { value: new THREE.Vector3() }, uHighTint: { value: new THREE.Vector3(1, 1, 1) },
       uHeat: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uHeatUp: { value: [new THREE.Vector2(0, 1), new THREE.Vector2(0, 1)] },
