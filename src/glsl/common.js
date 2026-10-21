@@ -6,7 +6,7 @@ uniform vec3 uSunDir, uMoonDir, uKeyDir;
 uniform vec3 uKeyColor, uSunColor, uSkyAmb, uGroundAmb;
 uniform float uKeyElev, uKeyIsSun;
 uniform sampler2D uSkyLUT, uAmbCube;
-uniform float uHaze, uValleyFog, uFogTop, uSnow, uFrost, uWet, uStorm, uNight, uCloud;
+uniform float uHaze, uSnow, uFrost, uWet, uStorm, uNight, uCloud;
 uniform vec2 uWindDir, uGustOffset;
 uniform float uWindStrength;
 uniform sampler2D uShadow0, uShadow1, uShadow2;

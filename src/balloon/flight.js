@@ -117,7 +117,7 @@ export class Flight {
       return dh * dh * 30 + Math.abs(this.targetAlt - this.p.y) * 0.035 + Math.abs(this.targetAlt - (ground + w.alt)) * 0.012 - L.spd * 0.15;
     })();
     if (bestCost < curCost - 1.5 || this.targetAlt < minSafe) this.targetAlt = Math.max(best, minSafe);
-    // dawn: linger low in the fog, then break out above it once the sun is up
+    // dawn: linger low, then climb once the sun is up
     if (this.dawnHold) this.targetAlt = Math.min(this.targetAlt, Math.max(minSafe, this.dawnHold));
     this.altControl(dt, this.targetAlt);
   }

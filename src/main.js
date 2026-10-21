@@ -223,7 +223,7 @@ async function boot() {
     U.uKeyElev.value = st.keyElev; U.uKeyIsSun.value = st.keyIsSun;
     U.uSunColor.value.copy(sky.sunColor);
     U.uSkyAmb.value.copy(sky.skyAmb); U.uGroundAmb.value.copy(sky.groundAmb);
-    U.uHaze.value = st.haze; U.uValleyFog.value = st.valleyFog; U.uSnow.value = st.snow;
+    U.uHaze.value = st.haze; U.uSnow.value = st.snow;
     U.uFrost.value = st.frost; U.uWet.value = st.wet; U.uStorm.value = st.storm; U.uNight.value = st.night;
     U.uCloud.value = st.cloud; U.uPillars.value = st.pillars; U.uDiamond.value = st.diamondDust;
     U.uSunDogs.value = st.sunDogs; U.uMoonVis.value = st.moonVis; U.uSunVis.value = st.sunVis;
@@ -233,7 +233,7 @@ async function boot() {
     // test hook: ts=N runs the world N times faster (extra substeps, rendered once)
     for (let k = 1; k < (dbg.ts | 0); k++) { const s2 = sky.update(dt, 1); wind.update(dt, s2); hero.update(dt, time, input, s2); fleet.update(dt, time, camera); }
     hero.update(dt, time, input, st);
-    // journey loop: once the envelope is down, fade into morning fog and start again at the launch field
+    // journey loop: once the envelope is down, fade out and start again at the launch field
     {
       const F = hero.flight;
       const u = pipe.post.comp.uniforms;
@@ -250,7 +250,7 @@ async function boot() {
         loop.fade = Math.max(0, loop.fade - dt / 3.5);
         if (loop.fade <= 0) loop.phase = null;
       }
-      // the veil takes the colour of the fog at this hour
+      // the veil takes the colour of the sky at this hour
       const a = sky.skyAmb;
       u.uFadeColor.value.setRGB(Math.min(1, 0.55 + a.r), Math.min(1, 0.58 + a.g), Math.min(1, 0.64 + a.b));
       u.uFade.value = loop.fade * loop.fade * (3 - 2 * loop.fade);

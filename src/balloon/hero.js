@@ -52,8 +52,8 @@ export class Hero {
 
   update(dt, t, input, st) {
     const F = this.flight;
-    // dawn: stay low in the freezing fog until the sun is up, then climb through it
-    F.dawnHold = (st.valleyFog > 0.6 && st.sunElev < 1.2 * Math.PI / 180 && st.sunElev > -12 * Math.PI / 180) ? 52 : null;
+    // dawn: stay low among the chimneys until the sun is up, then climb
+    F.dawnHold = (st.hour < 12 && st.sunElev < 1.2 * Math.PI / 180 && st.sunElev > -12 * Math.PI / 180) ? 52 : null;
     F.step(dt, t, input);
     const p = F.p;
     // after touchdown the crown line pulls the envelope over downwind and it settles on the field

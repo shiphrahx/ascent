@@ -4,7 +4,6 @@ import * as THREE from 'three';
 export const WORLD = {
   core: { minX: -2560, minZ: -1280, sizeX: 5120, sizeZ: 2560, resX: 2048, resZ: 1024 },
   outer: { minX: -40960, minZ: -40960, sizeX: 81920, sizeZ: 81920, resX: 1024, resZ: 1024 },
-  fogTop: 62,
   riverY: 4.0,
 };
 
@@ -25,8 +24,6 @@ export const U = {
   uSkyLUT: { value: null },
   uAmbCube: { value: null },
   uHaze: { value: 1 },
-  uValleyFog: { value: 0 },
-  uFogTop: { value: WORLD.fogTop },
   uSnow: { value: 0 },
   uFrost: { value: 0 },
   uWet: { value: 0 },

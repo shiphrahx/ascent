@@ -1,6 +1,6 @@
-// Half-res raymarched participating media: valley freezing fog (with shafts from every shadow
-// map), snowstorm haze, the glory on fog, and a volumetric cloud layer. Depth-aware upsample,
-// then blended over the HDR scene as scene * T + inscatter.
+// Half-res raymarched participating media: thin air with shafts from the shadow maps, snowstorm
+// haze and a volumetric cloud layer. Depth-aware upsample, then blended over the HDR scene as
+// scene * T + inscatter.
 import * as THREE from 'three';
 import { U } from '../core/shared.js';
 import { fsMaterial, renderFS, makeRT } from '../core/fsq.js';
@@ -30,19 +30,6 @@ float viewDist(vec2 uv, out vec3 dir){
   return d >= 0.99999 ? 1e7 : length(w - cameraPosition);
 }
 
-// valley fog: thick below the fog top, wispy surface, lifts and thins as it burns off
-float fogDensity(vec3 p){
-  if (uValleyFog <= 0.001) return 0.;
-  float top = uFogTop - 40. * (1. - uValleyFog);
-  vec3 q = p / 140. + vec3(uTime * 0.012, uTime * 0.004, uTime * 0.008);
-  float n = texture(uNoise3D, q).r * 0.65 + texture(uNoise3D, q * 3.1).g * 0.35;
-  // big slow billows on the surface of the fog sea
-  float b = texture(uNoise3D, p / 520. + vec3(uTime * 0.004, 0., uTime * 0.003)).a;
-  float surf = top + (n - 0.5) * 16. + (b - 0.5) * 26.;
-  float h = (surf - p.y) / 7.;
-  float d = smoothstep(-0.2, 1.0, h);
-  return d * (0.5 + 0.7 * n) * uValleyFog * sqrt(uValleyFog);
-}
 float cloudCover(vec2 xz){ return cloudDensity2D(xz); }
 float cloudDensity(vec3 p){
   float base = uCloudBase, top = uCloudTop;
@@ -69,19 +56,18 @@ void main(){
   float jit = fract(texelFetch(uNoise2D, ivec2(gl_FragCoord.xy) & 255, 0).a + uFrame * 0.618034);
   vec3 L = uKeyDir;
   float mu = dot(dir, L);
-  float phaseFog = mix(hgPhase(mu, 0.55), hgPhase(mu, -0.15), 0.35) * 12.566;
-  // fog down in the valleys only sees the deep blue zenith, not the glowing horizon
+  float phaseAir = mix(hgPhase(mu, 0.55), hgPhase(mu, -0.15), 0.35) * 12.566;
+  // the air down low only sees the deep blue zenith, not the glowing horizon
   vec3 zen = skyLut(vec3(0., 1., 0.)) * 0.53 * 3.14159 * 0.55;
   vec3 ambUp = mix(zen, ambCube(vec3(0, 1, 0)), 0.35);
   vec3 ambSide = mix(zen, ambCube(-dir), 0.35);
   vec3 scat = vec3(0);
   float T = 1.;
 
-  // --- near media: fog, snow haze, faint air for shafts ---
+  // --- near media: snow haze and faint air for shafts ---
   float Dn = min(D, 6000.);
   const int N = 22;
   float prev = 0.;
-  float glory = 0.;
   float airBase = 0.00006 + uStorm * 0.0009 + uDiamond * 0.00003;
   for (int i = 0; i < N; i++) {
     float x = (float(i) + jit) / float(N);
@@ -89,59 +75,24 @@ void main(){
     float dt = t - prev; prev = t;
     if (dt <= 0.) continue;
     vec3 p = C + dir * t;
-    float fog = fogDensity(p);
     float hfall = exp(-max(p.y - 40., 0.) / 900.);
     float air = airBase * hfall;
     if (uStorm > 0.) {
       vec3 sq = p / 90. + vec3(uTime * 0.06, -uTime * 0.04, uTime * 0.05) * uWindStrength;
       air *= 0.6 + 0.8 * texture(uNoise3D, sq).r;
     }
-    float sigma = fog * 0.017 + air;
+    float sigma = air;
     if (sigma < 1e-7) continue;
-    // shafts only matter near the camera or inside the fog; skip the shadow maps elsewhere
+    // shafts only matter near the camera; skip the shadow maps further out
     float sh = keyHorizon(p) * terrainShadow(p) * cloudShadow(p);
-    if (t < 2500. || fog > 0.01) sh *= cascadeShadowFast(p);
-    // light reaching into the fog bank is dimmed by fog above
-    float above = max(0., uFogTop - p.y) / max(L.y, 0.06);
-    float Tl = exp(-above * 0.022 * 0.55 * uValleyFog * 0.6);
-    vec3 Ls = uKeyColor * sh * Tl * phaseFog;
-    vec3 La = mix(ambSide, ambUp, 0.6) * (fog > 0. ? 0.9 : 1.2);
+    if (t < 2500.) sh *= cascadeShadowFast(p);
+    vec3 Ls = uKeyColor * sh * phaseAir;
+    vec3 La = mix(ambSide, ambUp, 0.6) * 1.2;
     vec3 S = (Ls + La) * sigma;
     float Ts = exp(-sigma * dt);
     scat += T * (S - S * Ts) / max(sigma, 1e-7);
-    // glory: where the view first meets the fog with the sun behind us
-    if (glory == 0. && fog > 0.15) glory = T * sh;
     T *= Ts;
     if (T < 0.01) break;
-  }
-  // far fog: analytic, unshadowed (except terrain), for the sea of cloud to the horizon
-  if (D > 6000. && uValleyFog > 0.01 && T > 0.01) {
-    float Df = min(D, 32000.);
-    float pr = 6000.;
-    for (int i = 0; i < 8; i++) {
-      float t = mix(6000., Df, (float(i) + jit) / 8.);
-      float dt = t - pr; pr = t;
-      vec3 p = C + dir * t;
-      float fog = fogDensity(p) * 0.8;
-      float sigma = fog * 0.02;
-      if (sigma < 1e-7) continue;
-      vec3 Ls = uKeyColor * keyHorizon(p) * terrainShadow(p) * phaseFog * exp(-max(0., uFogTop - p.y) / max(L.y, 0.06) * 0.006);
-      vec3 S = (Ls + ambUp) * sigma;
-      float Ts = exp(-sigma * dt);
-      scat += T * (S - S * Ts) / sigma;
-      T *= Ts;
-    }
-  }
-  // glory: coloured rings around the antisolar point
-  if (glory > 0. && uKeyIsSun > 0.5) {
-    float th = acos(clamp(-mu, -1., 1.));
-    vec3 ring = vec3(0);
-    for (int k = 0; k < 3; k++) {
-      float r0 = 0.022 + float(k) * 0.024;
-      ring += vec3(exp(-pow((th - r0 - 0.004) / 0.004, 2.)), exp(-pow((th - r0) / 0.004, 2.)), exp(-pow((th - r0 + 0.004) / 0.004, 2.))) / (1. + float(k) * 0.8);
-    }
-    ring += vec3(1.0, 0.95, 0.85) * exp(-pow(th / 0.014, 2.)) * 0.8;
-    scat += uKeyColor * ring * glory * 0.22 * uValleyFog;
   }
 
   // --- cloud layer ---
