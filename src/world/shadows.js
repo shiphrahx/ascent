@@ -49,19 +49,25 @@ export class Shadows {
       const cam = c.cam;
       const half = c.size;
       const back = i === 0 ? 400 : i === 1 ? 3000 : 9000;
-      cam.left = -half; cam.right = half; cam.top = half; cam.bottom = -half;
-      cam.near = 1; cam.far = back + half * 1.5 + 600;
-      cam.updateProjectionMatrix();
-      // snap the centre to whole texels in light space to stop shimmering
+      // The light's view sits on a line through a fixed anchor, so its texel grid is fixed in the
+      // world and only the window over it moves; the centre is snapped to whole texels in that grid.
+      // (It used to look straight at the centre, which put the centre at 0,0 in its own view every
+      // frame: the snap did nothing and the grid slid by sub-texel amounts, so cliff edges crawled.)
+      // The anchor isn't the origin: as the sun turns, the grid swings about the anchor, and far
+      // from it that swing is a slide. So it sits on the centre and only jumps to catch up once the
+      // centre has wandered a quarter of the cascade away.
+      const a = c.anchor || (c.anchor = centers[i].clone());
+      if (a.distanceToSquared(centers[i]) > half * half * 0.0625) a.copy(centers[i]);
       cam.up.copy(this._up);
-      cam.position.copy(centers[i]).addScaledVector(L, back);
-      cam.lookAt(centers[i]);
+      cam.position.copy(L).multiplyScalar(this._v.subVectors(centers[i], a).dot(L) + back).add(a);
+      this._v.copy(cam.position).sub(L);
+      cam.lookAt(this._v);
       cam.updateMatrixWorld();
       const texel = (2 * half) / c.res;
       this._v.copy(centers[i]).applyMatrix4(cam.matrixWorldInverse);
-      const sx = this._v.x - Math.round(this._v.x / texel) * texel;
-      const sy = this._v.y - Math.round(this._v.y / texel) * texel;
-      cam.left -= sx; cam.right -= sx; cam.top -= sy; cam.bottom -= sy;
+      const cx = Math.round(this._v.x / texel) * texel, cy = Math.round(this._v.y / texel) * texel;
+      cam.left = cx - half; cam.right = cx + half; cam.bottom = cy - half; cam.top = cy + half;
+      cam.near = -this._v.z - back; cam.far = -this._v.z + half * 1.5 + 600;
       cam.updateProjectionMatrix();
       mats[i].multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
       K.setComponent(i, 1 / (cam.far - cam.near));
