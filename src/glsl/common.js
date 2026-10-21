@@ -20,13 +20,13 @@ uniform vec3 uShadowEye;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
 uniform float uTerrBlend;
 uniform highp sampler2D uHeightCore, uHeightOuter;
-uniform sampler2D uNormCore, uNormOuter, uAttrCore;
+uniform sampler2D uNormCore, uNormOuter, uAttrCore, uTerrAO;
 uniform vec4 uCoreBounds, uOuterBounds;
 uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
-uniform float uGlowComp, uDbgShadow;
+uniform float uGlowComp, uDbgShadow, uSkyVis;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
@@ -178,6 +178,22 @@ vec3 envSpecular(vec3 R, float rough){
   vec3 sharp = mix(below, sky, smoothstep(-0.12, 0.05, R.y));
   return mix(sharp, ambCube(R), smoothstep(0.15, 0.85, rough));
 }
+// Valley-scale sky visibility (a) and the lean of the bent normal (rgb) from terrain/terrainAO.js.
+// It belongs to the ground, so it fades out over the first 40 m above it: a chimney's foot sits in
+// the canyon's shade, its cap mostly doesn't.
+// gHag is the height above the ground when the material knows it (the ground itself: 0), so the
+// lookup can skip the height fetch; below zero means work it out.
+float gHag = -1.;
+vec4 skyVisAt(vec3 P){
+  vec4 r = vec4(0., 0., 0., 1.);
+  if (uSkyVis > 0.5) {
+    vec4 a = texture(uTerrAO, coreUV(P.xz));
+    float hag = gHag >= 0. ? gHag : P.y - heightAt(P.xz);
+    float k = coreMask(P.xz) * (1. - sat(hag / 40.));
+    r = vec4((a.rgb * 2. - 1.) * k, mix(1., a.a, k));
+  }
+  return r;
+}
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   // test hook: shadowview shows only the key light's shadow term, grey on grey; shadowview=flat
   // shows flat grey, the control for everything that isn't the shadows
@@ -201,12 +217,13 @@ vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   // spec scales reflectance: 0.04 is any common dielectric, wet and icy surfaces push past it
   float F0 = 0.02 + 0.06 * s.spec;
   float F = F0 + (1. - F0) * pow(1. - ldh, 5.);
-  vec3 col = s.albedo * (key + ambCube(N) * s.ao) * (1. - F0);
+  vec4 sv = skyVisAt(P);
+  vec3 col = s.albedo * (key + ambCube(normalize(N + sv.xyz)) * s.ao * sv.w) * (1. - F0);
   col += uKeyColor * (D * vis * F * ndl * shadow);
   // sky reflection, darkened where the surface is occluded (specular occlusion from AO)
   float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);
   float so = sat(pow(ndv + s.ao, exp2(-16. * a - 1.)) - 1. + s.ao);
-  col += envSpecular(reflect(-V, N), rough) * Fe * so;
+  col += envSpecular(reflect(-V, N), rough) * Fe * so * sv.w;
   return col;
 }
 `;

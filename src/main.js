@@ -8,6 +8,7 @@ import { SkyDome } from './world/skydome.js';
 import { TerrainData } from './world/terrainGen.js';
 import { Terrain } from './world/terrain.js';
 import { TerrainShadow } from './world/terrainShadow.js';
+import { TerrainAO } from './world/terrainAO.js';
 import { Shadows } from './world/shadows.js';
 import { Wind } from './world/wind.js';
 import { Pipeline } from './core/pipeline.js';
@@ -109,6 +110,7 @@ async function boot() {
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer, tier);
+  G.terrAO = new TerrainAO(renderer, tier);
   const shadows = new Shadows(renderer, tier);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
