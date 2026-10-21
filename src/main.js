@@ -132,9 +132,11 @@ async function boot() {
   // start from a pixel budget that suits the GPU, then the governor below adapts every half second
   const budget = { high: 3.7e6, medium: 1.6e6, lite: 0.22e6 }[tier] || 1.6e6;
   const floorScale = tier === 'lite' ? 0.2 : 0.3;
-  if (tier === 'lite') pipe.post.comp.uniforms.uGrain.value = 0;
   const fitScale = () => Math.max(floorScale, Math.min(1, Math.sqrt(budget / (window.innerWidth * window.innerHeight * pr * pr))));
+  if (tier === 'lite') pipe.post.comp.uniforms.uGrain.value = 0;
   pipe.scale = fitScale();
+  // test hook: res=0.5 pins the render scale
+  if (dbg.res) { pipe.scale = +dbg.res; dbg.fixres = true; }
   const resize = () => {
     const w = window.innerWidth, h = window.innerHeight;
     // in lite mode the canvas itself is small and the browser scales it up: the final pass at
