@@ -326,10 +326,11 @@ void main(){
   N = normalize(N + T * (str - 0.5) * 0.5 * fade);
   float cav;
   vec3 N0 = N;
-  float relief = tuffRelief(P, N, length(fwidth(P)), 2, cav);
+  vec3 dPx = dFdx(P), dPy = dFdy(P);
+  float relief = tuffRelief(P, N, length(fwidth(P)), 2, dPx, dPy, cav);
   N = bumpNormal(N, P, relief * (vMat < 0.5 ? 1. : 0.6));
   // scanned tuff for the grain, cracks and pocks
-  MatS rk = matBiplanar(L_TUFF, P, N0, 3.4, dFdx(P), dFdy(P));
+  MatS rk = matBiplanar(L_TUFF, P, N0, 3.4, dPx, dPy);
   vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
   vec3 rkT = mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
   N = normalize(N + rk.dn * 0.9 * fade);

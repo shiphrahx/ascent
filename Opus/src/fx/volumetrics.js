@@ -1,4 +1,4 @@
-// Half-res raymarched participating media: thin air with shafts from the shadow maps, snowstorm
+// Quarter-res raymarched participating media: thin air with shafts from the shadow maps, snowstorm
 // haze and a volumetric cloud layer. Depth-aware upsample, then blended over the HDR scene as
 // scene * T + inscatter.
 import * as THREE from 'three';
@@ -218,8 +218,10 @@ export class Volumetrics {
   }
   setSize(W, H) {
     if (this.half) { this.half.dispose(); this.full.dispose(); this.half2.dispose(); }
-    this.half = makeRT(Math.ceil(W / 2), Math.ceil(H / 2), { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
-    this.half2 = makeRT(Math.ceil(W / 2), Math.ceil(H / 2), { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+    // quarter resolution: clouds and air are soft, and the depth-aware upsample plus TAA rebuild the edges
+    const D = this.div = 4;
+    this.half = makeRT(Math.ceil(W / D), Math.ceil(H / D), { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+    this.half2 = makeRT(Math.ceil(W / D), Math.ceil(H / D), { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     this.full = makeRT(W, H);
     this.W = W; this.H = H;
   }

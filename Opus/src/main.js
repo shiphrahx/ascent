@@ -27,6 +27,7 @@ import { Fleet } from './balloon/fleet.js';
 import { Crew } from './balloon/crew.js';
 import { Input } from './core/input.js';
 import { Cameras } from './core/cameras.js';
+import { GpuProf, FrameTimer } from './core/gpuprof.js';
 
 const canvas = document.getElementById('view');
 const loadFill = document.getElementById('loadFill');
@@ -59,6 +60,9 @@ async function boot() {
     : /intel|radeon\(tm\)|radeon graphics|\d{3,4}m graphics|apple|mali|adreno|vega \d/i.test(gpuName) && !/rtx|gtx|radeon rx|arc a/i.test(gpuName) ? 'medium' : 'high';
   if (dbg.q) tier = dbg.q;
   G.tier = tier;
+  const prof = G.prof = new GpuProf(glc, !!dbg.gpuprof);
+  // timer queries can't nest, so the governor's frame timer stands down while profiling
+  const ftimer = dbg.gpuprof ? { ok: false, begin() {}, end() {} } : new FrameTimer(glc);
   setProgress(0.02); await tick();
 
   U.uNoise2D.value = makeNoise2D(256);
@@ -136,11 +140,13 @@ async function boot() {
   setProgress(0.7); await tick();
 
   let pr = Math.min(window.devicePixelRatio || 1, 2);
-  // Resolution comes first: start at native on any real GPU and only give pixels up when the frame
-  // rate drops below about 30. A drifting balloon reads fine at 30-40 fps, a soft image doesn't.
+  // Dynamic resolution, the way UE does it with TSR: hold a steady 60 by trading render pixels, and
+  // let the temporal upsample rebuild a sharp native image. Judder from missed vsyncs reads far worse
+  // than rendering at 70-90% and upsampling. Driven by measured GPU time where the browser allows.
   const budget = { high: Infinity, medium: Infinity, lite: 0.22e6 }[tier] || Infinity;
-  const floorScale = tier === 'lite' ? 0.2 : 0.75;
-  const slowMs = tier === 'lite' ? 40 : 34, okMs = tier === 'lite' ? 23 : 27;
+  const floorScale = tier === 'lite' ? 0.2 : 0.67;
+  const slowMs = tier === 'lite' ? 40 : 18.5, okMs = tier === 'lite' ? 23 : 16.9;
+  const gpuHi = 15.5, gpuLo = 12, gpuGoal = 14;
   const fitScale = () => Math.max(floorScale, Math.min(1, Math.sqrt(budget / (window.innerWidth * window.innerHeight * pr * pr))));
   pipe.scale = fitScale();
   // test hook: res=0.5 pins the render scale
@@ -196,11 +202,12 @@ async function boot() {
   const look = {};
   const loop = { phase: null, fade: 0 };
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
-  window.__dbg = { G, U, sky, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
-    extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
+  window.__dbg = { G, U, sky, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
+    extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
   function frame() {
+    const cpu0 = performance.now();
     const rawDt = clock.getDelta();
     const dt = Math.min(0.1, rawDt);
     // adaptive resolution: reacts within half a second, drops hard when frames are slow,
@@ -213,11 +220,25 @@ async function boot() {
       perf.age = (perf.age || 0) + perf.t;
       if (!dbg.fixres && (perf.age > 3 || perf.ms > 250)) {
         const old = pipe.scale, ms = perf.ms;
-        if (ms > slowMs * 1.6) pipe.scale = Math.max(floorScale, pipe.scale * Math.max(0.5, Math.sqrt(okMs / ms)));
-        else if (ms > slowMs) pipe.scale = Math.max(floorScale, pipe.scale * 0.95);
-        else if (ms < okMs) { perf.good += perf.t; if (perf.good > 1.5 && pipe.scale < 1) { pipe.scale = Math.min(1, pipe.scale + 0.05); perf.good = 0; } }
-        else perf.good = 0;
-        if (Math.abs(old - pipe.scale) > 1e-3) { if (G.tier === 'lite') resize(); else pipe.setSize(window.innerWidth, window.innerHeight, pr); }
+        perf.dwell = (perf.dwell || 0) + perf.t;
+        // every change reallocates targets and costs a hitch, so changes are rare and deliberate
+        if (perf.dwell > 1.5) {
+          if (ftimer.ok && G.tier !== 'lite') {
+            // GPU work scales with pixels, roughly; the shadow maps and fixed passes don't
+            const g = ftimer.ms;
+            if (g > gpuHi) pipe.scale = Math.max(floorScale, pipe.scale * Math.max(0.85, Math.sqrt(gpuGoal / g)));
+            // climb back in proportion to the headroom, so a soft start after shader compiles doesn't linger
+            else if (g < gpuLo) { perf.good += perf.t; if (perf.good > 1 && pipe.scale < 1) { pipe.scale = Math.min(1, pipe.scale * Math.min(1.15, Math.sqrt(gpuGoal / g))); perf.good = 0; } }
+            else perf.good = 0;
+          } else {
+            if (ms > slowMs * 1.6) pipe.scale = Math.max(floorScale, pipe.scale * Math.max(0.5, Math.sqrt(okMs / ms)));
+            else if (ms > slowMs) pipe.scale = Math.max(floorScale, pipe.scale * 0.95);
+            else if (ms < okMs) { perf.good += perf.t; if (perf.good > 3 && pipe.scale < 1) { pipe.scale = Math.min(1, pipe.scale + 0.05); perf.good = 0; } }
+            else perf.good = 0;
+          }
+          pipe.scale = Math.round(pipe.scale * 100) / 100;
+        }
+        if (Math.abs(old - pipe.scale) > 1e-3) { perf.dwell = 0; if (G.tier === 'lite') resize(); else pipe.setSize(window.innerWidth, window.innerHeight, pr); }
         // still too slow at the floor: drop volumetrics, reflections and grass
         if (pipe.scale <= floorScale + 1e-3 && ms > 55) perf.slow += perf.t; else perf.slow = 0;
         if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; pipe.aoOn = false; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
@@ -301,6 +322,8 @@ async function boot() {
 
     const lite = G.tier === 'lite', fN = window.__dbg.frames;
     // lite mode spreads the slow-changing passes over several frames
+    ftimer.begin();
+    prof.begin('sky');
     if (!lite || fN % 8 === 0 || fN < 3) { dome.update(sky, camera); probe.update(st.snow); }
     dome.mesh.position.copy(camera.position);
     {
@@ -313,6 +336,7 @@ async function boot() {
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
       U.uGlowComp.value = 1 / (1 + 0.14 * exposure);
     }
+    prof.begin('terrShadow');
     if (!lite || fN % 30 === 0) tshadow.update(fN < 2);
     // cascades: basket detail, the area the camera looks at, wide for far balloons
     focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
@@ -327,10 +351,15 @@ async function boot() {
     landmarks.update(camera, lite);
     // lite mode refreshes the shadow maps every third frame
     terrain.setShadowCenter(viewC);
+    prof.begin('shadows');
     if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
     terrain.update(camera, lite ? 0.22 : 1);
+    prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
+    prof.collect();
+    ftimer.end();
+    perf.cpu = (perf.cpu || 0) + (performance.now() - cpu0 - (perf.cpu || 0)) * 0.05;
     window.__dbg.frames++;
     requestAnimationFrame(frame);
   }

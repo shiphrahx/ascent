@@ -39,13 +39,18 @@ export class Pipeline {
     const r = this.renderer;
     this.taa.jitter(camera, this.W, this.H);
     U.uTAAFrame.value = this.taa.frame % 64;
+    const P = G.prof;
+    P && P.begin('scene');
     camera.layers.set(0);
     r.setRenderTarget(this.main);
     r.setClearColor(0x000000, 1);
     r.clear(true, true, false);
     r.render(scene, camera);
+    P && P.begin('ao');
     if (this.aoOn) this.ao.render(this.main, camera);
+    P && P.begin('volumetrics');
     if (this.hooks.volumetrics) this.hooks.volumetrics(this.main);
+    P && P.begin('transparent');
     if (this.hooks.transparent) {
       r.setRenderTarget(this.main);
       camera.layers.set(4);
@@ -53,7 +58,9 @@ export class Pipeline {
       camera.layers.set(0);
     }
     this.taa.unjitter(camera);
+    P && P.begin('taa');
     const res = this.taa.resolve(this.main, camera, look.exposure);
+    P && P.begin('post');
     this.post.render(res.texture, look, time);
   }
 }

@@ -236,7 +236,8 @@ export class SkyDome {
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.scale.setScalar(70000);
     this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = -10;
+    // on the far plane and drawn last, so it only shades the pixels nothing else covered
+    this.mesh.renderOrder = 1000;
     this.mesh.layers.enable(2);
   }
   update(sky, camera) {

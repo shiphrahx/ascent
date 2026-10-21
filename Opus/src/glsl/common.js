@@ -153,23 +153,44 @@ vec3 applyHaze(vec3 col, vec3 P){
 
 struct Surf { vec3 albedo; vec3 N; float rough; float spec; float ao; float wrap; float sss; };
 
+// Physically based shading in the shape UE uses: Lambert diffuse, GGX specular with height-correlated
+// Smith visibility and Schlick Fresnel for the key light; the sky as diffuse irradiance plus a
+// roughness-blurred reflection weighted by the split-sum Fresnel. uKeyColor is irradiance (pi * L),
+// so the 1/pi of Lambert and the pi of the light cancel.
+// wrap: only thin, translucent things (leaves, grass, fabric) keep a little wrap-around light.
+vec3 envSpecular(vec3 R, float rough){
+  // sky above the horizon, a dim ground-tinted bounce below it, blurring toward irradiance as it roughens
+  vec3 sky = skyLut(normalize(vec3(R.x, max(R.y, 0.02), R.z)));
+  vec3 below = ambCube(vec3(0., -1., 0.)) * 1.2;
+  vec3 sharp = mix(below, sky, smoothstep(-0.12, 0.05, R.y));
+  return mix(sharp, ambCube(R), smoothstep(0.15, 0.85, rough));
+}
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
-  vec3 L = uKeyDir;
-  float ndl = dot(s.N, L);
-  float diff = max(0., (ndl + s.wrap) / (1. + s.wrap));
+  vec3 L = uKeyDir, N = s.N;
+  float ndlRaw = dot(N, L);
+  float ndl = max(ndlRaw, 0.);
+  float ndv = max(dot(N, V), 1e-3);
+  float w = max(0., s.wrap - 0.2);
+  float diff = max(0., (ndlRaw + w) / ((1. + w) * (1. + w)));
   vec3 key = uKeyColor * diff * shadow;
-  // translucency / subsurface through thin things lit from behind
+  // translucency through thin things lit from behind
   key += uKeyColor * s.sss * pow(sat(dot(-V, L)), 3.) * (0.35 + 0.65 * shadow) * 0.6;
-  vec3 amb = ambCube(s.N);
-  vec3 col = s.albedo * (key + amb * s.ao);
-  // specular
+  float rough = clamp(s.rough, 0.04, 1.);
+  float a = rough * rough, a2 = a * a;
   vec3 H = normalize(L + V);
-  float sp = pow(max(dot(s.N, H), 0.), mix(8., 180., 1. - s.rough)) * (1. - s.rough) * s.spec;
-  float fres = pow(1. - max(dot(s.N, V), 0.), 5.);
-  col += uKeyColor * sp * shadow * (0.3 + fres);
-  // painterly rim light along silhouettes facing the key
-  float rim = pow(1. - max(dot(s.N, V), 0.), 4.) * sat(dot(-V, L) * 0.6 + 0.4);
-  col += uKeyColor * rim * 0.22 * (0.4 + 0.6 * shadow) * mix(vec3(1), s.albedo * 1.8, 0.5);
+  float ndh = max(dot(N, H), 0.), ldh = max(dot(L, H), 0.);
+  float dd = ndh * ndh * (a2 - 1.) + 1.;
+  float D = a2 / (3.14159 * dd * dd);
+  float vis = 0.5 / (ndl * sqrt(ndv * ndv * (1. - a2) + a2) + ndv * sqrt(ndl * ndl * (1. - a2) + a2) + 1e-5);
+  // spec scales reflectance: 0.04 is any common dielectric, wet and icy surfaces push past it
+  float F0 = 0.02 + 0.06 * s.spec;
+  float F = F0 + (1. - F0) * pow(1. - ldh, 5.);
+  vec3 col = s.albedo * (key + ambCube(N) * s.ao) * (1. - F0);
+  col += uKeyColor * (D * vis * F * ndl * shadow);
+  // sky reflection, darkened where the surface is occluded (specular occlusion from AO)
+  float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);
+  float so = sat(pow(ndv + s.ao, exp2(-16. * a - 1.)) - 1. + s.ao);
+  col += envSpecular(reflect(-V, N), rough) * Fe * so;
   return col;
 }
 `;
@@ -199,7 +220,15 @@ float cascadeShadow(vec3 P, vec3 N, out float cover){
   float sb = 1.0 + 2.5 * (1. - ndl);
   cover = 1.;
   float s0 = sampleCascade(uShadow0, uShadowM0, P + N * uShadowWT.x * 1.5, uShadowK.x * uShadowWT.x * sb, 1.8, rot);
-  if (s0 >= 0.) return s0;
+  if (s0 >= 0.) {
+    // fade into the main cascade over the outer edge, so its coarser shadows don't pop in
+    vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+    vec2 e0 = min(c0.xy, 1. - c0.xy);
+    float k = smoothstep(0.0, 0.12, min(e0.x, e0.y));
+    if (k >= 1.) return s0;
+    float s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
+    return s1 >= 0. ? mix(s1, s0, k) : s0;
+  }
   // the middle cascade has the ground in it; fade to the coarse terrain shadow at its edges
   vec3 c1 = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
   vec2 e = min(c1.xy, 1. - c1.xy);
@@ -222,16 +251,22 @@ float keyShadow(vec3 P, vec3 N){
 // it, stretched up and down so steep faces read as rills. Each octave fades out before it
 // shrinks to a few pixels, so the detail never sparkles. px is the world size of one pixel.
 export const RELIEF = /* glsl */`
-float tuffRelief(vec3 P, vec3 N, float px, int octaves, out float cav){
+float tuffRelief(vec3 P, vec3 N, float px, int octaves, vec3 dPx, vec3 dPy, out float cav){
   vec3 w = pow(abs(N), vec3(4.)); w /= (w.x + w.y + w.z);
   float h = 0.; cav = 0.;
   const vec4 S = vec4(24., 7.5, 2.3, 0.7);
+  // explicit gradients, so planes that barely face us and octaves too fine to see can be skipped
+  vec2 gxX = vec2(dPx.z, dPx.y * 0.45), gyX = vec2(dPy.z, dPy.y * 0.45);
+  vec2 gxZ = vec2(dPx.x, dPx.y * 0.45), gyZ = vec2(dPy.x, dPy.y * 0.45);
   for (int i = 0; i < 4; i++) {
+    if (i >= octaves) break;
     float s = S[i], o = float(i) * 0.37;
-    float f = (1. - smoothstep(0.05, 0.22, px / s)) * step(float(i), float(octaves) - 0.5);
-    vec4 a = texture(uNoise2D, vec2(P.z, P.y * 0.45) / s + o) * w.x
-           + texture(uNoise2D, P.xz / s + o) * w.y
-           + texture(uNoise2D, vec2(P.x, P.y * 0.45) / s + o) * w.z;
+    float f = 1. - smoothstep(0.05, 0.22, px / s);
+    if (f <= 0.) continue;
+    vec4 a = vec4(0);
+    if (w.x > 0.03) a += textureGrad(uNoise2D, vec2(P.z, P.y * 0.45) / s + o, gxX / s, gyX / s) * w.x;
+    if (w.y > 0.03) a += textureGrad(uNoise2D, P.xz / s + o, dPx.xz / s, dPy.xz / s) * w.y;
+    if (w.z > 0.03) a += textureGrad(uNoise2D, vec2(P.x, P.y * 0.45) / s + o, gxZ / s, gyZ / s) * w.z;
     // fbm for the body, worley cells for the pocked surface
     h += (a.r - 0.5 - a.b * a.b * 0.3) * s * 0.07 * f;
     cav += (0.5 - a.b) * f * 0.3;
