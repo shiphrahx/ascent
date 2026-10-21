@@ -334,7 +334,7 @@ void main(){
     col = Lin;
   }
   col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 

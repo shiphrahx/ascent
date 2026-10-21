@@ -233,7 +233,7 @@ void main(){
   col += uKeyColor * sparkle * sh * 2.5;
   // cave and village windows are separate geometry; terrain only darkens in deep cracks
   col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 

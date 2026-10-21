@@ -210,6 +210,11 @@ vec3 groundBounce(vec3 P, vec3 n, float hag, float vis){
   }
   return r;
 }
+// How much of a pixel is direct key light, for the screen-space pass that adds contact shadows and
+// keeps SSAO off direct light (post/ao.js). Materials that write it put 1 - 0.999 * fraction in
+// alpha; alpha 1, the default, means unknown and gets the old treatment.
+float gDirect = 0.;
+float litAlpha(vec3 c){ return 1. - 0.999 * sat(gDirect / max(luma(c), 1e-5)); }
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   // test hook: shadowview shows only the key light's shadow term, grey on grey; shadowview=flat
   // shows flat grey, the control for everything that isn't the shadows
@@ -239,6 +244,7 @@ vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   vec3 amb = max(ambCube(An) * sv.w + groundBounce(P, An, hag, sv.w), 0.);
   vec3 col = s.albedo * (key + amb * s.ao) * (1. - F0);
   col += uKeyColor * (D * vis * F * ndl * shadow);
+  gDirect = luma(s.albedo * key * (1. - F0) + uKeyColor * (D * vis * F * ndl * shadow));
   // sky reflection, darkened where the surface is occluded (specular occlusion from AO)
   float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);
   float so = sat(pow(ndv + s.ao, exp2(-16. * a - 1.)) - 1. + s.ao);

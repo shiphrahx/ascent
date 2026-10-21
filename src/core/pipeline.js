@@ -13,7 +13,6 @@ export class Pipeline {
     this.post = new Post(renderer);
     this.taa = new TAA(renderer);
     this.ao = new AmbientOcclusion(renderer);
-    this.aoOn = true;
     this.scale = 1;
     this.main = null;
     this.hooks = { volumetrics: null, transparent: null };
@@ -47,7 +46,7 @@ export class Pipeline {
     r.clear(true, true, false);
     r.render(scene, camera);
     P && P.begin('ao');
-    if (this.aoOn) this.ao.render(this.main, camera);
+    this.ao.render(this.main, camera);
     P && P.begin('volumetrics');
     if (this.hooks.volumetrics) this.hooks.volumetrics(this.main);
     P && P.begin('transparent');

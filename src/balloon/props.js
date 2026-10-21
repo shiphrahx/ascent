@@ -169,7 +169,7 @@ void main(){
   col += alb * uLocalLightCol * (max(dot(N, tl * inversesqrt(d2)), 0.) * 0.8 + 0.2) / (1. + d2 * 1.5);
   col += emit;
   col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 
