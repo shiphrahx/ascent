@@ -11,6 +11,7 @@ const result = await esbuild.build({
   write: false,
   target: 'es2020',
   legalComments: 'eof',
+  loader: { '.jpg': 'dataurl' },
 });
 const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\/script');
 const html = fs.readFileSync('src/index.html', 'utf8').replace('/*__APP__*/', () => js);

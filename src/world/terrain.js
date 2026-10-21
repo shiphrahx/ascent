@@ -78,10 +78,12 @@ void main(){
   float steep = smoothstep(0.25, 0.65, slope);
   vec4 nz = texture(uNoise2D, P.xz / 18.);
   vec4 nz2 = texture(uNoise2D, P.xz / 4.3);
-  // weathered relief down to the size of a pixel, gentler on soil than on bare rock
+  // mid-scale weathered relief; the photo textures carry everything below a couple of metres
   float px = length(fwidth(P));
+  vec3 dPx = dFdx(P), dPy = dFdy(P);
   float cav;
-  float relief = tuffRelief(P, N, px, cav);
+  float relief = tuffRelief(P, N, px, 2, cav);
+  vec3 N0 = N;
   N = bumpNormal(N, P, relief * mix(0.22, 1., steep));
   // strata ledges catch light: tilt normal at band edges
   float b = (P.y + 6. * texture(uNoise2D, P.xz / 900.).r + 2.5 * texture(uNoise2D, P.xz / 140.).g) / 9.5;
@@ -101,48 +103,73 @@ void main(){
     fpP = mix(fpP, fpO, farM);
   }
   // --- albedo ---
+  // Every photo texture is used as detail around the hand-picked palette: divided by its own mean,
+  // half its hue kept. The strata and field colours stay; the grain, cracks and pebbles are real.
   float var = nz.r;
-  vec3 rock = tuffColor(P.y, rose, P.xz, var);
+  MatS rk = matBiplanar(L_TUFF, P, N0, 4.2, dPx, dPy);
+  vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
+  vec3 rock = tuffColor(P.y, rose, P.xz, var) * mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
   vec3 alb = rock;
   float rough = 0.85, spec = 0.12, ao = 1.0;
   // soils on gentle ground
   float flat_ = smoothstep(0.32, 0.12, slope);
-  vec3 dryGrass = mix(vec3(0.52, 0.47, 0.30), vec3(0.42, 0.40, 0.26), nz2.g);
-  vec3 tuffSoil = mix(vec3(0.60, 0.51, 0.39), vec3(0.50, 0.41, 0.31), nz.g);
-  vec3 plowed = mix(vec3(0.42, 0.30, 0.22), vec3(0.50, 0.38, 0.27), nz2.r);
-  // furrows in plowed fields
-  float ang = at.a * 3.14159;
-  vec2 fd = vec2(cos(ang), sin(ang));
-  float furrow = 0.5 + 0.5 * sin(dot(P.xz, fd) * 2.4);
-  plowed *= 1. + (0.25 * furrow - 0.12) * (1. - smoothstep(60., 220., dist));
-  vec3 vineSoil = mix(vec3(0.58, 0.42, 0.30), vec3(0.66, 0.50, 0.36), nz.g);
-  vec3 soil = tuffSoil;
-  soil = mix(soil, dryGrass, smoothstep(0.3, 0.42, soilT) * (1. - smoothstep(0.62, 0.7, soilT)));
-  soil = mix(soil, plowed, smoothstep(0.66, 0.72, soilT) * (1. - smoothstep(0.9, 0.98, soilT)));
-  soil = mix(soil, vineSoil, smoothstep(0.92, 0.98, soilT));
-  // field margins: darker strips of stubble and stones along every plot edge
-  vec2 ff = abs(fract(fpP) - 0.5);
-  float edgeW = 0.012 + dist * 0.000012;
-  float margin = (1. - smoothstep(0.5 - edgeW * 1.6, 0.5 - edgeW * 0.6, max(ff.x, ff.y))) ;
-  soil *= 1. - 0.22 * (1. - margin) * smoothstep(0.3, 0.4, soilT);
-  // scrubby dark cushions in patches on the uncultivated ground
-  float scrub = smoothstep(0.55, 0.75, texture(uNoise2D, P.xz / 46.).g) * (1. - smoothstep(0.3, 0.4, soilT) * 0.7);
-  soil = mix(soil, vec3(0.27, 0.26, 0.18) * (0.8 + 0.4 * nz2.r), scrub * 0.55);
-  // dirt tracks winding across the plateau and valley floors
-  float rn = texture(uNoise2D, P.xz / 2900. + 0.21).r - 0.5;
-  float rn2 = texture(uNoise2D, P.xz / 1700. + 0.63).g - 0.5;
-  float rw = fwidth(rn) * 1.2 + 0.0008;
-  float road = max(1. - smoothstep(rw * 0.5, rw * 1.5, abs(rn)), 1. - smoothstep(rw * 0.5, rw * 1.5, abs(rn2)) * 0.8);
-  soil = mix(soil, vec3(0.70, 0.62, 0.50) * (0.9 + 0.2 * nz2.g), road * 0.75);
   float soilAmt = flat_ * smoothstep(0.1, 0.25, soilT + 0.12 * (1. - slope));
   // plateau tops get patchy dry grass over pale tuff
   soilAmt = max(soilAmt, flat_ * smoothstep(0.55, 0.75, texture(uNoise2D, P.xz / 70.).r) * 0.85);
-  alb = mix(alb, soil, soilAmt);
+  vec3 groundDn = vec3(0);
+  float groundH = 0.5;
+  if (soilAmt > 0.001) {
+    float big = 0.25 + 0.3 * nz.g;
+    MatS st = matTop(L_STEPPE, P, 3.4, dPx, dPy, big);
+    MatS so = matTop(L_SOIL, P, 2.6, dPx, dPy, big);
+    MatS pl = matTop(L_PLOWED, P, 3.0, dPx, dPy, big);
+    vec3 stD = st.alb / vec3(0.22, 0.18, 0.105), soD = so.alb / vec3(0.27, 0.15, 0.07), plD = pl.alb / vec3(0.10, 0.06, 0.03);
+    vec3 dryGrass = mix(vec3(0.52, 0.47, 0.30), vec3(0.42, 0.40, 0.26), nz2.g) * mix(vec3(luma(stD)), stD, 0.6);
+    vec3 tuffSoil = mix(vec3(0.60, 0.51, 0.39), vec3(0.50, 0.41, 0.31), nz.g) * mix(vec3(luma(soD)), soD, 0.35);
+    vec3 plowed = mix(vec3(0.42, 0.30, 0.22), vec3(0.50, 0.38, 0.27), nz2.r) * mix(vec3(luma(plD)), plD, 0.5);
+    // furrows in plowed fields, faded out before they're too fine to resolve (that was the checkerboard)
+    float ang = at.a * 3.14159;
+    vec2 fd = vec2(cos(ang), sin(ang));
+    float fph = dot(P.xz, fd) * 7.8;
+    float fFade = 1. - smoothstep(0.6, 1.6, fwidth(fph));
+    float furrow = 0.5 + 0.5 * sin(fph);
+    plowed *= 1. + (0.16 * furrow - 0.08) * fFade;
+    vec3 plDn = pl.dn + vec3(fd.x, 0., fd.y) * cos(fph) * 0.3 * fFade;
+    vec3 vineSoil = mix(vec3(0.58, 0.42, 0.30), vec3(0.66, 0.50, 0.36), nz.g) * mix(vec3(luma(soD)), soD, 0.35);
+    float wGrass = smoothstep(0.3, 0.42, soilT) * (1. - smoothstep(0.62, 0.7, soilT));
+    float wPlow = smoothstep(0.66, 0.72, soilT) * (1. - smoothstep(0.9, 0.98, soilT));
+    float wVine = smoothstep(0.92, 0.98, soilT);
+    vec3 soil = tuffSoil;
+    soil = mix(soil, dryGrass, wGrass);
+    soil = mix(soil, plowed, wPlow);
+    soil = mix(soil, vineSoil, wVine);
+    groundDn = mix(mix(mix(so.dn, st.dn, wGrass), plDn, wPlow), so.dn, wVine);
+    groundH = mix(mix(mix(so.h, st.h, wGrass), pl.h, wPlow), so.h, wVine);
+    // field margins: darker strips of stubble and stones along every plot edge
+    vec2 ff = abs(fract(fpP) - 0.5);
+    float edgeW = 0.012 + dist * 0.000012;
+    float margin = (1. - smoothstep(0.5 - edgeW * 1.6, 0.5 - edgeW * 0.6, max(ff.x, ff.y))) ;
+    soil *= 1. - 0.22 * (1. - margin) * smoothstep(0.3, 0.4, soilT);
+    // scrubby dark cushions in patches on the uncultivated ground
+    float scrub = smoothstep(0.55, 0.75, texture(uNoise2D, P.xz / 46.).g) * (1. - smoothstep(0.3, 0.4, soilT) * 0.7);
+    soil = mix(soil, vec3(0.27, 0.26, 0.18) * (0.8 + 0.4 * nz2.r) * luma(stD), scrub * 0.55);
+    // dirt tracks winding across the plateau and valley floors
+    float rn = texture(uNoise2D, P.xz / 2900. + 0.21).r - 0.5;
+    float rn2 = texture(uNoise2D, P.xz / 1700. + 0.63).g - 0.5;
+    float rw = fwidth(rn) * 1.2 + 0.0008;
+    float road = max(1. - smoothstep(rw * 0.5, rw * 1.5, abs(rn)), 1. - smoothstep(rw * 0.5, rw * 1.5, abs(rn2)) * 0.8);
+    soil = mix(soil, vec3(0.70, 0.62, 0.50) * (0.9 + 0.2 * nz2.g) * mix(1., luma(soD), 0.7), road * 0.75);
+    // where soil meets rock, the higher of the two surfaces wins
+    soilAmt = sat(soilAmt + (groundH - rk.h) * 0.8 * soilAmt * (1. - soilAmt) * 4.);
+    alb = mix(alb, soil, soilAmt);
+  }
+  N = normalize(N + mix(rk.dn * 0.9, groundDn * 0.8, soilAmt) * detailFade);
   // base of cliffs: darker scree and AO in crevices
   ao = mix(0.55, 1., smoothstep(0.25, 0.65, gro)) * mix(1., 0.85, steep);
   ao *= 1. - 0.25 * smoothstep(0.3, 0.0, slope) * smoothstep(0.35, 0.6, slope + 0.2) ;
-  // pits and hollows in the relief hold shade
+  // pits and hollows in the relief and the scanned surfaces hold shade
   ao *= 1. - sat(cav) * mix(0.1, 0.55, steep);
+  ao *= mix(0.6 + 0.4 * rk.h, 0.75 + 0.25 * groundH, soilAmt);
 
   // river bank: wet dark silt, pebbles
   vec3 silt = mix(vec3(0.36, 0.33, 0.28), vec3(0.48, 0.44, 0.38), nz2.r);

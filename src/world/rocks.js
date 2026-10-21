@@ -325,8 +325,14 @@ void main(){
   vec3 T = normalize(cross(N, vec3(0, 1, 0)) + 1e-4);
   N = normalize(N + T * (str - 0.5) * 0.5 * fade);
   float cav;
-  float relief = tuffRelief(P, N, length(fwidth(P)), cav);
+  vec3 N0 = N;
+  float relief = tuffRelief(P, N, length(fwidth(P)), 2, cav);
   N = bumpNormal(N, P, relief * (vMat < 0.5 ? 1. : 0.6));
+  // scanned tuff for the grain, cracks and pocks
+  MatS rk = matBiplanar(L_TUFF, P, N0, 3.4, dFdx(P), dFdy(P));
+  vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
+  vec3 rkT = mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
+  N = normalize(N + rk.dn * 0.9 * fade);
   // strata ledges catch the light
   float b = (P.y + 6. * texture(uNoise2D, P.xz / 900.).r + 2.5 * texture(uNoise2D, P.xz / 140.).g) / 9.5;
   float ledge = smoothstep(0.0, 0.06, fract(b)) * (1. - smoothstep(0.06, 0.16, fract(b)));
@@ -334,22 +340,22 @@ void main(){
 
   float m = vMat;
   vec3 alb;
-  float rough = 0.85, spec = 0.12, ao = vAO * (1. - sat(cav) * 0.5);
+  float rough = 0.85, spec = 0.12, ao = vAO * (1. - sat(cav) * 0.5) * (0.6 + 0.4 * rk.h);
   if (m < 0.5) {
-    alb = tuffColor(P.y, rose, P.xz, nz.r);
+    alb = tuffColor(P.y, rose, P.xz, nz.r) * rkT;
     // darker weathering streaks running down from the cap
     alb *= 1. - 0.18 * smoothstep(0.55, 0.8, str) * smoothstep(0., 8., vLocalY);
     // scree and soil splash around the foot
     alb = mix(alb, vec3(0.42, 0.36, 0.28) * (0.8 + 0.4 * nz.g), smoothstep(1.6, -0.5, vLocalY) * 0.7);
   } else if (m < 1.5) {
     // basalt cap: dark, rough, with lichen and a rusty skin
-    alb = mix(vec3(0.11, 0.095, 0.085), vec3(0.22, 0.19, 0.16), nz.r);
+    alb = mix(vec3(0.11, 0.095, 0.085), vec3(0.22, 0.19, 0.16), nz.r) * luma(rkT);
     alb = mix(alb, vec3(0.45, 0.30, 0.20), smoothstep(0.6, 0.8, nz2.g) * 0.5);
     alb = mix(alb, vec3(0.55, 0.55, 0.38), smoothstep(0.72, 0.85, nz.g) * 0.3);
     rough = 0.7; spec = 0.2;
   } else {
     // carved interiors: soot-darkened tuff
-    alb = tuffColor(P.y, rose, P.xz, nz.r) * 0.32;
+    alb = tuffColor(P.y, rose, P.xz, nz.r) * rkT * 0.32;
     ao *= 0.6;
   }
   // lime-wash and red ochre bands painted around the pigeon holes

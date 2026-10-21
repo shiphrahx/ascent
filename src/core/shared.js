@@ -54,6 +54,8 @@ export const U = {
   uOuterBounds: { value: new THREE.Vector4(WORLD.outer.minX, WORLD.outer.minZ, WORLD.outer.sizeX, WORLD.outer.sizeZ) },
   uNoise2D: { value: null },
   uNoise3D: { value: null },
+  uSurfAlb: { value: null },
+  uSurfNH: { value: null },
   uCloudOffset: { value: new THREE.Vector2() },
   uCloudBase: { value: 1500 },
   uCloudTop: { value: 2600 },

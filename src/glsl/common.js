@@ -214,13 +214,13 @@ float keyShadow(vec3 P, vec3 N){
 // it, stretched up and down so steep faces read as rills. Each octave fades out before it
 // shrinks to a few pixels, so the detail never sparkles. px is the world size of one pixel.
 export const RELIEF = /* glsl */`
-float tuffRelief(vec3 P, vec3 N, float px, out float cav){
+float tuffRelief(vec3 P, vec3 N, float px, int octaves, out float cav){
   vec3 w = pow(abs(N), vec3(4.)); w /= (w.x + w.y + w.z);
   float h = 0.; cav = 0.;
   const vec4 S = vec4(24., 7.5, 2.3, 0.7);
   for (int i = 0; i < 4; i++) {
     float s = S[i], o = float(i) * 0.37;
-    float f = 1. - smoothstep(0.05, 0.22, px / s);
+    float f = (1. - smoothstep(0.05, 0.22, px / s)) * step(float(i), float(octaves) - 0.5);
     vec4 a = texture(uNoise2D, vec2(P.z, P.y * 0.45) / s + o) * w.x
            + texture(uNoise2D, P.xz / s + o) * w.y
            + texture(uNoise2D, vec2(P.x, P.y * 0.45) / s + o) * w.z;
@@ -240,8 +240,58 @@ vec3 bumpNormal(vec3 N, vec3 P, float h){
 }
 `;
 
+// Photo-scanned materials (see core/surfaces.js). Gradients come in from the caller, so these are
+// safe inside branches. dn is a world-space offset to add to the normal before normalising.
+export const SURF = /* glsl */`
+uniform highp sampler2DArray uSurfAlb, uSurfNH;
+#define L_TUFF 0.
+#define L_STEPPE 1.
+#define L_SOIL 2.
+#define L_PLOWED 3.
+struct MatS { vec3 alb; vec3 dn; float h; };
+MatS matPlanar(float L, vec2 uv, vec2 gx, vec2 gy){
+  MatS m;
+  m.alb = textureGrad(uSurfAlb, vec3(uv, L), gx, gy).rgb;
+  vec3 nh = textureGrad(uSurfNH, vec3(uv, L), gx, gy).rgb;
+  m.dn = vec3(nh.xy * 2. - 1., 0.);
+  m.h = nh.z;
+  return m;
+}
+// ground layers seen from above. A second, rotated sample at a much larger scale breaks up the tiling.
+MatS matTop(float L, vec3 P, float scale, vec3 dPx, vec3 dPy, float mixBig){
+  MatS m = matPlanar(L, P.xz / scale, dPx.xz / scale, dPy.xz / scale);
+  m.dn = vec3(m.dn.x, 0., m.dn.y);
+  const mat2 R = mat2(0.8, 0.6, -0.6, 0.8);
+  float sb = scale * 3.7;
+  vec3 big = textureGrad(uSurfAlb, vec3(R * P.xz / sb + 0.37, L), R * dPx.xz / sb, R * dPy.xz / sb).rgb;
+  m.alb = mix(m.alb, big, mixBig);
+  return m;
+}
+// biplanar (two dominant axes) for cliffs and chimneys
+MatS matBiplanar(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy){
+  vec3 n = abs(N);
+  ivec3 ma = (n.x > n.y && n.x > n.z) ? ivec3(0, 1, 2) : (n.y > n.z) ? ivec3(1, 2, 0) : ivec3(2, 0, 1);
+  ivec3 mi = (n.x < n.y && n.x < n.z) ? ivec3(0, 1, 2) : (n.y < n.z) ? ivec3(1, 2, 0) : ivec3(2, 0, 1);
+  ivec3 me = ivec3(3) - mi - ma;
+  vec3 p = P / scale, gx = dPx / scale, gy = dPy / scale;
+  MatS a = matPlanar(L, vec2(p[ma.y], p[ma.z]), vec2(gx[ma.y], gx[ma.z]), vec2(gy[ma.y], gy[ma.z]));
+  MatS b = matPlanar(L, vec2(p[me.y], p[me.z]), vec2(gx[me.y], gx[me.z]), vec2(gy[me.y], gy[me.z]));
+  vec3 da = vec3(0), db = vec3(0);
+  da[ma.y] = a.dn.x; da[ma.z] = a.dn.y;
+  db[me.y] = b.dn.x; db[me.z] = b.dn.y;
+  vec2 w = clamp((vec2(n[ma.x], n[me.x]) - 0.5773) / (1. - 0.5773), 0., 1.);
+  w = pow(w, vec2(1.5)) + vec2(1e-4, 0.);
+  float ws = w.x + w.y;
+  MatS m;
+  m.alb = (a.alb * w.x + b.alb * w.y) / ws;
+  m.dn = (da * w.x + db * w.y) / ws;
+  m.h = (a.h * w.x + b.h * w.y) / ws;
+  return m;
+}
+`;
+
 export const VCOMMON = DECL + NOISE + TERRAIN + SHADOW + LIGHT;
-export const COMMON = VCOMMON + SHADOW_F + RELIEF;
+export const COMMON = VCOMMON + SHADOW_F + RELIEF + SURF;
 
 // Wind field shared with JS (see world/wind.js). Ground layer only in shaders.
 export const WIND = /* glsl */`

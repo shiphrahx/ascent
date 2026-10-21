@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { U, G, WORLD } from './core/shared.js';
 import { makeNoise2D, makeNoise3D } from './core/noise.js';
+import { loadSurfaces } from './core/surfaces.js';
 import { Sky, cycleForHour } from './world/time.js';
 import { SkyDome } from './world/skydome.js';
 import { TerrainData } from './world/terrainGen.js';
@@ -63,6 +64,7 @@ async function boot() {
   U.uNoise2D.value = makeNoise2D(256);
   setProgress(0.05); await tick();
   U.uNoise3D.value = makeNoise3D(64);
+  await loadSurfaces();
   setProgress(0.1); await tick();
 
   const data = new TerrainData();
