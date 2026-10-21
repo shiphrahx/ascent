@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { U, G, WORLD } from './core/shared.js';
 import { makeNoise2D, makeNoise3D } from './core/noise.js';
+import { loadSurfaces } from './core/surfaces.js';
 import { Sky, cycleForHour } from './world/time.js';
 import { SkyDome } from './world/skydome.js';
 import { TerrainData } from './world/terrainGen.js';
@@ -63,6 +64,7 @@ async function boot() {
   U.uNoise2D.value = makeNoise2D(256);
   setProgress(0.05); await tick();
   U.uNoise3D.value = makeNoise3D(64);
+  await loadSurfaces();
   setProgress(0.1); await tick();
 
   const data = new TerrainData();
@@ -102,7 +104,7 @@ async function boot() {
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer);
-  const shadows = new Shadows(renderer, tier === 'lite' ? 1024 : 2048);
+  const shadows = new Shadows(renderer, tier === 'lite' ? 1024 : 2048, tier === 'lite' ? 1024 : 4096);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   hero.flight.wind = wind;
@@ -127,15 +129,18 @@ async function boot() {
   pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
   const volHook = rt => vol.render(rt, camera);
   pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
+  if (tier === 'lite' || dbg.noao) pipe.aoOn = false;
   if (tier === 'lite') { river.reflect = false; veg.grass.visible = false; veg.noGrass = true; }
   pipe.hooks.transparent = true;
   let exposure = 1;
   setProgress(0.7); await tick();
 
   let pr = Math.min(window.devicePixelRatio || 1, 2);
-  // start from a pixel budget that suits the GPU, then the governor below adapts every half second
-  const budget = { high: 3.7e6, medium: 1.6e6, lite: 0.22e6 }[tier] || 1.6e6;
-  const floorScale = tier === 'lite' ? 0.2 : 0.3;
+  // Resolution comes first: start at native on any real GPU and only give pixels up when the frame
+  // rate drops below about 30. A drifting balloon reads fine at 30-40 fps, a soft image doesn't.
+  const budget = { high: Infinity, medium: Infinity, lite: 0.22e6 }[tier] || Infinity;
+  const floorScale = tier === 'lite' ? 0.2 : 0.75;
+  const slowMs = tier === 'lite' ? 40 : 34, okMs = tier === 'lite' ? 23 : 27;
   const fitScale = () => Math.max(floorScale, Math.min(1, Math.sqrt(budget / (window.innerWidth * window.innerHeight * pr * pr))));
   pipe.scale = fitScale();
   // test hook: res=0.5 pins the render scale
@@ -206,15 +211,14 @@ async function boot() {
       perf.age = (perf.age || 0) + perf.t;
       if (!dbg.fixres && (perf.age > 3 || perf.ms > 250)) {
         const old = pipe.scale, ms = perf.ms;
-        if (ms > 40) pipe.scale = Math.max(floorScale, pipe.scale * Math.max(0.5, Math.sqrt(22 / ms)));
-        else if (ms > 23) pipe.scale = Math.max(floorScale, pipe.scale * 0.93);
-        // vsync caps us at ~16.7 ms, so "at the cap" counts as headroom to climb into
-        else if (ms < 18.2) { perf.good += perf.t; if (perf.good > 1.5 && pipe.scale < 1) { pipe.scale = Math.min(1, pipe.scale + 0.06); perf.good = 0; } }
+        if (ms > slowMs * 1.6) pipe.scale = Math.max(floorScale, pipe.scale * Math.max(0.5, Math.sqrt(okMs / ms)));
+        else if (ms > slowMs) pipe.scale = Math.max(floorScale, pipe.scale * 0.95);
+        else if (ms < okMs) { perf.good += perf.t; if (perf.good > 1.5 && pipe.scale < 1) { pipe.scale = Math.min(1, pipe.scale + 0.05); perf.good = 0; } }
         else perf.good = 0;
         if (Math.abs(old - pipe.scale) > 1e-3) { if (G.tier === 'lite') resize(); else pipe.setSize(window.innerWidth, window.innerHeight, pr); }
         // still too slow at the floor: drop volumetrics, reflections and grass
-        if (pipe.scale <= floorScale + 1e-3 && ms > 45) perf.slow += perf.t; else perf.slow = 0;
-        if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
+        if (pipe.scale <= floorScale + 1e-3 && ms > 55) perf.slow += perf.t; else perf.slow = 0;
+        if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; pipe.aoOn = false; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
       }
       perf.acc = 0; perf.n = 0; perf.t = 0;
     }
@@ -320,6 +324,7 @@ async function boot() {
     village.update(camera);
     landmarks.update(camera, lite);
     // lite mode refreshes the shadow maps every third frame
+    terrain.setShadowCenter(viewC);
     if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
     terrain.update(camera, lite ? 0.22 : 1);
     if (!dbg.norefl) river.render(scene, camera, st);

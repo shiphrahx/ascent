@@ -11,7 +11,6 @@ uniform vec2 uWindDir, uGustOffset;
 uniform float uWindStrength;
 uniform sampler2D uShadow0, uShadow1, uShadow2;
 uniform mat4 uShadowM0, uShadowM1, uShadowM2;
-uniform vec2 uShadowTexel;
 uniform vec3 uShadowK, uShadowWT;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
 uniform highp sampler2D uHeightCore, uHeightOuter;
@@ -183,30 +182,39 @@ float sampleCascade(sampler2D map, mat4 m, vec3 P, float bias, float radius, flo
   vec3 c = sc.xyz / sc.w * 0.5 + 0.5;
   if (c.x < 0.002 || c.x > 0.998 || c.y < 0.002 || c.y > 0.998 || c.z > 1.) return -1.;
   float s = 0.;
+  vec2 texel = 1. / vec2(textureSize(map, 0));
   float cr = cos(rot), sr = sin(rot);
   mat2 R = mat2(cr, sr, -sr, cr);
   for (int i = 0; i < 8; i++) {
-    vec2 o = R * POISSON[i] * radius * uShadowTexel;
+    vec2 o = R * POISSON[i] * radius * texel;
     float d = texture(map, c.xy + o).r;
     s += step(c.z - bias, d);
   }
   return s / 8.;
 }
-float cascadeShadow(vec3 P, vec3 N){
+float cascadeShadow(vec3 P, vec3 N, out float cover){
   // rotates every frame so the temporal pass averages the pattern away
   float rot = ign(gl_FragCoord.xy + 5.588238 * uTAAFrame) * 6.283;
   float ndl = abs(dot(N, uKeyDir));
   float sb = 1.0 + 2.5 * (1. - ndl);
+  cover = 1.;
   float s0 = sampleCascade(uShadow0, uShadowM0, P + N * uShadowWT.x * 1.5, uShadowK.x * uShadowWT.x * sb, 1.8, rot);
   if (s0 >= 0.) return s0;
+  // the middle cascade has the ground in it; fade to the coarse terrain shadow at its edges
+  vec3 c1 = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  vec2 e = min(c1.xy, 1. - c1.xy);
+  cover = smoothstep(0.0, 0.08, min(e.x, e.y));
   float s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
   if (s1 >= 0.) return s1;
+  cover = 0.;
   float s2 = sampleCascade(uShadow2, uShadowM2, P + N * uShadowWT.z * 1.0, uShadowK.z * uShadowWT.z * sb, 1.2, rot);
   if (s2 >= 0.) return s2;
   return 1.;
 }
 float keyShadow(vec3 P, vec3 N){
-  return keyHorizon(P) * min(terrainShadow(P), cascadeShadow(P, N)) * cloudShadow(P);
+  float cover;
+  float c = cascadeShadow(P, N, cover);
+  return keyHorizon(P) * min(mix(terrainShadow(P), 1., cover), c) * cloudShadow(P);
 }
 `;
 
@@ -214,13 +222,13 @@ float keyShadow(vec3 P, vec3 N){
 // it, stretched up and down so steep faces read as rills. Each octave fades out before it
 // shrinks to a few pixels, so the detail never sparkles. px is the world size of one pixel.
 export const RELIEF = /* glsl */`
-float tuffRelief(vec3 P, vec3 N, float px, out float cav){
+float tuffRelief(vec3 P, vec3 N, float px, int octaves, out float cav){
   vec3 w = pow(abs(N), vec3(4.)); w /= (w.x + w.y + w.z);
   float h = 0.; cav = 0.;
   const vec4 S = vec4(24., 7.5, 2.3, 0.7);
   for (int i = 0; i < 4; i++) {
     float s = S[i], o = float(i) * 0.37;
-    float f = 1. - smoothstep(0.05, 0.22, px / s);
+    float f = (1. - smoothstep(0.05, 0.22, px / s)) * step(float(i), float(octaves) - 0.5);
     vec4 a = texture(uNoise2D, vec2(P.z, P.y * 0.45) / s + o) * w.x
            + texture(uNoise2D, P.xz / s + o) * w.y
            + texture(uNoise2D, vec2(P.x, P.y * 0.45) / s + o) * w.z;
@@ -240,8 +248,65 @@ vec3 bumpNormal(vec3 N, vec3 P, float h){
 }
 `;
 
+// Photo-scanned materials (see core/surfaces.js). Gradients come in from the caller, so these are
+// safe inside branches. dn is a world-space offset to add to the normal before normalising.
+export const SURF = /* glsl */`
+uniform highp sampler2DArray uSurfAlb, uSurfNH;
+#define L_TUFF 0.
+#define L_STEPPE 1.
+#define L_SOIL 2.
+#define L_PLOWED 3.
+struct MatS { vec3 alb; vec3 dn; float h; };
+MatS matPlanar(float L, vec2 uv, vec2 gx, vec2 gy){
+  MatS m;
+  m.alb = textureGrad(uSurfAlb, vec3(uv, L), gx, gy).rgb;
+  vec3 nh = textureGrad(uSurfNH, vec3(uv, L), gx, gy).rgb;
+  m.dn = vec3(nh.xy * 2. - 1., 0.);
+  m.h = nh.z;
+  return m;
+}
+// ground layers seen from above, with no visible repeat: two copies at random offsets picked by a
+// slow noise and blended where it changes over (iq's texture repetition trick). The noise index is
+// shared by every layer so they stay in step.
+MatS matTop(float L, vec3 P, float scale, vec3 dPx, vec3 dPy, float k){
+  vec2 uv = P.xz / scale, gx = dPx.xz / scale, gy = dPy.xz / scale;
+  float l = k * 8., f = fract(l), ia = floor(l);
+  vec2 oa = sin(vec2(3., 7.) * ia), ob = sin(vec2(3., 7.) * (ia + 1.));
+  vec3 aA = textureGrad(uSurfAlb, vec3(uv + oa, L), gx, gy).rgb, bA = textureGrad(uSurfAlb, vec3(uv + ob, L), gx, gy).rgb;
+  vec3 aN = textureGrad(uSurfNH, vec3(uv + oa, L), gx, gy).rgb, bN = textureGrad(uSurfNH, vec3(uv + ob, L), gx, gy).rgb;
+  float t = smoothstep(0.2, 0.8, f - 0.1 * (aA.r + aA.g + aA.b - bA.r - bA.g - bA.b));
+  MatS m;
+  m.alb = mix(aA, bA, t);
+  vec3 nh = mix(aN, bN, t);
+  m.dn = vec3(nh.x * 2. - 1., 0., nh.y * 2. - 1.);
+  m.h = nh.z;
+  return m;
+}
+// biplanar (two dominant axes) for cliffs and chimneys
+MatS matBiplanar(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy){
+  vec3 n = abs(N);
+  ivec3 ma = (n.x > n.y && n.x > n.z) ? ivec3(0, 1, 2) : (n.y > n.z) ? ivec3(1, 2, 0) : ivec3(2, 0, 1);
+  ivec3 mi = (n.x < n.y && n.x < n.z) ? ivec3(0, 1, 2) : (n.y < n.z) ? ivec3(1, 2, 0) : ivec3(2, 0, 1);
+  ivec3 me = ivec3(3) - mi - ma;
+  vec3 p = P / scale, gx = dPx / scale, gy = dPy / scale;
+  MatS a = matPlanar(L, vec2(p[ma.y], p[ma.z]), vec2(gx[ma.y], gx[ma.z]), vec2(gy[ma.y], gy[ma.z]));
+  MatS b = matPlanar(L, vec2(p[me.y], p[me.z]), vec2(gx[me.y], gx[me.z]), vec2(gy[me.y], gy[me.z]));
+  vec3 da = vec3(0), db = vec3(0);
+  da[ma.y] = a.dn.x; da[ma.z] = a.dn.y;
+  db[me.y] = b.dn.x; db[me.z] = b.dn.y;
+  vec2 w = clamp((vec2(n[ma.x], n[me.x]) - 0.5773) / (1. - 0.5773), 0., 1.);
+  w = pow(w, vec2(1.5)) + vec2(1e-4, 0.);
+  float ws = w.x + w.y;
+  MatS m;
+  m.alb = (a.alb * w.x + b.alb * w.y) / ws;
+  m.dn = (da * w.x + db * w.y) / ws;
+  m.h = (a.h * w.x + b.h * w.y) / ws;
+  return m;
+}
+`;
+
 export const VCOMMON = DECL + NOISE + TERRAIN + SHADOW + LIGHT;
-export const COMMON = VCOMMON + SHADOW_F + RELIEF;
+export const COMMON = VCOMMON + SHADOW_F + RELIEF + SURF;
 
 // Wind field shared with JS (see world/wind.js). Ground layer only in shaders.
 export const WIND = /* glsl */`

@@ -83,6 +83,18 @@ function poplar(rng, lod) {
   return { geo: buildTree(segs, 6), H };
 }
 
+// the twig crown of a bare poplar as a volume: an ellipsoid shell around the branches, shaded by how
+// much crown the view ray passes through. Real twigs are far thinner than a pixel, so on their own they
+// vanish and leave a pole; this is the grey-brown feathery column you actually see.
+function crownShell(H) {
+  const g = new THREE.IcosahedronGeometry(1, 3);
+  const rx = 1.9, ry = H * 0.43, cy = H * 0.56;
+  g.scale(rx, ry, rx);
+  g.translate(0, cy, 0);
+  g.userData.crown = new THREE.Vector4(0, cy, rx, ry);
+  return g;
+}
+
 function apricot(rng, lod) {
   const segs = [];
   const opt = { wiggle: 0.25, lift: 0.02, swayGain: 0.12, trunkSides: lod ? 5 : 7 };
@@ -291,6 +303,60 @@ void main(){
 }
 `;
 
+const CROWN_VERT = /* glsl */`
+${VCOMMON}
+${WIND}
+uniform vec4 uCrown;   // centre y, radius xz, radius y (local)
+varying vec3 vWorld, vLocal, vCamLocal;
+varying float vScale;
+void main(){
+  vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.);
+  mat4 M = modelMatrix * instanceMatrix;
+  vScale = length(M[0].xyz);
+  vec3 root = (M * vec4(0, 0, 0, 1)).xyz;
+  // lean with the gust like the branches do
+  float s = sat((position.y - uCrown.y + uCrown.w) / (2. * uCrown.w));
+  wp.xz += windAt(root.xz) * 0.06 * s * s * 0.8;
+  vWorld = wp.xyz; vLocal = position;
+  vCamLocal = (inverse(M) * vec4(cameraPosition, 1.)).xyz;
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}
+`;
+const CROWN_FRAG = /* glsl */`
+${COMMON}
+uniform vec4 uCrown;
+varying vec3 vWorld, vLocal, vCamLocal;
+varying float vScale;
+void main(){
+  vec3 P = vWorld;
+  if (P.y < uClipY) discard;
+  // ray through the unit sphere the crown maps to
+  vec3 R = vec3(uCrown.z, uCrown.w, uCrown.z), C = vec3(0., uCrown.y, 0.);
+  vec3 o = (vCamLocal - C) / R, d = normalize((vLocal - vCamLocal) / R);
+  float b = dot(o, d), c = dot(o, o) - 1., h = b * b - c;
+  if (h <= 0.) discard;
+  h = sqrt(h);
+  float t0 = max(-b - h, 0.), t1 = -b + h;
+  vec3 m0 = o + d * t0, m1 = o + d * t1, mm = (m0 + m1) * 0.5;
+  // metres of crown along the ray, thicker towards the trunk
+  float chord = length((m1 - m0) * R) * vScale;
+  float core = 1. - dot(mm.xz, mm.xz) * 0.6;
+  float n = texture(uNoise3D, P / 2.3).r * 0.6 + texture(uNoise3D, P / 0.7).g * 0.4;
+  float a = (1. - exp(-chord * 0.6 * core)) * smoothstep(0.25, 0.75, n + 0.15);
+  a *= 0.9 * smoothstep(1., 0.6, length(mm));
+  if (a < ign(gl_FragCoord.xy + 7.13 * uTAAFrame)) discard;
+  vec3 V = normalize(cameraPosition - P);
+  vec3 N = normalize(normalize((vLocal - C) / (R * R)) + vec3(0, 0.4, 0));
+  vec3 alb = mix(vec3(0.30, 0.25, 0.21), vec3(0.42, 0.36, 0.30), n);
+  alb = mix(alb, vec3(0.82, 0.86, 0.92), uFrost * 0.3);
+  alb = mix(alb, vec3(0.93, 0.95, 0.99), uSnow * 0.35);
+  Surf s; s.albedo = alb; s.N = N; s.rough = 0.9; s.spec = 0.03; s.ao = 0.55 + 0.45 * sat(mm.y * 0.5 + 0.5); s.wrap = 0.8; s.sss = 0.5;
+  float sh = keyShadow(P, N);
+  vec3 col = shadeSurf(s, P, V, sh);
+  gl_FragColor = vec4(applyHaze(col, P), 1.);
+}
+`;
+
 export class Vegetation {
   constructor(scene, data, rocks, village) {
     this.data = data;
@@ -321,7 +387,8 @@ export class Vegetation {
         }
       }
     }
-    this.addSet([poplar(mulberry32(1), 0), poplar(mulberry32(2), 0), poplar(mulberry32(3), 0)], [poplar(mulberry32(1), 1), poplar(mulberry32(2), 1), poplar(mulberry32(3), 1)], poplars, 300, 1.0, true);
+    const pv = [poplar(mulberry32(1), 0), poplar(mulberry32(2), 0), poplar(mulberry32(3), 0)];
+    this.addSet(pv, [poplar(mulberry32(1), 1), poplar(mulberry32(2), 1), poplar(mulberry32(3), 1)], poplars, 300, 1.0, true, pv.map(v => crownShell(v.H)));
     this.poplars = poplars;
     // apricot orchard in rows
     const trees = [];
@@ -374,9 +441,9 @@ export class Vegetation {
     this._m = m4; this._q = q;
   }
 
-  addSet(hiGeos, loGeos, list, maxDist, swayH, cast) {
+  addSet(hiGeos, loGeos, list, maxDist, swayH, cast, crowns) {
     const n = list.length;
-    const set = { hi: [], lo: [], list, maxDist, loDist: loGeos ? 140 : 1e9 };
+    const set = { hi: [], lo: [], crowns: [], list, maxDist, loDist: loGeos ? 140 : 1e9 };
     list.forEach((o, i) => { o.v = i % hiGeos.length; });
     const mk = (geo, cnt) => {
       const mat = makeMaterial({ vertex: VERT, fragment: FRAG, side: THREE.DoubleSide, uniforms: { uScaleH: { value: swayH }, uGrid: { value: 0 }, uCellSize: { value: 0 }, uCamGrid: { value: new THREE.Vector3() } } });
@@ -392,6 +459,14 @@ export class Vegetation {
       const cnt = list.filter(o => o.v === v).length;
       set.hi.push(mk(hiGeos[v].geo || hiGeos[v], cnt));
       if (loGeos) set.lo.push(mk(loGeos[v].geo || loGeos[v], cnt));
+      if (crowns) {
+        const mat = makeMaterial({ vertex: CROWN_VERT, fragment: CROWN_FRAG, shadow: false, uniforms: { uCrown: { value: crowns[v].userData.crown } } });
+        const m = new THREE.InstancedMesh(crowns[v], mat, Math.max(1, cnt));
+        m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        m.frustumCulled = false; m.count = 0;
+        this.group.add(m);
+        set.crowns.push(m);
+      }
     }
     this.sets.push(set);
   }
@@ -402,7 +477,7 @@ export class Vegetation {
     const cp = camera.position;
     const up = new THREE.Vector3(0, 1, 0), pos = new THREE.Vector3(), sc = new THREE.Vector3();
     for (const set of this.sets) {
-      const ch = set.hi.map(() => 0), cl = set.lo.map(() => 0);
+      const ch = set.hi.map(() => 0), cl = set.lo.map(() => 0), cc = set.hi.map(() => 0);
       for (const o of set.list) {
         this._sph.center.set(o.x, o.y + 5 * o.s, o.z); this._sph.radius = 10 * o.s;
         const d = cp.distanceTo(this._sph.center);
@@ -412,7 +487,9 @@ export class Vegetation {
         this._m.compose(pos.set(o.x, o.y, o.z), this._q, sc.set(o.s, o.s, o.s));
         if (d < set.loDist || !set.lo.length) set.hi[o.v].setMatrixAt(ch[o.v]++, this._m);
         else set.lo[o.v].setMatrixAt(cl[o.v]++, this._m);
+        if (set.crowns.length) set.crowns[o.v].setMatrixAt(cc[o.v]++, this._m);
       }
+      set.crowns.forEach((m, i) => { m.count = cc[i]; m.instanceMatrix.needsUpdate = true; });
       set.hi.forEach((m, i) => { m.count = ch[i]; m.instanceMatrix.needsUpdate = true; });
       set.lo.forEach((m, i) => { m.count = cl[i]; m.instanceMatrix.needsUpdate = true; });
     }
