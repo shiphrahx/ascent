@@ -224,7 +224,7 @@ async function boot() {
 
   const clock = new THREE.Clock();
   let time = 0;
-  const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3();
+  const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3(), dofP = new THREE.Vector3();
   const look = {};
   const loop = { phase: null, fade: 0 };
   const shimmer = new ShimmerProbe(renderer);
@@ -410,8 +410,10 @@ async function boot() {
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
-    // depth of field only for close-ups of the balloon: focused on it, fading in under 50 m
-    const focusD = camera.position.distanceTo(hero.env.position);
+    // depth of field only for close-ups of the balloon: focused on whichever of the basket and the
+    // envelope is nearer, fading in under 50 m
+    dofP.set(0, 11, 0).add(hero.env.position);
+    const focusD = Math.min(camera.position.distanceTo(hero.basket.position), camera.position.distanceTo(dofP));
     const dofK = cams.mode === 1 || lite ? 0 : Math.min(1, Math.max(0, (50 - focusD) / 25));
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi, dof: dofK, focus: focusD }, time);
     prof.collect();

@@ -109,18 +109,18 @@ vec3 sceneAt(vec2 uv){
   return clamp(s, min(c, min(min(a, b), min(e, f))), max(c, max(max(a, b), max(e, f))));
 }
 // Depth of field for close-up shots only (Pipeline sets uDof from the camera): a small disc gather
-// sized by the thin-lens circle of confusion, a few pixels at most.
+// sized by the thin-lens circle of confusion, two pixels at most.
 float linZ(float d){ float z = d * 2. - 1.; return uProj[3][2] / (z * uProj[2][3] - uProj[2][2]); }
 vec3 dof(vec3 c, vec2 uv){
   float z = -linZ(texture(tDepth, uv).r);
-  float coc = min(abs(1. / uFocus - 1. / max(z, 0.1)) * 100. * uDof, 3.);
+  float coc = min(abs(1. / uFocus - 1. / max(z, 0.1)) * 60. * uDof, 2.);
   if (coc < 0.5) return c;
   vec3 acc = c; float ws = 1.;
   for (int i = 0; i < 8; i++) {
     float a = float(i) * 2.39996 + uTime * 7.1, r = sqrt((float(i) + 0.5) / 8.) * coc;
     vec2 q = uv + vec2(cos(a), sin(a)) * r / uRes;
     // nearer things don't bleed into what's behind them in focus
-    float zq = -linZ(texture(tDepth, q).r), w = zq < z - 1. && abs(1. / uFocus - 1. / max(zq, 0.1)) * 100. * uDof < 0.5 ? 0. : 1.;
+    float zq = -linZ(texture(tDepth, q).r), w = zq < z - 1. && abs(1. / uFocus - 1. / max(zq, 0.1)) * 60. * uDof < 0.5 ? 0. : 1.;
     acc += texture(tScene, q).rgb * w; ws += w;
   }
   return acc / ws;
