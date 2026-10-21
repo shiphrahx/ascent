@@ -49,9 +49,9 @@ export class Probe {
     this.renderer = renderer;
     this.rt = makeRT(6, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     this.mat = fsMaterial(FRAG, Object.assign({}, U, { uGroundAlbedo: { value: new THREE.Color(0.42, 0.37, 0.32) } }));
-    U.uAmbCube.value = this.rt.texture;
+    // read back to uniforms rather than sampled: every terrain texture unit is spoken for
     this.buf = new Float32Array(24);
-    this.pending = false;
+    this.sync = null; this.pbo = null;
     this.frame = 0;
     this.up = new THREE.Color(0.2, 0.25, 0.35);
     this.ok = false;
@@ -60,13 +60,38 @@ export class Probe {
     this.mat.uniforms.uGroundAlbedo.value.setRGB(0.42 + 0.4 * snow, 0.37 + 0.45 * snow, 0.32 + 0.52 * snow);
     renderFS(this.renderer, this.mat, this.rt);
     this.frame++;
-    if (!this.pending && (this.frame % 6 === 0 || !this.ok)) {
-      this.pending = true;
-      const p = this.renderer.readRenderTargetPixelsAsync
-        ? this.renderer.readRenderTargetPixelsAsync(this.rt, 0, 0, 6, 1, this.buf)
-        : Promise.resolve(this.renderer.readRenderTargetPixels(this.rt, 0, 0, 6, 1, this.buf));
-      p.then(() => { this.pending = false; this.ok = true; this.up.setRGB(this.buf[8], this.buf[9], this.buf[10]); })
-        .catch(() => { this.pending = false; });
+    // the first read waits for the answer, so nothing renders unlit; after that it lands a frame or two late
+    if (!this.ok) { this.renderer.readRenderTargetPixels(this.rt, 0, 0, 6, 1, this.buf); this.take(); }
+    else this.readAsync();
+  }
+  // A pixel-pack buffer read, polled once a frame. three's own async read keeps the pack buffer bound
+  // while it waits, and every other readPixels fails in that window (the shimmer probe's did).
+  readAsync() {
+    const gl = this.renderer.getContext();
+    if (this.sync) {
+      if (gl.getSyncParameter(this.sync, gl.SYNC_STATUS) !== gl.SIGNALED) return;
+      gl.deleteSync(this.sync); this.sync = null;
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
+      gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.buf);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+      gl.deleteBuffer(this.pbo); this.pbo = null;
+      this.take();
+      return;
     }
+    this.pbo = gl.createBuffer(); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo); gl.bufferData(gl.PIXEL_PACK_BUFFER, this.buf.byteLength, gl.STREAM_READ);
+    const prev = this.renderer.getRenderTarget();
+    this.renderer.setRenderTarget(this.rt);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
+    gl.readPixels(0, 0, 6, 1, gl.RGBA, gl.FLOAT, 0);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    this.renderer.setRenderTarget(prev);
+    this.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+  }
+  take() {
+    this.ok = true;
+    const b = this.buf, a = U.uAmb.value;
+    for (let i = 0; i < 6; i++) a[i].set(b[i * 4], b[i * 4 + 1], b[i * 4 + 2]);
+    this.up.setRGB(b[8], b[9], b[10]);
   }
 }

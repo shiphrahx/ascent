@@ -5,25 +5,29 @@ uniform float uTime, uTAAFrame;
 uniform vec3 uSunDir, uMoonDir, uKeyDir;
 uniform vec3 uKeyColor, uSunColor, uSkyAmb, uGroundAmb;
 uniform float uKeyElev, uKeyIsSun;
-uniform sampler2D uSkyLUT, uAmbCube;
+uniform vec3 uHeroBurnerPos, uHeroBurnerCol;
+uniform sampler2D uSkyLUT;
+uniform vec3 uAmb[6];
 uniform float uHaze, uSnow, uFrost, uWet, uStorm, uNight, uCloud;
 uniform vec2 uWindDir, uGustOffset;
 uniform float uWindStrength;
-uniform sampler2D uShadow0, uShadow1, uShadow2, uShadow3;
+// uShadow0 holds the basket cascade on its left half and the balloon cascade on its right
+uniform sampler2D uShadow0, uShadow1, uShadow2;
 uniform mat4 uShadowM0, uShadowM1, uShadowM2, uShadowM3;
 uniform vec4 uShadowK, uShadowWT;
 uniform vec2 uShadowSplit;
+uniform float uShadowHQ;
 uniform vec3 uShadowEye;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
 uniform float uTerrBlend;
 uniform highp sampler2D uHeightCore, uHeightOuter;
-uniform sampler2D uNormCore, uNormOuter, uAttrCore;
+uniform sampler2D uNormCore, uNormOuter, uAttrCore, uTerrAO, uBounce;
 uniform vec4 uCoreBounds, uOuterBounds;
 uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
-uniform float uGlowComp, uDbgShadow;
+uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
@@ -98,17 +102,18 @@ float terrainShadowAt(vec3 P, float lit){
 float terrainShadow(vec3 P){ return terrainShadowAt(P, 0.); }
 float terrainShadowSoft(vec3 P){ return terrainShadowAt(P, 1.5); }
 // cheaper single-tap version for volumetrics and particles: the first slice that holds the point
-float tapCascade(sampler2D map, mat4 m, vec3 P, float bias, out bool inside){
+// atl: x scale and offset of this cascade's square within its texture (the atlas holds two)
+float tapCascade(sampler2D map, mat4 m, vec3 P, float bias, vec2 atl, out bool inside){
   vec3 c = (m * vec4(P, 1.)).xyz * 0.5 + 0.5;
   inside = all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.;
-  return inside ? step(c.z - bias, textureLod(map, c.xy, 0.).r) : 1.;
+  return inside ? step(c.z - bias, textureLod(map, vec2(c.x * atl.x + atl.y, c.y), 0.).r) : 1.;
 }
 float cascadeShadowFast(vec3 P){
-  bool in1, in2, in3;
-  float r = tapCascade(uShadow1, uShadowM1, P, uShadowK.y * 1.5, in1);
-  if (in1) return r;
-  if (uShadowSplit.y > 0.) { r = tapCascade(uShadow2, uShadowM2, P, uShadowK.z * 2., in2); if (in2) return r; }
-  return tapCascade(uShadow3, uShadowM3, P, uShadowK.w * 4., in3);
+  bool in1, in2 = false, in3;
+  float r = tapCascade(uShadow1, uShadowM1, P, uShadowK.y * 1.5, vec2(1, 0), in1);
+  if (!in1 && uShadowSplit.y > 0.) r = tapCascade(uShadow2, uShadowM2, P, uShadowK.z * 2., vec2(1, 0), in2);
+  if (!in1 && !in2) r = tapCascade(uShadow0, uShadowM3, P, uShadowK.w * 4., vec2(0.5, 0.5), in3);
+  return r;
 }
 float cloudDensity2D(vec2 xz){
   vec2 uv = (xz + uCloudOffset) / 12000.;
@@ -134,9 +139,9 @@ vec3 skyLut(vec3 d){
 }
 vec3 ambCube(vec3 n){
   vec3 n2 = n * n;
-  vec3 x = texelFetch(uAmbCube, ivec2(n.x > 0. ? 0 : 1, 0), 0).rgb;
-  vec3 y = texelFetch(uAmbCube, ivec2(n.y > 0. ? 2 : 3, 0), 0).rgb;
-  vec3 z = texelFetch(uAmbCube, ivec2(n.z > 0. ? 4 : 5, 0), 0).rgb;
+  vec3 x = n.x > 0. ? uAmb[0] : uAmb[1];
+  vec3 y = n.y > 0. ? uAmb[2] : uAmb[3];
+  vec3 z = n.z > 0. ? uAmb[4] : uAmb[5];
   return x * n2.x + y * n2.y + z * n2.z;
 }
 float hgPhase(float c, float g){ float g2 = g*g; return (1. - g2) / (12.566 * pow(1. + g2 - 2.*g*c, 1.5)); }
@@ -174,6 +179,44 @@ vec3 envSpecular(vec3 R, float rough){
   vec3 sharp = mix(below, sky, smoothstep(-0.12, 0.05, R.y));
   return mix(sharp, ambCube(R), smoothstep(0.15, 0.85, rough));
 }
+// Valley-scale sky visibility (a) and the lean of the bent normal (rgb) from terrain/terrainAO.js.
+// It belongs to the ground, so it fades out over the first 40 m above it: a chimney's foot sits in
+// the canyon's shade, its cap mostly doesn't.
+// gHag is the height above the ground when the material knows it (the ground itself: 0), so the
+// lookups can skip the height fetch; below zero means work it out.
+float gHag = -1.;
+float hagAt(vec3 P){ return gHag >= 0. ? gHag : (uSkyVis + uBounceOn > 0.5 ? P.y - heightAt(P.xz) : 1e4); }
+vec4 skyVisAt(vec3 P, float hag){
+  vec4 r = vec4(0., 0., 0., 1.);
+  if (uSkyVis > 0.5) {
+    vec4 a = texture(uTerrAO, coreUV(P.xz));
+    float k = coreMask(P.xz) * (1. - sat(hag / 40.));
+    r = vec4((a.rgb * 2. - 1.) * k, mix(1., a.a, k));
+  }
+  return r;
+}
+// Light bounced off the ground (world/bounce.js), in ambient-cube units. The terrain that hides part
+// of the sky sends its own light instead; and a surface facing down sees the ground right below it,
+// blurrier the higher it is, in place of the ambient cube's one-size-fits-all ground.
+vec3 groundBounce(vec3 P, vec3 n, float hag, float vis){
+  vec3 r = vec3(0.);
+  float m = coreMask(P.xz);
+  if (uBounceOn > 0.5 && m > 0.) {
+    vec2 uv = coreUV(P.xz);
+    // the walls and floor that hide the sky can be a canyon's width away: half from 40 m, half 160 m
+    r = (textureLod(uBounce, uv, 2.).rgb + textureLod(uBounce, uv, 4.).rgb) * 0.5 * (1. - vis);
+    float d = max(-n.y, 0.);
+    if (d > 0.) r += d * d * (textureLod(uBounce, uv, clamp(log2(max(hag, 4.) / 10.) + 1., 0., 6.)).rgb - uAmb[3]);
+    r *= m;
+  }
+  return r;
+}
+// How much of a pixel is direct key light, for the screen-space pass that adds contact shadows and
+// keeps SSAO off direct light (post/ao.js). Materials that write it put 1 - 0.999 * fraction in
+// alpha; alpha 1, the default, means unknown and gets the old treatment.
+float gDirect = 0.;
+float gBurner = 1.;
+float litAlpha(vec3 c){ return 1. - 0.999 * sat(gDirect / max(luma(c), 1e-5)); }
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   // test hook: shadowview shows only the key light's shadow term, grey on grey; shadowview=flat
   // shows flat grey, the control for everything that isn't the shadows
@@ -197,68 +240,114 @@ vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   // spec scales reflectance: 0.04 is any common dielectric, wet and icy surfaces push past it
   float F0 = 0.02 + 0.06 * s.spec;
   float F = F0 + (1. - F0) * pow(1. - ldh, 5.);
-  vec3 col = s.albedo * (key + ambCube(N) * s.ao) * (1. - F0);
+  float hag = hagAt(P);
+  vec4 sv = skyVisAt(P, hag);
+  vec3 An = normalize(N + sv.xyz);
+  vec3 amb = max(ambCube(An) * sv.w + groundBounce(P, An, hag, sv.w), 0.);
+  vec3 col = s.albedo * (key + amb * s.ao) * (1. - F0);
   col += uKeyColor * (D * vis * F * ndl * shadow);
+  gDirect = luma(s.albedo * key * (1. - F0) + uKeyColor * (D * vis * F * ndl * shadow));
   // sky reflection, darkened where the surface is occluded (specular occlusion from AO)
   float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);
   float so = sat(pow(ndv + s.ao, exp2(-16. * a - 1.)) - 1. + s.ao);
-  col += envSpecular(reflect(-V, N), rough) * Fe * so;
+  col += envSpecular(reflect(-V, N), rough) * Fe * so * sv.w;
+  // the hero's burner as a point light, out to 90 m: enough to reach the ground from the height it
+  // flies at (props.js lights the basket and crew itself, so it turns this off with gBurner)
+  if (uHeroBurnerCol.r > 1e-3 && gBurner > 0.5) {
+    vec3 tb = uHeroBurnerPos - P;
+    float d2 = dot(tb, tb);
+    if (d2 < 8100.) {
+      float w = max(0., s.wrap - 0.2);
+      float nl = max(0., (dot(N, tb * inversesqrt(d2)) + w) / (1. + w));
+      col += s.albedo * uHeroBurnerCol * nl / (1. + d2) * (1. - smoothstep(4900., 8100., d2));
+    }
+  }
   return col;
 }
 `;
 
 export const SHADOW_F = /* glsl */`
-const vec2 POISSON[8] = vec2[8](vec2(-0.613,0.617), vec2(0.170,-0.040), vec2(-0.299,-0.791), vec2(0.645,0.493),
-  vec2(-0.651,-0.088), vec2(0.421,-0.665), vec2(-0.069,0.997), vec2(0.962,-0.194));
-float sampleCascade(sampler2D map, mat4 m, vec3 P, float bias, float radius, float rot){
-  vec4 sc = m * vec4(P, 1.);
+// Soft shadows the way UE does them on high: a blocker search finds how far the occluder is, and the
+// filter widens with that distance, so shadows are sharp where things touch the ground and soften
+// away from it (PCSS). Taps lie on a Vogel disc turned by blue noise that steps each frame, which the
+// temporal pass averages far better than the white noise it replaced. Filter sizes are in metres,
+// with a floor that grows with distance from the camera only, so softness doesn't jump where one
+// cascade hands over to the next. Below high: 8 taps at the floor size, no search.
+const float PENUMBRA = 0.008;   // filter radius per metre from blocker to receiver: a slightly soft sun
+vec2 vogel(int i, int n, float rot){
+  float r = sqrt((float(i) + 0.5) / float(n)), a = float(i) * 2.39996 + rot;
+  return r * vec2(cos(a), sin(a));
+}
+// texW: metres per texel, K: 1 / depth range in metres, floorW / searchW: smallest filter and widest
+// search radius in metres. -1 when P is outside this map.
+// One exit per function throughout: the D3D compiler warns about early returns from these.
+float sampleCascade(sampler2D map, mat4 m, vec3 P, vec3 N, float ndl, float texW, float K, float floorW, float searchW, float rot, vec2 atl){
+  vec4 sc = m * vec4(P + N * texW * 1.5, 1.);
   vec3 c = sc.xyz / sc.w * 0.5 + 0.5;
-  if (c.x < 0.002 || c.x > 0.998 || c.y < 0.002 || c.y > 0.998 || c.z > 1.) return -1.;
-  float s = 0.;
-  vec2 texel = 1. / vec2(textureSize(map, 0));
-  float cr = cos(rot), sr = sin(rot);
-  mat2 R = mat2(cr, sr, -sr, cr);
-  for (int i = 0; i < 8; i++) {
-    vec2 o = R * POISSON[i] * radius * texel;
-    float d = texture(map, c.xy + o).r;
-    s += step(c.z - bias, d);
+  float res = -1.;
+  if (c.x > 0.002 && c.x < 0.998 && c.y > 0.002 && c.y < 0.998 && c.z <= 1.) {
+    float texel = 1. / float(textureSize(map, 0).y);
+    // taps stay inside this cascade's square, so they never read the atlas neighbour
+    vec2 lo = vec2(0.5 * texel), hi = vec2(1. - 0.5 * texel);
+    float tanT = min(sqrt(max(1. - ndl * ndl, 0.)) / max(ndl, 0.05), 4.);
+    float rw = floorW;
+    int n = 8;
+    bool lit = false;
+    if (uShadowHQ > 0.5) {
+      n = 16;
+      float sw = max(floorW, searchW), bias = K * (texW + sw * tanT * 0.25);
+      float sum = 0., cnt = 0.;
+      for (int i = 0; i < 8; i++) {
+        vec2 uv = clamp(c.xy + vogel(i, 8, rot + 1.3) * (sw / texW * texel), lo, hi);
+        float d = textureLod(map, vec2(uv.x * atl.x + atl.y, uv.y), 0.).r;
+        if (d < c.z - bias) { sum += d; cnt += 1.; }
+      }
+      // nothing in the way anywhere it could matter
+      lit = cnt < 0.5;
+      rw = clamp((c.z - sum / max(cnt, 1.)) / K * PENUMBRA, floorW, sw);
+    }
+    // slope-scaled: a wider filter on a slope reaches deeper into the surface it sits on
+    float bias = K * (texW * (1. + 2.5 * (1. - ndl)) + rw * tanT * 0.25);
+    float s = 0., r = rw / texW * texel;
+    for (int i = 0; i < 16; i++) {
+      if (i >= n || lit) break;
+      vec2 uv = clamp(c.xy + vogel(i, n, rot) * r, lo, hi);
+      s += step(c.z - bias, textureLod(map, vec2(uv.x * atl.x + atl.y, uv.y), 0.).r);
+    }
+    res = lit ? 1. : s / float(n);
   }
-  return s / 8.;
+  return res;
 }
 // the view slices, picked by distance from the camera rather than by which map holds the point, so
 // turning the camera never moves a point from one slice to another
-float sliceShadow(vec3 P, vec3 N, float sb, float rot){
-  float d = distance(P, uShadowEye);
+float sliceShadow(vec3 P, vec3 N, float ndl, float d, float rot){
   float s1 = -1., s2 = -1.;
   float k = uShadowSplit.y > 0. ? smoothstep(uShadowSplit.x * 0.85, uShadowSplit.x, d) : 0.;
-  if (k < 1.) s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
-  if (k > 0. && d < uShadowSplit.y) s2 = sampleCascade(uShadow2, uShadowM2, P + N * uShadowWT.z * 1.5, uShadowK.z * uShadowWT.z * sb, 1.4, rot);
+  float fl = d * 0.002;
+  if (k < 1.) s1 = sampleCascade(uShadow1, uShadowM1, P, N, ndl, uShadowWT.y, uShadowK.y, max(fl, uShadowWT.y), 2., rot, vec2(1, 0));
+  if (k > 0. && d < uShadowSplit.y) s2 = sampleCascade(uShadow2, uShadowM2, P, N, ndl, uShadowWT.z, uShadowK.z, max(fl, uShadowWT.z), 2., rot, vec2(1, 0));
   // a point outside a map (reflections see past the view) takes the other slice
   if (s1 < 0.) { s1 = s2; k = 1.; }
   if (s2 < 0.) { s2 = s1; k = 0.; }
-  if (s1 < 0.) return -1.;
-  return mix(s1, s2, k);
+  return s1 < 0. ? -1. : mix(s1, s2, k);
 }
 float cascadeShadow(vec3 P, vec3 N){
-  // rotates every frame so the temporal pass averages the pattern away
-  float rot = ign(gl_FragCoord.xy + 5.588238 * uTAAFrame) * 6.283;
+  float rot = fract(texelFetch(uNoise2D, ivec2(gl_FragCoord.xy) & 255, 0).a + uTAAFrame * 0.618034) * 6.283;
   float ndl = abs(dot(N, uKeyDir));
-  float sb = 1.0 + 2.5 * (1. - ndl);
-  float s0 = sampleCascade(uShadow0, uShadowM0, P + N * uShadowWT.x * 1.5, uShadowK.x * uShadowWT.x * sb, 1.8, rot);
-  if (s0 >= 0.) {
-    // fade into the slices over the outer edge, so their coarser shadows don't pop in
-    vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-    vec2 e0 = min(c0.xy, 1. - c0.xy);
-    float k = smoothstep(0.0, 0.12, min(e0.x, e0.y));
-    if (k >= 1.) return s0;
-    float s1 = sliceShadow(P, N, sb, rot);
-    return s1 >= 0. ? mix(s1, s0, k) : s0;
+  float d = distance(P, uShadowEye);
+  float s0 = sampleCascade(uShadow0, uShadowM0, P, N, ndl, uShadowWT.x, uShadowK.x, max(d * 0.002, uShadowWT.x * 1.5), 0.5, rot, vec2(0.5, 0));
+  // fade from the basket cascade into the slices over its outer edge, so their coarser shadows don't pop in
+  vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  vec2 e0 = min(c0.xy, 1. - c0.xy);
+  float k = s0 >= 0. ? smoothstep(0.0, 0.12, min(e0.x, e0.y)) : 0.;
+  float s = s0;
+  if (k < 1.) {
+    float s1 = sliceShadow(P, N, ndl, d, rot);
+    if (s1 < 0.) s1 = sampleCascade(uShadow0, uShadowM3, P, N, ndl, uShadowWT.w, uShadowK.w, uShadowWT.w * 1.2, 0., rot, vec2(0.5, 0.5));
+    s1 = s1 < 0. ? 1. : s1;
+    s = s0 >= 0. ? mix(s1, s0, k) : s1;
   }
-  float s1 = sliceShadow(P, N, sb, rot);
-  if (s1 >= 0.) return s1;
-  float s3 = sampleCascade(uShadow3, uShadowM3, P + N * uShadowWT.w * 1.0, uShadowK.w * uShadowWT.w * sb, 1.2, rot);
-  if (s3 >= 0.) return s3;
-  return 1.;
+  return s;
 }
 // The coarse terrain shadow is always in, even where the cascades cover: ridges outside the shadow
 // grid cast nowhere else, and fading it out under the cascade made big ridge shadows come and go as

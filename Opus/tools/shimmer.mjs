@@ -4,7 +4,7 @@
 // Prints the mean frame-to-frame luma change the smooth trend doesn't explain (second difference along
 // each surface point's motion, 8-bit levels) over the whole frame and over a cliff-heavy crop. Lower is steadier. Runs on the shadow-only view by default
 // (textures moving past the camera score too, and would bury the shadow numbers); FULL=1 for the image.
-// usage: node tools/shimmer.mjs [A|B|C|P]   (env CAM overrides the view hash, RUNS repeats each test,
+// usage: node tools/shimmer.mjs [A|B|C|P|F]   (F runs 60 s; N sets the frame count)   (env CAM overrides the view hash, RUNS repeats each test,
 // SHOT=1 also saves the last frame and a heat map of where it flickered)
 import puppeteer from 'puppeteer-core';
 import path from 'path';
@@ -21,6 +21,9 @@ const tests = {
   A: `#h=15&freeze&hold&fixdt&res=1&${CAM}&shadowpan=4,3`,
   P: `#h=15&freeze&hold&fixdt&res=1&${CAM}&pan=5,0,0`,
   B: `#h=15&hold&fixdt&res=1&${CAM}`,
+  // the real thing: the chase camera following the balloon's own flight, sun moving. Camera motion
+  // means edges score too, so compare runs of F with each other rather than with A and B.
+  F: `#h=15&sim=60&hold&fixdt&res=1`,
   // reference: nothing moves, so this is the floor the jitter and the noise leave behind
   C: `#h=15&freeze&fixdt&res=1&${CAM}`,
 };
@@ -37,8 +40,8 @@ const capture = async (t, view) => {
   await page.waitForFunction('window.__dbg && window.__dbg.frames > 3', { timeout: 180000 });
   // let shader compiles finish and the temporal history settle
   await new Promise(r => setTimeout(r, 5000));
-  await page.evaluate(c => window.__dbg.shimmer(300, c), CROP);
-  await page.waitForFunction('window.__dbg.shimmerResult()', { timeout: 300000, polling: 500 });
+  await page.evaluate((c, n) => window.__dbg.shimmer(n, c), CROP, +(process.env.N || (t === 'F' ? 3600 : 300)));
+  await page.waitForFunction('window.__dbg.shimmerResult()', { timeout: 3600000, polling: 1000 });
   const r = await page.evaluate(() => window.__dbg.shimmerResult());
   if (process.env.SHOT && view !== '&shadowview=flat') {
     await page.screenshot({ path: `shots/shimmer_${t}.png` });

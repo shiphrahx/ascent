@@ -384,7 +384,7 @@ void main(){
     col += vec3(1.0, 0.52, 0.22) * lit * flick * 2.2;
   }
   col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 

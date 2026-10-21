@@ -8,6 +8,8 @@ import { SkyDome } from './world/skydome.js';
 import { TerrainData } from './world/terrainGen.js';
 import { Terrain } from './world/terrain.js';
 import { TerrainShadow } from './world/terrainShadow.js';
+import { TerrainAO } from './world/terrainAO.js';
+import { Bounce } from './world/bounce.js';
 import { Shadows } from './world/shadows.js';
 import { Wind } from './world/wind.js';
 import { Pipeline } from './core/pipeline.js';
@@ -109,6 +111,8 @@ async function boot() {
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer, tier);
+  G.terrAO = new TerrainAO(renderer, tier);
+  const bounce = G.bounce = new Bounce(renderer, tier);
   const shadows = new Shadows(renderer, tier);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
@@ -134,7 +138,8 @@ async function boot() {
   pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
   const volHook = rt => vol.render(rt, camera);
   pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
-  if (tier === 'lite' || dbg.noao) pipe.aoOn = false;
+  if (tier === 'lite' || dbg.noao) pipe.ao.aoOn = false;
+  if (tier === 'lite' || dbg.nocontact) pipe.ao.contactOn = false;
   if (tier === 'lite') { river.reflect = false; veg.grass.visible = false; veg.noGrass = true; }
   pipe.hooks.transparent = true;
   let exposure = 1;
@@ -169,6 +174,9 @@ async function boot() {
   sky.cycleT = cycleForHour(dbg.h !== undefined ? parseFloat(dbg.h) : START_HOUR);
   const fixedCam = dbg.cam ? dbg.cam.split(',').map(Number) : null;
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
+  // test hook: u=uName:value,uOther:value sets shared uniforms after boot (feature switches for A/B shots)
+  const setU = () => { if (dbg.u) for (const kv of dbg.u.split(',')) { const [k, v] = kv.split(':'); if (U[k]) { if (U[k].value && U[k].value.setScalar) U[k].value.setScalar(+v); else U[k].value = +v; } } };
+  setU();
   if (dbg.shadowview) U.uDbgShadow.value = dbg.shadowview === 'flat' ? 2 : 1;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
@@ -262,7 +270,7 @@ async function boot() {
         if (Math.abs(old - pipe.scale) > 1e-3) { perf.dwell = 0; if (G.tier === 'lite') resize(); else pipe.setSize(window.innerWidth, window.innerHeight, pr); }
         // still too slow at the floor: drop volumetrics, reflections and grass
         if (pipe.scale <= floorScale + 1e-3 && ms > 55) perf.slow += perf.t; else perf.slow = 0;
-        if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; pipe.aoOn = false; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
+        if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; pipe.ao.aoOn = pipe.ao.contactOn = false; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
       }
       perf.acc = 0; perf.n = 0; perf.t = 0; perf.max = 0;
     }
@@ -359,6 +367,7 @@ async function boot() {
     }
     prof.begin('terrShadow');
     tshadow.update(fN < 2);
+    bounce.update();
     // cascades: basket detail, slices of the view, wide for far balloons
     focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
     if (camera.position.distanceTo(focus) > 140) focus.copy(camera.position);

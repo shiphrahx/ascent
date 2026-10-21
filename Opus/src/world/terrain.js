@@ -223,6 +223,7 @@ void main(){
   Surf s;
   s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.12; s.sss = 0.;
   float sh = keyShadow(P, N);
+  gHag = 0.;
   vec3 col = shadeSurf(s, P, V, sh);
   // frost and snow glitter: tiny facets flashing toward the light
   vec2 gcell = floor(P.xz * 9.);
@@ -232,7 +233,7 @@ void main(){
   col += uKeyColor * sparkle * sh * 2.5;
   // cave and village windows are separate geometry; terrain only darkens in deep cracks
   col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 

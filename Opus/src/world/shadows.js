@@ -11,30 +11,41 @@ export class Shadows {
   constructor(renderer, tier = 'high') {
     this.renderer = renderer;
     this.slices = SLICES[tier] || SLICES.high;
+    this.high = tier === 'high';
+    U.uShadowHQ.value = this.high ? 1 : 0;
     const lite = tier === 'lite';
     // basket, slices, far balloons. The last slice carries the ground and cliffs out to the haze, so it
     // gets the most texels.
     const defs = [{ res: lite ? 1024 : 2048, layer: 1, back: 400 }];
     this.slices.forEach((f, i) => defs.push({ res: lite ? 1024 : i === this.slices.length - 1 ? 4096 : 2048, layer: 1, back: 3000, slice: i }));
     defs.push({ res: lite ? 1024 : 2048, layer: 3, back: 9000, half: 6000 });
-    this.cascades = defs.map(d => {
-      const rt = new THREE.WebGLRenderTarget(d.res, d.res, { depthBuffer: true });
-      rt.depthTexture = new THREE.DepthTexture(d.res, d.res);
+    const mkRT = (w, h) => {
+      const rt = new THREE.WebGLRenderTarget(w, h, { depthBuffer: true });
+      rt.depthTexture = new THREE.DepthTexture(w, h);
       rt.depthTexture.type = THREE.FloatType;
       rt.depthTexture.minFilter = rt.depthTexture.magFilter = THREE.NearestFilter;
+      return rt;
+    };
+    // the basket and balloon cascades share one map side by side: every terrain texture unit is
+    // spoken for, and this frees one
+    const R = defs[0].res, atlas = mkRT(R * 2, R);
+    defs[0].vp = new THREE.Vector4(0, 0, R, R);
+    defs[defs.length - 1].vp = new THREE.Vector4(R, 0, R, R);
+    this.cascades = defs.map(d => {
+      const rt = d.vp ? atlas : mkRT(d.res, d.res);
       const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 10);
       cam.layers.set(d.layer);
       // the shadow-only ground grid casts into the nearest slice only
       if (d.slice === 0) cam.layers.enable(5);
       return Object.assign(d, { rt, cam, half: d.half || 55, center: new THREE.Vector3() });
     });
-    // four slots in the shaders: basket, near slice, far slice, balloons. With one slice, the far slice
-    // slot points at the same map and its split is 0, so it's never picked.
+    // four slots in the shaders: basket, near slice, far slice, balloons (the last in the atlas with the
+    // first). With one slice, the far slice slot points at the same map and its split is 0, so it's
+    // never picked.
     const c = this.cascades, n = c.length;
-    U.uShadow0.value = c[0].rt.depthTexture;
+    U.uShadow0.value = atlas.depthTexture;
     U.uShadow1.value = c[1].rt.depthTexture;
     U.uShadow2.value = c[n === 4 ? 2 : 1].rt.depthTexture;
-    U.uShadow3.value = c[n - 1].rt.depthTexture;
     this.slot = n === 4 ? [0, 1, 2, 3] : [0, 1, 3];
     U.uShadowSplit.value.set(this.slices[0], this.slices[1] || 0);
     this._v = new THREE.Vector3();
@@ -83,9 +94,10 @@ export class Shadows {
     const last = this.cascades.length - 1;
     for (let i = 0; i <= last; i++) {
       const c = this.cascades[i];
-      // everything near refreshes every frame: on alternate frames a moving balloon's shadow stepped
-      // along at half rate. Only the far one, for distant balloons, can skip.
-      if (this.frame > 4 && i === last && (this.frame & 1)) continue;
+      // everything refreshes every frame on high: on alternate frames a moving balloon's shadow
+      // stepped along at half rate, and the sun's sweep did too. Below high the far one, for distant
+      // balloons only, can skip.
+      if (!this.high && this.frame > 4 && i === last && (this.frame & 1)) continue;
       const cam = c.cam, half = c.half, back = c.back, center = c.center;
       // The light's view sits on a line through a fixed anchor, so its texel grid is fixed in the
       // world and only the window over it moves; the centre is snapped to whole texels in that grid.
@@ -112,6 +124,8 @@ export class Shadows {
       K.setComponent(s, 1 / (cam.far - cam.near));
       WT.setComponent(s, texel);
       G.prof && G.prof.begin('shadow' + i);
+      if (c.vp) { c.rt.viewport.copy(c.vp); c.rt.scissor.copy(c.vp); }
+      c.rt.scissorTest = !!c.vp;
       r.setRenderTarget(c.rt);
       r.setClearColor(0x000000, 0);
       r.clear(true, true, false);

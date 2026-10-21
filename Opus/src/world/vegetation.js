@@ -299,7 +299,7 @@ void main(){
   float sh = keyShadow(P, N);
   vec3 col = shadeSurf(s, P, V, sh);
   col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 
@@ -353,7 +353,8 @@ void main(){
   Surf s; s.albedo = alb; s.N = N; s.rough = 0.9; s.spec = 0.03; s.ao = 0.55 + 0.45 * sat(mm.y * 0.5 + 0.5); s.wrap = 0.8; s.sss = 0.5;
   float sh = keyShadow(P, N);
   vec3 col = shadeSurf(s, P, V, sh);
-  gl_FragColor = vec4(applyHaze(col, P), 1.);
+  col = applyHaze(col, P);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 

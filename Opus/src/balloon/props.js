@@ -162,6 +162,7 @@ void main(){
   alb = mix(alb, vec3(0.92, 0.94, 0.98), snow);
   Surf s; s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.3; s.sss = sss;
   float sh = keyShadow(P, N);
+  gBurner = 0.;
   vec3 col = shadeSurf(s, P, V, sh);
   // burner light
   vec3 tl = uLocalLightPos - P;
@@ -169,7 +170,7 @@ void main(){
   col += alb * uLocalLightCol * (max(dot(N, tl * inversesqrt(d2)), 0.) * 0.8 + 0.2) / (1. + d2 * 1.5);
   col += emit;
   col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 

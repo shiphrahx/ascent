@@ -85,7 +85,7 @@ void main(){
   Surf s; s.albedo = alb; s.N = N; s.rough = 0.8; s.spec = 0.1; s.ao = 1.; s.wrap = 0.4; s.sss = 0.3;
   vec3 col = shadeSurf(s, P, V, keyShadow(P, N));
   col = applyHaze(col, P);
-  gl_FragColor = vec4(col, 1.);
+  gl_FragColor = vec4(col, litAlpha(col));
 }
 `;
 
