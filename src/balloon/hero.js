@@ -101,11 +101,17 @@ export class Hero {
     this.burnerWorld.copy(this.rig.burners[0]).lerp(this.rig.burners[1], 0.5).applyMatrix4(this.basket.matrixWorld);
     this.burnerWorld.y += 1.2;
     eu.uBurnerPos.value.copy(this.burnerWorld);
-    eu.uFlameI.value = 1.1;
+    // a roaring flame isn't steady: two beating tones and a ragged one, only while it burns
+    const fl = 1 + this.flameI * (0.14 * Math.sin(t * 31.0) * Math.sin(t * 17.3 + 1.1) + 0.08 * Math.sin(t * 53.7 + Math.sin(t * 7.1) * 3.0));
+    this.flicker = fl;
+    eu.uFlameI.value = 1.1 * fl;
     // local light for basket and crew: flame plus pilot lights
     const pu = this.propMat.uniforms;
     pu.uLocalLightPos.value.copy(this.burnerWorld);
-    pu.uLocalLightCol.value.setRGB(1.0, 0.55, 0.22).multiplyScalar((this.flameI * 1.6 + 0.06) * U.uGlowComp.value);
+    pu.uLocalLightCol.value.setRGB(1.0, 0.55, 0.22).multiplyScalar((this.flameI * 1.6 * fl + 0.06) * U.uGlowComp.value);
+    // and everything else close to it (the ground below, a cliff or a neighbour on a near pass)
+    U.uHeroBurnerPos.value.copy(this.burnerWorld);
+    U.uHeroBurnerCol.value.setRGB(1.0, 0.5, 0.18).multiplyScalar(this.flameI * fl * 14 * U.uGlowComp.value);
 
     // flying wires
     const mouthR = ENV.mouthR;

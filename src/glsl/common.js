@@ -5,6 +5,7 @@ uniform float uTime, uTAAFrame;
 uniform vec3 uSunDir, uMoonDir, uKeyDir;
 uniform vec3 uKeyColor, uSunColor, uSkyAmb, uGroundAmb;
 uniform float uKeyElev, uKeyIsSun;
+uniform vec3 uHeroBurnerPos, uHeroBurnerCol;
 uniform sampler2D uSkyLUT;
 uniform vec3 uAmb[6];
 uniform float uHaze, uSnow, uFrost, uWet, uStorm, uNight, uCloud;
@@ -214,6 +215,7 @@ vec3 groundBounce(vec3 P, vec3 n, float hag, float vis){
 // keeps SSAO off direct light (post/ao.js). Materials that write it put 1 - 0.999 * fraction in
 // alpha; alpha 1, the default, means unknown and gets the old treatment.
 float gDirect = 0.;
+float gBurner = 1.;
 float litAlpha(vec3 c){ return 1. - 0.999 * sat(gDirect / max(luma(c), 1e-5)); }
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   // test hook: shadowview shows only the key light's shadow term, grey on grey; shadowview=flat
@@ -249,6 +251,17 @@ vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);
   float so = sat(pow(ndv + s.ao, exp2(-16. * a - 1.)) - 1. + s.ao);
   col += envSpecular(reflect(-V, N), rough) * Fe * so * sv.w;
+  // the hero's burner as a point light, out to 90 m: enough to reach the ground from the height it
+  // flies at (props.js lights the basket and crew itself, so it turns this off with gBurner)
+  if (uHeroBurnerCol.r > 1e-3 && gBurner > 0.5) {
+    vec3 tb = uHeroBurnerPos - P;
+    float d2 = dot(tb, tb);
+    if (d2 < 8100.) {
+      float w = max(0., s.wrap - 0.2);
+      float nl = max(0., (dot(N, tb * inversesqrt(d2)) + w) / (1. + w));
+      col += s.albedo * uHeroBurnerCol * nl / (1. + d2) * (1. - smoothstep(4900., 8100., d2));
+    }
+  }
   return col;
 }
 `;
