@@ -166,8 +166,9 @@ vec3 envSpecular(vec3 R, float rough){
   return mix(sharp, ambCube(R), smoothstep(0.15, 0.85, rough));
 }
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
-  // test hook: shadowview shows only the key light's shadow term, grey on grey
-  if (uDbgShadow > 0.5) return vec3(0.04 + 0.5 * shadow);
+  // test hook: shadowview shows only the key light's shadow term, grey on grey; shadowview=flat
+  // shows flat grey, the control for everything that isn't the shadows
+  if (uDbgShadow > 0.5) return vec3(uDbgShadow > 1.5 ? 0.3 : 0.04 + 0.5 * shadow);
   vec3 L = uKeyDir, N = s.N;
   float ndlRaw = dot(N, L);
   float ndl = max(ndlRaw, 0.);

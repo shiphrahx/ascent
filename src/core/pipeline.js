@@ -59,7 +59,7 @@ export class Pipeline {
     }
     this.taa.unjitter(camera);
     P && P.begin('taa');
-    const res = this.taa.resolve(this.main, camera, look.exposure);
+    const res = this.resolved = this.taa.resolve(this.main, camera, look.exposure);
     P && P.begin('post');
     this.post.render(res.texture, look, time);
   }

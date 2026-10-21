@@ -169,7 +169,7 @@ async function boot() {
   sky.cycleT = cycleForHour(dbg.h !== undefined ? parseFloat(dbg.h) : START_HOUR);
   const fixedCam = dbg.cam ? dbg.cam.split(',').map(Number) : null;
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
-  if (dbg.shadowview) U.uDbgShadow.value = 1;
+  if (dbg.shadowview) U.uDbgShadow.value = dbg.shadowview === 'flat' ? 2 : 1;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
   if (dbg.fp) { const [a, b] = dbg.fp.split(',').map(Number); cams.fpYaw = a; cams.fpPitch = b; }
@@ -214,9 +214,9 @@ async function boot() {
   const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3();
   const look = {};
   const loop = { phase: null, fade: 0 };
-  const shimmer = new ShimmerProbe(glc);
+  const shimmer = new ShimmerProbe(renderer);
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
-  window.__dbg = { G, U, sky, shimmer: (n, crop) => { shimmer.start(n, crop); pipe.post.comp.uniforms.uDither.value = 0; if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
+  window.__dbg = { G, U, sky, shimmer: (n, crop) => { shimmer.start(n, crop); if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, shimmerMap: () => shimmer.heatmap(), loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
     extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
@@ -380,7 +380,7 @@ async function boot() {
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
     prof.collect();
     ftimer.end();
-    shimmer.grab(pipe.OW, pipe.OH);
+    shimmer.grab(pipe.resolved.texture, pipe.main.depthTexture, camera, exposure);
     perf.cpu = (perf.cpu || 0) + (performance.now() - cpu0 - (perf.cpu || 0)) * 0.05;
     window.__dbg.frames++;
     requestAnimationFrame(frame);
