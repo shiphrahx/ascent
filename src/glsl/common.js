@@ -20,13 +20,13 @@ uniform vec3 uShadowEye;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
 uniform float uTerrBlend;
 uniform highp sampler2D uHeightCore, uHeightOuter;
-uniform sampler2D uNormCore, uNormOuter, uAttrCore, uTerrAO;
+uniform sampler2D uNormCore, uNormOuter, uAttrCore, uTerrAO, uBounce;
 uniform vec4 uCoreBounds, uOuterBounds;
 uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
-uniform float uGlowComp, uDbgShadow, uSkyVis;
+uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
@@ -182,15 +182,31 @@ vec3 envSpecular(vec3 R, float rough){
 // It belongs to the ground, so it fades out over the first 40 m above it: a chimney's foot sits in
 // the canyon's shade, its cap mostly doesn't.
 // gHag is the height above the ground when the material knows it (the ground itself: 0), so the
-// lookup can skip the height fetch; below zero means work it out.
+// lookups can skip the height fetch; below zero means work it out.
 float gHag = -1.;
-vec4 skyVisAt(vec3 P){
+float hagAt(vec3 P){ return gHag >= 0. ? gHag : (uSkyVis + uBounceOn > 0.5 ? P.y - heightAt(P.xz) : 1e4); }
+vec4 skyVisAt(vec3 P, float hag){
   vec4 r = vec4(0., 0., 0., 1.);
   if (uSkyVis > 0.5) {
     vec4 a = texture(uTerrAO, coreUV(P.xz));
-    float hag = gHag >= 0. ? gHag : P.y - heightAt(P.xz);
     float k = coreMask(P.xz) * (1. - sat(hag / 40.));
     r = vec4((a.rgb * 2. - 1.) * k, mix(1., a.a, k));
+  }
+  return r;
+}
+// Light bounced off the ground (world/bounce.js), in ambient-cube units. The terrain that hides part
+// of the sky sends its own light instead; and a surface facing down sees the ground right below it,
+// blurrier the higher it is, in place of the ambient cube's one-size-fits-all ground.
+vec3 groundBounce(vec3 P, vec3 n, float hag, float vis){
+  vec3 r = vec3(0.);
+  float m = coreMask(P.xz);
+  if (uBounceOn > 0.5 && m > 0.) {
+    vec2 uv = coreUV(P.xz);
+    // the walls and floor that hide the sky can be a canyon's width away: half from 40 m, half 160 m
+    r = (textureLod(uBounce, uv, 2.).rgb + textureLod(uBounce, uv, 4.).rgb) * 0.5 * (1. - vis);
+    float d = max(-n.y, 0.);
+    if (d > 0.) r += d * d * (textureLod(uBounce, uv, clamp(log2(max(hag, 4.) / 10.) + 1., 0., 6.)).rgb - uAmb[3]);
+    r *= m;
   }
   return r;
 }
@@ -217,8 +233,11 @@ vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   // spec scales reflectance: 0.04 is any common dielectric, wet and icy surfaces push past it
   float F0 = 0.02 + 0.06 * s.spec;
   float F = F0 + (1. - F0) * pow(1. - ldh, 5.);
-  vec4 sv = skyVisAt(P);
-  vec3 col = s.albedo * (key + ambCube(normalize(N + sv.xyz)) * s.ao * sv.w) * (1. - F0);
+  float hag = hagAt(P);
+  vec4 sv = skyVisAt(P, hag);
+  vec3 An = normalize(N + sv.xyz);
+  vec3 amb = max(ambCube(An) * sv.w + groundBounce(P, An, hag, sv.w), 0.);
+  vec3 col = s.albedo * (key + amb * s.ao) * (1. - F0);
   col += uKeyColor * (D * vis * F * ndl * shadow);
   // sky reflection, darkened where the surface is occluded (specular occlusion from AO)
   float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);

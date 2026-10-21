@@ -57,6 +57,8 @@ export const U = {
   uAttrCore: { value: null },
   uTerrAO: { value: null },
   uSkyVis: { value: 1 },
+  uBounce: { value: null },
+  uBounceOn: { value: 1 },
   uCoreBounds: { value: new THREE.Vector4(WORLD.core.minX, WORLD.core.minZ, WORLD.core.sizeX, WORLD.core.sizeZ) },
   uOuterBounds: { value: new THREE.Vector4(WORLD.outer.minX, WORLD.outer.minZ, WORLD.outer.sizeX, WORLD.outer.sizeZ) },
   uNoise2D: { value: null },

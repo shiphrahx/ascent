@@ -9,6 +9,7 @@ import { TerrainData } from './world/terrainGen.js';
 import { Terrain } from './world/terrain.js';
 import { TerrainShadow } from './world/terrainShadow.js';
 import { TerrainAO } from './world/terrainAO.js';
+import { Bounce } from './world/bounce.js';
 import { Shadows } from './world/shadows.js';
 import { Wind } from './world/wind.js';
 import { Pipeline } from './core/pipeline.js';
@@ -111,6 +112,7 @@ async function boot() {
   const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer, tier);
   G.terrAO = new TerrainAO(renderer, tier);
+  const bounce = G.bounce = new Bounce(renderer, tier);
   const shadows = new Shadows(renderer, tier);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
@@ -361,6 +363,7 @@ async function boot() {
     }
     prof.begin('terrShadow');
     tshadow.update(fN < 2);
+    bounce.update();
     // cascades: basket detail, slices of the view, wide for far balloons
     focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
     if (camera.position.distanceTo(focus) > 140) focus.copy(camera.position);
