@@ -69,15 +69,16 @@ export class Probe {
   readAsync() {
     const gl = this.renderer.getContext();
     if (this.sync) {
-      if (gl.clientWaitSync(this.sync, 0, 0) === gl.TIMEOUT_EXPIRED) return;
+      if (gl.getSyncParameter(this.sync, gl.SYNC_STATUS) !== gl.SIGNALED) return;
       gl.deleteSync(this.sync); this.sync = null;
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
       gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.buf);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+      gl.deleteBuffer(this.pbo); this.pbo = null;
       this.take();
       return;
     }
-    if (!this.pbo) { this.pbo = gl.createBuffer(); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo); gl.bufferData(gl.PIXEL_PACK_BUFFER, this.buf.byteLength, gl.STREAM_READ); }
+    this.pbo = gl.createBuffer(); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo); gl.bufferData(gl.PIXEL_PACK_BUFFER, this.buf.byteLength, gl.STREAM_READ);
     const prev = this.renderer.getRenderTarget();
     this.renderer.setRenderTarget(this.rt);
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
