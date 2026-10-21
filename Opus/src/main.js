@@ -28,6 +28,7 @@ import { Crew } from './balloon/crew.js';
 import { Input } from './core/input.js';
 import { Cameras } from './core/cameras.js';
 import { GpuProf, FrameTimer } from './core/gpuprof.js';
+import { ShimmerProbe } from './core/shimmer.js';
 
 const canvas = document.getElementById('view');
 const loadFill = document.getElementById('loadFill');
@@ -87,7 +88,7 @@ async function boot() {
   G.sky = sky;
   const dome = new SkyDome(renderer);
   scene.add(dome.mesh);
-  const terrain = new Terrain(data);
+  const terrain = new Terrain(data, tier);
   scene.add(terrain.group);
   const rocks = new Rocks(data, facades);
   scene.add(rocks.group);
@@ -107,8 +108,8 @@ async function boot() {
   G.hero = hero;
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
-  const tshadow = new TerrainShadow(renderer);
-  const shadows = new Shadows(renderer, tier === 'lite' ? 1024 : 2048, tier === 'lite' ? 1024 : 4096);
+  const tshadow = new TerrainShadow(renderer, tier);
+  const shadows = new Shadows(renderer, tier);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   hero.flight.wind = wind;
@@ -168,6 +169,7 @@ async function boot() {
   sky.cycleT = cycleForHour(dbg.h !== undefined ? parseFloat(dbg.h) : START_HOUR);
   const fixedCam = dbg.cam ? dbg.cam.split(',').map(Number) : null;
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
+  if (dbg.shadowview) U.uDbgShadow.value = dbg.shadowview === 'flat' ? 2 : 1;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
   if (dbg.fp) { const [a, b] = dbg.fp.split(',').map(Number); cams.fpYaw = a; cams.fpPitch = b; }
@@ -188,6 +190,17 @@ async function boot() {
   }
   if (dbg.bcam) { const v = dbg.bcam.split(',').map(Number); cams.fixed = (cam) => { const b = hero.basket; cam.position.set(v[0], v[1], v[2]).applyMatrix4(b.matrixWorld); cam.lookAt(new THREE.Vector3(0, 1.3, 0).applyMatrix4(b.matrixWorld)); cam.near = 0.1; cam.updateProjectionMatrix(); }; }
   if (fixedCam) cams.fixed = (cam) => { cam.position.fromArray(fixedCam); cam.lookAt(new THREE.Vector3().fromArray(fixedLook || [0, 0, 0])); };
+  // test hook: pan=right,up,forward slides a fixed camera at that many m/s without turning it.
+  // hold keeps the sun and the pan still until a shimmer capture starts, so every run starts alike.
+  const hold = { on: !!dbg.hold, t: 0 };
+  if (dbg.pan && cams.fixed) {
+    const pv = new THREE.Vector3().fromArray(dbg.pan.split(',').map(Number)), f = cams.fixed, ax = new THREE.Vector3();
+    cams.fixed = (cam, time) => {
+      f(cam, time);
+      const t = hold.on ? 0 : time - hold.t;
+      cam.position.addScaledVector(ax.set(1, 0, 0).applyQuaternion(cam.quaternion), pv.x * t).addScaledVector(ax.set(0, 1, 0).applyQuaternion(cam.quaternion), pv.y * t).addScaledVector(ax.set(0, 0, -1).applyQuaternion(cam.quaternion), pv.z * t);
+    };
+  }
   // fast-forward the flight for testing: sim=seconds
   if (dbg.sim) {
     const n = Math.floor(parseFloat(dbg.sim) / 0.1);
@@ -201,24 +214,32 @@ async function boot() {
   const focus = new THREE.Vector3(), viewC = new THREE.Vector3(), farC = new THREE.Vector3();
   const look = {};
   const loop = { phase: null, fade: 0 };
+  const shimmer = new ShimmerProbe(renderer);
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
-  window.__dbg = { G, U, sky, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
+  window.__dbg = { G, U, sky, shimmer: (n, crop) => { shimmer.start(n, crop); if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, shimmerMap: () => shimmer.heatmap(), loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
     extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
   function frame() {
     const cpu0 = performance.now();
     const rawDt = clock.getDelta();
-    const dt = Math.min(0.1, rawDt);
+    // test hook: fixdt steps the world exactly one 60th of a second per frame, however slow the frame
+    const dt = dbg.fixdt ? 1 / 60 : Math.min(0.1, rawDt);
     // adaptive resolution: reacts within half a second, drops hard when frames are slow,
     // creeps back up when there's headroom. If even the floor is too slow, shed the heavy passes.
     perf.acc += rawDt; perf.n++; perf.t += rawDt; perf.warm++;
+    perf.max = Math.max(perf.max || 0, rawDt);
     perf.ema += (rawDt * 1000 - perf.ema) * 0.25;
     if (perf.t > 0.5 && perf.warm > 3) {
       perf.ms = perf.acc / perf.n * 1000; perf.fps = 1000 / perf.ms;
       // ignore the first seconds (shader compiles) unless frames are catastrophically slow
       perf.age = (perf.age || 0) + perf.t;
-      if (!dbg.fixres && (perf.age > 3 || perf.ms > 250)) {
+      // a window with one huge frame among quick ones is a shader compile or a GC, not the GPU running
+      // out of breath. Compiles kept landing at the scale floor on a cold cache and tripping the lite
+      // fallback below, which then stuck for the session. A software rasteriser is slow every frame,
+      // so it never looks like a hitch.
+      const hitch = perf.n > 2 && perf.max > 0.1 && perf.max > 3 * (perf.acc - perf.max) / (perf.n - 1);
+      if (!dbg.fixres && !hitch && (perf.age > 3 || perf.ms > 250)) {
         const old = pipe.scale, ms = perf.ms;
         perf.dwell = (perf.dwell || 0) + perf.t;
         // every change reallocates targets and costs a hitch, so changes are rare and deliberate
@@ -243,10 +264,10 @@ async function boot() {
         if (pipe.scale <= floorScale + 1e-3 && ms > 55) perf.slow += perf.t; else perf.slow = 0;
         if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; pipe.aoOn = false; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
       }
-      perf.acc = 0; perf.n = 0; perf.t = 0;
+      perf.acc = 0; perf.n = 0; perf.t = 0; perf.max = 0;
     }
     time += dt;
-    const freeze = !!dbg.freeze;
+    const freeze = !!dbg.freeze || hold.on;
     const st = sky.update(freeze ? 0 : dt, input.fast ? 14 : 1);
     wind.update(dt, st);
     U.uTime.value = time;
@@ -337,28 +358,35 @@ async function boot() {
       U.uGlowComp.value = 1 / (1 + 0.14 * exposure);
     }
     prof.begin('terrShadow');
-    if (!lite || fN % 30 === 0) tshadow.update(fN < 2);
-    // cascades: basket detail, the area the camera looks at, wide for far balloons
+    tshadow.update(fN < 2);
+    // cascades: basket detail, slices of the view, wide for far balloons
     focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
     if (camera.position.distanceTo(focus) > 140) focus.copy(camera.position);
-    camera.getWorldDirection(viewC).multiplyScalar(500).add(camera.position);
-    viewC.lerp(camera.position, 0.45);
-    viewC.y = Math.max(viewC.y, data.height(viewC.x, viewC.z));
-    farC.copy(viewC);
+    camera.getWorldDirection(farC).multiplyScalar(275).add(camera.position);
+    farC.y = Math.max(farC.y, data.height(farC.x, farC.z));
+    // test hook: shadowpan=x,z slides every shadow centre at that many m/s under a still camera, the
+    // way a moving balloon drags them, without the camera motion that would blur the measurement
+    let shift = null;
+    if (dbg.shadowpan && !hold.on) {
+      const [px, pz] = dbg.shadowpan.split(',').map(Number), t = time - hold.t;
+      shift = viewC.set(px * t, 0, pz * t);
+    }
+    shadows.fit(camera, focus, farC, shift);
     rocks.update(camera);
     veg.update(camera);
     village.update(camera);
     landmarks.update(camera, lite);
     // lite mode refreshes the shadow maps every third frame
-    terrain.setShadowCenter(viewC);
+    terrain.setShadowCenter(shadows.cascades[1].center, shadows.cascades[1].half, U.uKeyDir.value);
     prof.begin('shadows');
-    if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
+    if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene);
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
     prof.collect();
     ftimer.end();
+    shimmer.grab(pipe.resolved.texture, pipe.main.depthTexture, camera, exposure);
     perf.cpu = (perf.cpu || 0) + (performance.now() - cpu0 - (perf.cpu || 0)) * 0.05;
     window.__dbg.frames++;
     requestAnimationFrame(frame);
