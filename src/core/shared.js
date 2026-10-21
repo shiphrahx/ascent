@@ -60,6 +60,7 @@ export const U = {
   uBounce: { value: null },
   uBounceOn: { value: 1 },
   uTerrDisp: { value: 0 },
+  uPOM: { value: 0 },
   uHeroBurnerPos: { value: new THREE.Vector3() },
   uHeroBurnerCol: { value: new THREE.Color(0, 0, 0) },
   uCoreBounds: { value: new THREE.Vector4(WORLD.core.minX, WORLD.core.minZ, WORLD.core.sizeX, WORLD.core.sizeZ) },

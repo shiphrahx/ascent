@@ -143,7 +143,9 @@ void main(){
   // a texture that contributes nothing isn't sampled; this stands in for it (its own mean, flat, mid height)
   MatS none; none.alb = vec3(0.); none.dn = vec3(0.); none.h = 0.5;
   MatS rk = none; rk.alb = vec3(0.44, 0.26, 0.125);
-  if (soilAmt < 0.999) rk = matBiplanar(L_TUFF, P, N0, 4.2, dPx, dPy);
+  // close up, cliffs get parallax occlusion on the scanned tuff (high only)
+  float pom = uPOM * (1. - smoothstep(30., 60., dist)) * steep * 0.45;
+  if (soilAmt < 0.999) rk = matBiplanarP(L_TUFF, P, N0, 4.2, dPx, dPy, V, pom);
   vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
   vec3 rock = tuffColor(P.y, rose, P.xz, var) * mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
   vec3 alb = rock;
@@ -276,6 +278,7 @@ export class Terrain {
     this.levels = [];
     this.fine = tier === 'high';
     U.uTerrDisp.value = this.fine ? 1 : 0;
+    U.uPOM.value = this.fine ? 1 : 0;
     for (let l = 0; l < 5; l++) {
       const geo = gridGeometry((GRID * 2) >> l);
       const maxInst = 1600;

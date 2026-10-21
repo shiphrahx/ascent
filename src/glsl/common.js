@@ -27,7 +27,7 @@ uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
-uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp;
+uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp, uPOM;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
@@ -438,15 +438,41 @@ MatS matTop(float L, vec3 P, float scale, vec3 dPx, vec3 dPy, float k){
   m.h = nh.z;
   return m;
 }
-// biplanar (two dominant axes) for cliffs and chimneys
-MatS matBiplanar(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy){
+// Parallax occlusion: march the view ray into the scanned height (nh.z, 1 = proud) until it hits,
+// then refine between the last two steps. vp is the view direction across the plane, vn along its
+// normal, depth the relief in metres. Explicit gradients, so it's safe in branches.
+vec2 pomUV(float L, vec2 uv, vec2 vp, float vn, float depth, float scale, vec2 gx, vec2 gy){
+  vec2 du = -vp / max(vn, 0.25) * depth / scale;
+  const int N = 8;
+  vec2 st = du / float(N), u = uv;
+  float cur = 0., h = 1. - textureGrad(uSurfNH, vec3(u, L), gx, gy).z, hp = h;
+  for (int i = 0; i < N; i++) {
+    if (cur >= h) break;
+    hp = h; u += st; cur += 1. / float(N);
+    h = 1. - textureGrad(uSurfNH, vec3(u, L), gx, gy).z;
+  }
+  float after = h - cur, before = hp - cur + 1. / float(N);
+  return mix(u, u - st, sat(after / min(after - before, -1e-5)));
+}
+// biplanar (two dominant axes) for cliffs and chimneys; with pom > 0 (metres of relief) each plane's
+// lookup is parallax-offset along the view direction V
+MatS matBiplanarP(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy, vec3 V, float pom);
+MatS matBiplanar(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy){ return matBiplanarP(L, P, N, scale, dPx, dPy, vec3(0.), 0.); }
+MatS matBiplanarP(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy, vec3 V, float pom){
   vec3 n = abs(N);
   ivec3 ma = (n.x > n.y && n.x > n.z) ? ivec3(0, 1, 2) : (n.y > n.z) ? ivec3(1, 2, 0) : ivec3(2, 0, 1);
   ivec3 mi = (n.x < n.y && n.x < n.z) ? ivec3(0, 1, 2) : (n.y < n.z) ? ivec3(1, 2, 0) : ivec3(2, 0, 1);
   ivec3 me = ivec3(3) - mi - ma;
   vec3 p = P / scale, gx = dPx / scale, gy = dPy / scale;
-  MatS a = matPlanar(L, vec2(p[ma.y], p[ma.z]), vec2(gx[ma.y], gx[ma.z]), vec2(gy[ma.y], gy[ma.z]));
-  MatS b = matPlanar(L, vec2(p[me.y], p[me.z]), vec2(gx[me.y], gx[me.z]), vec2(gy[me.y], gy[me.z]));
+  vec2 ua = vec2(p[ma.y], p[ma.z]), ub = vec2(p[me.y], p[me.z]);
+  vec2 gax = vec2(gx[ma.y], gx[ma.z]), gay = vec2(gy[ma.y], gy[ma.z]), gbx = vec2(gx[me.y], gx[me.z]), gby = vec2(gy[me.y], gy[me.z]);
+  if (pom > 0.) {
+    float sa = sign(N[ma.x]), sb = sign(N[me.x]);
+    ua = pomUV(L, ua, vec2(V[ma.y], V[ma.z]), V[ma.x] * sa, pom, scale, gax, gay);
+    ub = pomUV(L, ub, vec2(V[me.y], V[me.z]), V[me.x] * sb, pom, scale, gbx, gby);
+  }
+  MatS a = matPlanar(L, ua, gax, gay);
+  MatS b = matPlanar(L, ub, gbx, gby);
   vec3 da = vec3(0), db = vec3(0);
   da[ma.y] = a.dn.x; da[ma.z] = a.dn.y;
   db[me.y] = b.dn.x; db[me.z] = b.dn.y;

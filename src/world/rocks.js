@@ -330,7 +330,9 @@ void main(){
   float relief = tuffRelief(P, N, length(fwidth(P)), 2, dPx, dPy, cav);
   N = bumpNormal(N, P, relief * (vMat < 0.5 ? 1. : 0.6));
   // scanned tuff for the grain, cracks and pocks
-  MatS rk = matBiplanar(L_TUFF, P, N0, 3.4, dPx, dPy);
+  // close up, parallax occlusion on the scanned tuff (high only)
+  float pom = uPOM * (1. - smoothstep(25., 50., length(cameraPosition - P))) * 0.35;
+  MatS rk = matBiplanarP(L_TUFF, P, N0, 3.4, dPx, dPy, normalize(cameraPosition - P), pom);
   vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
   vec3 rkT = mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
   N = normalize(N + rk.dn * 0.9 * fade);
