@@ -210,8 +210,38 @@ float keyShadow(vec3 P, vec3 N){
 }
 `;
 
+// Fragment-only surface relief: weathered tuff in metres, triplanar so cliffs and flats both get
+// it, stretched up and down so steep faces read as rills. Each octave fades out before it
+// shrinks to a few pixels, so the detail never sparkles. px is the world size of one pixel.
+export const RELIEF = /* glsl */`
+float tuffRelief(vec3 P, vec3 N, float px, out float cav){
+  vec3 w = pow(abs(N), vec3(4.)); w /= (w.x + w.y + w.z);
+  float h = 0.; cav = 0.;
+  const vec4 S = vec4(24., 7.5, 2.3, 0.7);
+  for (int i = 0; i < 4; i++) {
+    float s = S[i], o = float(i) * 0.37;
+    float f = 1. - smoothstep(0.05, 0.22, px / s);
+    vec4 a = texture(uNoise2D, vec2(P.z, P.y * 0.45) / s + o) * w.x
+           + texture(uNoise2D, P.xz / s + o) * w.y
+           + texture(uNoise2D, vec2(P.x, P.y * 0.45) / s + o) * w.z;
+    // fbm for the body, worley cells for the pocked surface
+    h += (a.r - 0.5 - a.b * a.b * 0.3) * s * 0.07 * f;
+    cav += (0.5 - a.b) * f * 0.3;
+  }
+  return h;
+}
+// bump from a scalar height via screen derivatives (Mikkelsen's surface gradient)
+vec3 bumpNormal(vec3 N, vec3 P, float h){
+  vec3 dpdx = dFdx(P), dpdy = dFdy(P);
+  vec3 r1 = cross(dpdy, N), r2 = cross(N, dpdx);
+  float det = dot(dpdx, r1);
+  vec3 g = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
+  return normalize(abs(det) * N - g);
+}
+`;
+
 export const VCOMMON = DECL + NOISE + TERRAIN + SHADOW + LIGHT;
-export const COMMON = VCOMMON + SHADOW_F;
+export const COMMON = VCOMMON + SHADOW_F + RELIEF;
 
 // Wind field shared with JS (see world/wind.js). Ground layer only in shaders.
 export const WIND = /* glsl */`

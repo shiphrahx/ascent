@@ -323,7 +323,10 @@ void main(){
   vec4 nz2 = texture(uNoise2D, vec2(dot(P.xz, vec2(0.8, 0.6)), P.y) / 1.3);
   float fade = 1. - smoothstep(150., 900., dist);
   vec3 T = normalize(cross(N, vec3(0, 1, 0)) + 1e-4);
-  N = normalize(N + T * (str - 0.5) * 0.9 * fade + vec3(nz2.r - 0.5, nz2.g - 0.5, nz2.b - 0.5) * 0.25 * fade);
+  N = normalize(N + T * (str - 0.5) * 0.5 * fade);
+  float cav;
+  float relief = tuffRelief(P, N, length(fwidth(P)), cav);
+  N = bumpNormal(N, P, relief * (vMat < 0.5 ? 1. : 0.6));
   // strata ledges catch the light
   float b = (P.y + 6. * texture(uNoise2D, P.xz / 900.).r + 2.5 * texture(uNoise2D, P.xz / 140.).g) / 9.5;
   float ledge = smoothstep(0.0, 0.06, fract(b)) * (1. - smoothstep(0.06, 0.16, fract(b)));
@@ -331,7 +334,7 @@ void main(){
 
   float m = vMat;
   vec3 alb;
-  float rough = 0.85, spec = 0.12, ao = vAO;
+  float rough = 0.85, spec = 0.12, ao = vAO * (1. - sat(cav) * 0.5);
   if (m < 0.5) {
     alb = tuffColor(P.y, rose, P.xz, nz.r);
     // darker weathering streaks running down from the cap

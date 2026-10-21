@@ -70,20 +70,23 @@ void main(){
   if (Ng.y < 0.) Ng = -Ng;
   float slope = 1. - min(N.y, mix(N.y, Ng.y, 0.7));
 
-  // detail normals: vertical erosion grooves on steep faces, grain on flats
+  // erosion grooves still drive the crevice darkening below
   float detailFade = 1. - smoothstep(600., 2500., dist);
   vec3 tang = normalize(vec3(-N.z, 0., N.x) + 1e-4);
   float along = dot(P.xz, tang.xz);
   float gro = texture(uNoise2D, vec2(along / 9., P.y / 160.)).r * 0.6 + texture(uNoise2D, vec2(along / 3.1, P.y / 60.)).g * 0.4;
   float steep = smoothstep(0.25, 0.65, slope);
-  vec3 gN = tang * (gro - 0.5) * 1.6 * steep * detailFade;
   vec4 nz = texture(uNoise2D, P.xz / 18.);
   vec4 nz2 = texture(uNoise2D, P.xz / 4.3);
-  vec3 grain = vec3(nz.g - 0.5, 0., nz2.r - 0.5) * 0.35 * detailFade;
+  // weathered relief down to the size of a pixel, gentler on soil than on bare rock
+  float px = length(fwidth(P));
+  float cav;
+  float relief = tuffRelief(P, N, px, cav);
+  N = bumpNormal(N, P, relief * mix(0.22, 1., steep));
   // strata ledges catch light: tilt normal at band edges
   float b = (P.y + 6. * texture(uNoise2D, P.xz / 900.).r + 2.5 * texture(uNoise2D, P.xz / 140.).g) / 9.5;
   float ledge = smoothstep(0.0, 0.08, fract(b)) * (1. - smoothstep(0.08, 0.2, fract(b)));
-  N = normalize(N + gN + grain * (1. - steep) + vec3(0, ledge * 0.9 * steep, 0));
+  N = normalize(N + vec3(0, ledge * 0.9 * steep * detailFade, 0));
 
   // beyond the core the plateau is farmed too: the same patchwork, made up procedurally
   float farM = 1. - coreMask(P.xz);
@@ -138,6 +141,8 @@ void main(){
   // base of cliffs: darker scree and AO in crevices
   ao = mix(0.55, 1., smoothstep(0.25, 0.65, gro)) * mix(1., 0.85, steep);
   ao *= 1. - 0.25 * smoothstep(0.3, 0.0, slope) * smoothstep(0.35, 0.6, slope + 0.2) ;
+  // pits and hollows in the relief hold shade
+  ao *= 1. - sat(cav) * mix(0.1, 0.55, steep);
 
   // river bank: wet dark silt, pebbles
   vec3 silt = mix(vec3(0.36, 0.33, 0.28), vec3(0.48, 0.44, 0.38), nz2.r);
