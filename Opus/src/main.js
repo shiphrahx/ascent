@@ -157,7 +157,9 @@ async function boot() {
   window.addEventListener('resize', resize);
   resize();
 
-  if (dbg.h !== undefined) sky.cycleT = cycleForHour(parseFloat(dbg.h));
+  // open on a clear, low winter sun with long shadows; golden hour and sunset follow within two minutes
+  const START_HOUR = 14.0;
+  sky.cycleT = cycleForHour(dbg.h !== undefined ? parseFloat(dbg.h) : START_HOUR);
   const fixedCam = dbg.cam ? dbg.cam.split(',').map(Number) : null;
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
@@ -246,14 +248,14 @@ async function boot() {
     {
       const F = hero.flight;
       const u = pipe.post.comp.uniforms;
-      if (!loop.phase && ((F.mode === 'landed' && hero.deflate >= 1) || F.modeT > 1500)) loop.phase = 'out';
+      if (!loop.phase && ((F.mode === 'landed' && hero.deflate >= 1) || (F.modeT > 1500 && F.manualT > 120))) loop.phase = 'out';
       if (loop.phase === 'out') {
         loop.fade = Math.min(1, loop.fade + dt / 3);
         if (loop.fade >= 1) {
           F.reset(); hero.deflate = 0; cams.inited = false; cams.shot = null; loop.phase = 'in';
-          // landing in the night: the veil carries us on to the next pre-dawn so every flight meets the sunrise
+          // landing in the dark: the veil carries us back to the afternoon light we opened on
           const hr = sky.hour;
-          if (hr > 18.6 || hr < 6.4) sky.cycleT = 0;
+          if (hr > 18.2 || hr < 7.0) sky.cycleT = cycleForHour(START_HOUR);
         }
       } else if (loop.phase === 'in') {
         loop.fade = Math.max(0, loop.fade - dt / 3.5);
