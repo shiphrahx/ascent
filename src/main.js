@@ -173,6 +173,9 @@ async function boot() {
   sky.cycleT = cycleForHour(dbg.h !== undefined ? parseFloat(dbg.h) : START_HOUR);
   const fixedCam = dbg.cam ? dbg.cam.split(',').map(Number) : null;
   const fixedLook = dbg.look ? dbg.look.split(',').map(Number) : null;
+  // test hook: u=uName:value,uOther:value sets shared uniforms after boot (feature switches for A/B shots)
+  const setU = () => { if (dbg.u) for (const kv of dbg.u.split(',')) { const [k, v] = kv.split(':'); if (U[k]) U[k].value = +v; } };
+  setU();
   if (dbg.shadowview) U.uDbgShadow.value = dbg.shadowview === 'flat' ? 2 : 1;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
