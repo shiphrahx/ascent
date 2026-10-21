@@ -59,7 +59,9 @@ export class Pipeline {
     this.taa.unjitter(camera);
     P && P.begin('taa');
     const res = this.resolved = this.taa.resolve(this.main, camera, look.exposure);
+    P && P.begin('blur');
+    const out = this.taa.blur(res);
     P && P.begin('post');
-    this.post.render(res.texture, look, time);
+    this.post.render(out.texture, look, time);
   }
 }
