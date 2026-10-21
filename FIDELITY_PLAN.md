@@ -28,23 +28,30 @@ Work through this file top to bottom. Phase 1 fixes the shadow flicker the playe
 
 **Done when:** the script prints two stable numbers you can compare after each fix.
 
-**Baseline (2026-10-21, RTX 5070 Ti laptop, headless, 1600×900, res pinned at 1).** `node tools/shimmer.mjs`, shadow-only view, church cliffs from 150 m (`at=church&d=150&up=55`), crop = top 60% of the frame. Three runs each agreed to ±0.01.
+**How it measures (rev 3).** Each pixel is reprojected through depth into the two frames before, like TAA does, and the second difference along that track is scored; surfaces not seen in all three frames are left out. Raw screen diffs (rev 1) scored textures sliding past as flicker. Even reprojected, a moving camera scores hard edges (a world-fixed painted pattern that can't flicker scored 1.7), so:
+- **A** keeps the camera still and slides every shadow centre at 5 m/s (`shadowpan`), which is what a moving balloon does to the shadows.
+- **B** still camera, sun moving at the normal timelapse rate from 15:00.
+- **C** nothing moving: the floor.
+- **F** 60 s of the real chase camera following the balloon's flight. Includes camera-motion edge noise, so only compare F with F.
+- **P** the camera itself sliding 5 m/s (kept for reference, edge-dominated).
 
-| test | frame | crop |
-|---|---|---|
-| A: camera sliding 5 m/s, sun frozen at 15:00 | 1.39 | 1.33 |
-| B: camera still, sun moving from 15:00 | 0.52 | 0.58 |
-| C: nothing moving (floor) | 0.45 | 0.53 |
-| A, full image (`FULL=1`) | 3.32 | 2.34 |
-| B, full image | 0.69 | 0.74 |
+Every run is paired with a flat-grey control (`shadowview=flat`); the number tracked is the shadow view minus the control. Church cliffs from 150 m (`at=church&d=150&up=55`), crop = top 60% of the frame, RTX 5070 Ti laptop, headless, 1600×900, res pinned at 1. Repeat runs agree to ±0.01.
 
-The floor isn't zero: the per-pixel rotating Poisson pattern fizzes even with nothing moving. The full-image A number is mostly textures sliding past, which is why the shadow-only view is the one to track.
+| test (frame / crop, 8-bit levels) | baseline | after Phase 1 | change |
+|---|---|---|---|
+| A: shadow cascades sliding 5 m/s | 0.22 / 0.28 | 0.05 / 0.05 | −77% / −82% |
+| B: sun moving | 0.11 / 0.12 | 0.08 / 0.08 | −27% / −33% |
+| C: floor | 0.08 / 0.09 | 0.05 / 0.05 | |
+| F: 60 s flight | 0.60 / 0.47 | 0.46 / 0.23 | −23% / −51% |
+
+What moved A: the texel snap (0.22 → 0.15), frustum-sphere slices (0.14), always-on heightmap shadow with a matched caster grid (0.06), PCSS + blue noise (0.05). B starts and ends within 0.03 of the floor: the moving sun never caused much beyond the static fizz, and the static fizz is what dropped. F's heat map lost the bright patches on the cliffs where ridge shadows used to pop; what's left is the hero balloon and edge noise from the camera moving, which isn't shadow work. Short of the 80% target on F and B, for those reasons.
 
 ## Screenshot review: problems the plan missed
 
 - **A fresh browser profile drops to the lite tier on first load.** Shader compiles stall the first seconds, the governor sees >55 ms frames at the scale floor and sheds volumetrics, AO, grass and reflections for the rest of the session. Every first headless shot came back `tier: lite`, and so would a player's first visit.
-- **Blotchy dark patches on lit cliff faces** (church facade at 15:00): large mottled self-shadowing, not the soft relief. Points at caster terrain vs rendered terrain mismatch and bias (1.3).
-- **A hard straight shadow edge on the right of the church cliff**: the edge of the shadow-caster grid or a cascade.
+- **Blotchy dark patches on lit cliff faces** (church facade at 15:00). *Checked in the shadow-only view: not shadows. It's the scanned tuff albedo and cavity AO.*
+- **A hard straight shadow edge on the right of the church cliff.** *Checked: a real ridge shadow. The caster grid's skirt could cast a straight wall at its edge, though; removed in 1.3.*
+- **SSAO leaves a fixed crosshatch on distant slopes** (only visible in the shadow-only view, the textures hide it in the real image). Half-res AO with depth-weighted upsampling breaks on grazing slopes. Phase 2.1's large-scale visibility should let the SSAO fade out with distance.
 - **Shadow noise with nothing moving** (floor above): the shadow term isn't converged even on a still frame.
 
 ---
