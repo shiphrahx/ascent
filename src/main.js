@@ -228,12 +228,18 @@ async function boot() {
     // adaptive resolution: reacts within half a second, drops hard when frames are slow,
     // creeps back up when there's headroom. If even the floor is too slow, shed the heavy passes.
     perf.acc += rawDt; perf.n++; perf.t += rawDt; perf.warm++;
+    perf.max = Math.max(perf.max || 0, rawDt);
     perf.ema += (rawDt * 1000 - perf.ema) * 0.25;
     if (perf.t > 0.5 && perf.warm > 3) {
       perf.ms = perf.acc / perf.n * 1000; perf.fps = 1000 / perf.ms;
       // ignore the first seconds (shader compiles) unless frames are catastrophically slow
       perf.age = (perf.age || 0) + perf.t;
-      if (!dbg.fixres && (perf.age > 3 || perf.ms > 250)) {
+      // a window with one huge frame among quick ones is a shader compile or a GC, not the GPU running
+      // out of breath. Compiles kept landing at the scale floor on a cold cache and tripping the lite
+      // fallback below, which then stuck for the session. A software rasteriser is slow every frame,
+      // so it never looks like a hitch.
+      const hitch = perf.n > 2 && perf.max > 0.1 && perf.max > 3 * (perf.acc - perf.max) / (perf.n - 1);
+      if (!dbg.fixres && !hitch && (perf.age > 3 || perf.ms > 250)) {
         const old = pipe.scale, ms = perf.ms;
         perf.dwell = (perf.dwell || 0) + perf.t;
         // every change reallocates targets and costs a hitch, so changes are rare and deliberate
@@ -258,7 +264,7 @@ async function boot() {
         if (pipe.scale <= floorScale + 1e-3 && ms > 55) perf.slow += perf.t; else perf.slow = 0;
         if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; pipe.aoOn = false; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
       }
-      perf.acc = 0; perf.n = 0; perf.t = 0;
+      perf.acc = 0; perf.n = 0; perf.t = 0; perf.max = 0;
     }
     time += dt;
     const freeze = !!dbg.freeze || hold.on;
