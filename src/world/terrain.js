@@ -84,7 +84,7 @@ void main(){
   float px = length(fwidth(P));
   vec3 dPx = dFdx(P), dPy = dFdy(P);
   float cav;
-  float relief = tuffRelief(P, N, px, 2, cav);
+  float relief = tuffRelief(P, N, px, 2, dPx, dPy, cav);
   vec3 N0 = N;
   N = bumpNormal(N, P, relief * mix(0.22, 1., steep));
   // strata ledges catch light: tilt normal at band edges
@@ -108,23 +108,31 @@ void main(){
   // Every photo texture is used as detail around the hand-picked palette: divided by its own mean,
   // half its hue kept. The strata and field colours stay; the grain, cracks and pebbles are real.
   float var = nz.r;
-  MatS rk = matBiplanar(L_TUFF, P, N0, 4.2, dPx, dPy);
-  vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
-  vec3 rock = tuffColor(P.y, rose, P.xz, var) * mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
-  vec3 alb = rock;
   float rough = 0.85, spec = 0.12, ao = 1.0;
   // soils on gentle ground
   float flat_ = smoothstep(0.32, 0.12, slope);
   float soilAmt = flat_ * smoothstep(0.1, 0.25, soilT + 0.12 * (1. - slope));
   // plateau tops get patchy dry grass over pale tuff
   soilAmt = max(soilAmt, flat_ * smoothstep(0.55, 0.75, texture(uNoise2D, P.xz / 70.).r) * 0.85);
+  // a texture that contributes nothing isn't sampled; this stands in for it (its own mean, flat, mid height)
+  MatS none; none.alb = vec3(0.); none.dn = vec3(0.); none.h = 0.5;
+  MatS rk = none; rk.alb = vec3(0.44, 0.26, 0.125);
+  if (soilAmt < 0.999) rk = matBiplanar(L_TUFF, P, N0, 4.2, dPx, dPy);
+  vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
+  vec3 rock = tuffColor(P.y, rose, P.xz, var) * mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
+  vec3 alb = rock;
   vec3 groundDn = vec3(0);
   float groundH = 0.5;
   if (soilAmt > 0.001) {
     float rep = texture(uNoise2D, P.xz / 23.).r;
-    MatS st = matTop(L_STEPPE, P, 3.4, dPx, dPy, rep);
-    MatS so = matTop(L_SOIL, P, 2.6, dPx, dPy, rep);
-    MatS pl = matTop(L_PLOWED, P, 3.0, dPx, dPy, rep);
+    float wGrass = smoothstep(0.3, 0.42, soilT) * (1. - smoothstep(0.62, 0.7, soilT));
+    float wPlow = smoothstep(0.66, 0.72, soilT) * (1. - smoothstep(0.9, 0.98, soilT));
+    float wVine = smoothstep(0.92, 0.98, soilT);
+    MatS st = none, so = none, pl = none;
+    st.alb = vec3(0.22, 0.18, 0.105); so.alb = vec3(0.27, 0.15, 0.07); pl.alb = vec3(0.10, 0.06, 0.03);
+    if (wGrass * (1. - wPlow) * (1. - wVine) > 0.002) st = matTop(L_STEPPE, P, 3.4, dPx, dPy, rep);
+    if ((1. - wGrass) * (1. - wPlow) * (1. - wVine) + wVine > 0.002) so = matTop(L_SOIL, P, 2.6, dPx, dPy, rep);
+    if (wPlow * (1. - wVine) > 0.002) pl = matTop(L_PLOWED, P, 3.0, dPx, dPy, rep);
     vec3 stD = st.alb / vec3(0.22, 0.18, 0.105), soD = so.alb / vec3(0.27, 0.15, 0.07), plD = pl.alb / vec3(0.10, 0.06, 0.03);
     vec3 dryGrass = mix(vec3(0.52, 0.47, 0.30), vec3(0.42, 0.40, 0.26), nz2.g) * mix(vec3(luma(stD)), stD, 0.6);
     vec3 tuffSoil = mix(vec3(0.60, 0.51, 0.39), vec3(0.50, 0.41, 0.31), nz.g) * mix(vec3(luma(soD)), soD, 0.35);
@@ -138,9 +146,6 @@ void main(){
     plowed *= 1. + (0.16 * furrow - 0.08) * fFade;
     vec3 plDn = pl.dn + vec3(fd.x, 0., fd.y) * cos(fph) * 0.3 * fFade;
     vec3 vineSoil = mix(vec3(0.58, 0.42, 0.30), vec3(0.66, 0.50, 0.36), nz.g) * mix(vec3(luma(soD)), soD, 0.35);
-    float wGrass = smoothstep(0.3, 0.42, soilT) * (1. - smoothstep(0.62, 0.7, soilT));
-    float wPlow = smoothstep(0.66, 0.72, soilT) * (1. - smoothstep(0.9, 0.98, soilT));
-    float wVine = smoothstep(0.92, 0.98, soilT);
     vec3 soil = tuffSoil;
     soil = mix(soil, dryGrass, wGrass);
     soil = mix(soil, plowed, wPlow);

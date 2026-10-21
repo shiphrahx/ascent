@@ -222,16 +222,22 @@ float keyShadow(vec3 P, vec3 N){
 // it, stretched up and down so steep faces read as rills. Each octave fades out before it
 // shrinks to a few pixels, so the detail never sparkles. px is the world size of one pixel.
 export const RELIEF = /* glsl */`
-float tuffRelief(vec3 P, vec3 N, float px, int octaves, out float cav){
+float tuffRelief(vec3 P, vec3 N, float px, int octaves, vec3 dPx, vec3 dPy, out float cav){
   vec3 w = pow(abs(N), vec3(4.)); w /= (w.x + w.y + w.z);
   float h = 0.; cav = 0.;
   const vec4 S = vec4(24., 7.5, 2.3, 0.7);
+  // explicit gradients, so planes that barely face us and octaves too fine to see can be skipped
+  vec2 gxX = vec2(dPx.z, dPx.y * 0.45), gyX = vec2(dPy.z, dPy.y * 0.45);
+  vec2 gxZ = vec2(dPx.x, dPx.y * 0.45), gyZ = vec2(dPy.x, dPy.y * 0.45);
   for (int i = 0; i < 4; i++) {
+    if (i >= octaves) break;
     float s = S[i], o = float(i) * 0.37;
-    float f = (1. - smoothstep(0.05, 0.22, px / s)) * step(float(i), float(octaves) - 0.5);
-    vec4 a = texture(uNoise2D, vec2(P.z, P.y * 0.45) / s + o) * w.x
-           + texture(uNoise2D, P.xz / s + o) * w.y
-           + texture(uNoise2D, vec2(P.x, P.y * 0.45) / s + o) * w.z;
+    float f = 1. - smoothstep(0.05, 0.22, px / s);
+    if (f <= 0.) continue;
+    vec4 a = vec4(0);
+    if (w.x > 0.03) a += textureGrad(uNoise2D, vec2(P.z, P.y * 0.45) / s + o, gxX / s, gyX / s) * w.x;
+    if (w.y > 0.03) a += textureGrad(uNoise2D, P.xz / s + o, dPx.xz / s, dPy.xz / s) * w.y;
+    if (w.z > 0.03) a += textureGrad(uNoise2D, vec2(P.x, P.y * 0.45) / s + o, gxZ / s, gyZ / s) * w.z;
     // fbm for the body, worley cells for the pocked surface
     h += (a.r - 0.5 - a.b * a.b * 0.3) * s * 0.07 * f;
     cav += (0.5 - a.b) * f * 0.3;
