@@ -129,6 +129,7 @@ async function boot() {
   pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
   const volHook = rt => vol.render(rt, camera);
   pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
+  if (tier === 'lite' || dbg.noao) pipe.aoOn = false;
   if (tier === 'lite') { river.reflect = false; veg.grass.visible = false; veg.noGrass = true; }
   pipe.hooks.transparent = true;
   let exposure = 1;
@@ -216,7 +217,7 @@ async function boot() {
         if (Math.abs(old - pipe.scale) > 1e-3) { if (G.tier === 'lite') resize(); else pipe.setSize(window.innerWidth, window.innerHeight, pr); }
         // still too slow at the floor: drop volumetrics, reflections and grass
         if (pipe.scale <= floorScale + 1e-3 && ms > 45) perf.slow += perf.t; else perf.slow = 0;
-        if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
+        if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; pipe.aoOn = false; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
       }
       perf.acc = 0; perf.n = 0; perf.t = 0;
     }
