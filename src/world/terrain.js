@@ -6,10 +6,12 @@ import { COMMON, VCOMMON, ROCK } from '../glsl/common.js';
 import { makeMaterial } from '../core/mat.js';
 
 const GRID = 64;
-// shadow-casting ground: covers the main cascade at 4m spacing
-const SHADOW_SIZE = 1300, SHADOW_GRID = 325;
+// Shadow-casting ground for the near slice. On high it sits on the same 2.5 m lattice as the nearest
+// visible LOD, with the same diagonals, so the ground shadows itself exactly where it's drawn; a
+// coarser copy self-shadowed in bands. Lower tiers trade that for a lighter grid.
+const SHADOW_GRID = { high: { size: 900, step: 2.5 }, medium: { size: 1600, step: 5 }, lite: { size: 1100, step: 10 } };
 
-function gridGeometry(n) {
+function gridGeometry(n, skirts = true) {
   // (n+1)^2 grid plus a skirt ring that drops down to hide LOD cracks
   const pos = [], idx = [];
   const v = (x, z, skirt) => { pos.push(x / n, skirt, z / n); return pos.length / 3 - 1; };
@@ -25,7 +27,8 @@ function gridGeometry(n) {
   };
   const top = [], bottom = [], left = [], right = [];
   for (let i = 0; i <= n; i++) { top.push(i); bottom.push(n * (n + 1) + i); left.push(i * (n + 1)); right.push(i * (n + 1) + n); }
-  edge(top); edge(bottom.reverse()); edge(left.reverse()); edge(right);
+  // the shadow grid has none: hanging past its edge over lower ground, a skirt cast a straight wall of shadow
+  if (skirts) { edge(top); edge(bottom.reverse()); edge(left.reverse()); edge(right); }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setIndex(idx);
@@ -234,8 +237,9 @@ void main(){
 `;
 
 export class Terrain {
-  constructor(data) {
+  constructor(data, tier = 'high') {
     this.data = data;
+    this.sg = SHADOW_GRID[tier] || SHADOW_GRID.high;
     U.uHeightCore.value = data.texH;
     U.uHeightOuter.value = data.texHO;
     U.uNormCore.value = data.texN;
@@ -296,9 +300,10 @@ export class Terrain {
     this._m = new THREE.Matrix4();
     this._v = new THREE.Vector3();
 
-    // Shadow-only copy of the ground under the main cascade. The view chunks are culled to the
-    // camera, so cliffs behind us would never cast; this grid covers the whole cascade instead.
-    const sg = gridGeometry(SHADOW_GRID);
+    // Shadow-only copy of the ground under the near slice. The view chunks are culled to the camera,
+    // so cliffs behind us would never cast; this grid covers the slice and reaches up-sun of it. Past
+    // it, ridges shadow through the coarse terrain shadow, which every receiver always takes.
+    const sg = gridGeometry(Math.round(this.sg.size / this.sg.step), false);
     const sinst = new THREE.InstancedBufferAttribute(new Float32Array(4), 4);
     sinst.setUsage(THREE.DynamicDrawUsage);
     sg.setAttribute('aChunk', sinst);
@@ -307,17 +312,20 @@ export class Terrain {
     const smat = new THREE.ShaderMaterial({ uniforms: this.mat.uniforms, vertexShader: VERT, fragmentShader: 'void main(){ gl_FragColor = vec4(1.); }', defines: { DEPTH_PASS: 1 }, side: THREE.DoubleSide });
     this.shadowMesh = new THREE.Mesh(sig, smat);
     this.shadowMesh.frustumCulled = false;
-    this.shadowMesh.layers.set(1);
+    this.shadowMesh.layers.set(5);
     this.shadowInst = sinst;
     this.group.add(this.shadowMesh);
   }
-  // centre the shadow grid on the main cascade, snapped so its triangles don't swim
-  setShadowCenter(c) {
-    const step = SHADOW_SIZE / SHADOW_GRID;
+  // cover the near slice (centre c, half-size half) and reach up-sun of it, snapped to every other
+  // lattice point so the grid's diagonals line up with the visible ground's
+  setShadowCenter(c, half, L) {
+    const { size, step } = this.sg;
+    const lh = Math.hypot(L.x, L.z) || 1, push = Math.max(0, size / 2 - half);
+    const x = c.x + L.x / lh * push, z = c.z + L.z / lh * push, q = step * 2;
     const a = this.shadowInst.array;
-    a[0] = Math.round(c.x / step) * step - SHADOW_SIZE / 2;
-    a[1] = Math.round(c.z / step) * step - SHADOW_SIZE / 2;
-    a[2] = SHADOW_SIZE; a[3] = 0;
+    a[0] = Math.round((x - size / 2) / q) * q;
+    a[1] = Math.round((z - size / 2) / q) * q;
+    a[2] = Math.round(size / step) * step; a[3] = 0;
     this.shadowInst.needsUpdate = true;
   }
 

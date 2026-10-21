@@ -88,7 +88,7 @@ async function boot() {
   G.sky = sky;
   const dome = new SkyDome(renderer);
   scene.add(dome.mesh);
-  const terrain = new Terrain(data);
+  const terrain = new Terrain(data, tier);
   scene.add(terrain.group);
   const rocks = new Rocks(data, facades);
   scene.add(rocks.group);
@@ -377,7 +377,7 @@ async function boot() {
     village.update(camera);
     landmarks.update(camera, lite);
     // lite mode refreshes the shadow maps every third frame
-    terrain.setShadowCenter(shadows.cascades[1].center);
+    terrain.setShadowCenter(shadows.cascades[1].center, shadows.cascades[1].half, U.uKeyDir.value);
     prof.begin('shadows');
     if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene);
     terrain.update(camera, lite ? 0.22 : 1);

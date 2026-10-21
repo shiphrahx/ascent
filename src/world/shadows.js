@@ -24,6 +24,8 @@ export class Shadows {
       rt.depthTexture.minFilter = rt.depthTexture.magFilter = THREE.NearestFilter;
       const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 10);
       cam.layers.set(d.layer);
+      // the shadow-only ground grid casts into the nearest slice only
+      if (d.slice === 0) cam.layers.enable(5);
       return Object.assign(d, { rt, cam, half: d.half || 55, center: new THREE.Vector3() });
     });
     // four slots in the shaders: basket, near slice, far slice, balloons. With one slice, the far slice
