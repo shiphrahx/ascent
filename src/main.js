@@ -27,6 +27,7 @@ import { Fleet } from './balloon/fleet.js';
 import { Crew } from './balloon/crew.js';
 import { Input } from './core/input.js';
 import { Cameras } from './core/cameras.js';
+import { GpuProf } from './core/gpuprof.js';
 
 const canvas = document.getElementById('view');
 const loadFill = document.getElementById('loadFill');
@@ -59,6 +60,7 @@ async function boot() {
     : /intel|radeon\(tm\)|radeon graphics|\d{3,4}m graphics|apple|mali|adreno|vega \d/i.test(gpuName) && !/rtx|gtx|radeon rx|arc a/i.test(gpuName) ? 'medium' : 'high';
   if (dbg.q) tier = dbg.q;
   G.tier = tier;
+  const prof = G.prof = new GpuProf(glc, !!dbg.gpuprof);
   setProgress(0.02); await tick();
 
   U.uNoise2D.value = makeNoise2D(256);
@@ -196,7 +198,7 @@ async function boot() {
   const look = {};
   const loop = { phase: null, fade: 0 };
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
-  window.__dbg = { G, U, sky, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0,
+  window.__dbg = { G, U, sky, loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
     extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
@@ -301,6 +303,7 @@ async function boot() {
 
     const lite = G.tier === 'lite', fN = window.__dbg.frames;
     // lite mode spreads the slow-changing passes over several frames
+    prof.begin('sky');
     if (!lite || fN % 8 === 0 || fN < 3) { dome.update(sky, camera); probe.update(st.snow); }
     dome.mesh.position.copy(camera.position);
     {
@@ -313,6 +316,7 @@ async function boot() {
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
       U.uGlowComp.value = 1 / (1 + 0.14 * exposure);
     }
+    prof.begin('terrShadow');
     if (!lite || fN % 30 === 0) tshadow.update(fN < 2);
     // cascades: basket detail, the area the camera looks at, wide for far balloons
     focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
@@ -327,10 +331,13 @@ async function boot() {
     landmarks.update(camera, lite);
     // lite mode refreshes the shadow maps every third frame
     terrain.setShadowCenter(viewC);
+    prof.begin('shadows');
     if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
     terrain.update(camera, lite ? 0.22 : 1);
+    prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi }, time);
+    prof.collect();
     window.__dbg.frames++;
     requestAnimationFrame(frame);
   }
