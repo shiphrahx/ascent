@@ -1,4 +1,4 @@
-// HDR post: bloom mip chain, heat shimmer, exposure, filmic curve, per-hour grade, vignette, grain, FXAA.
+// HDR post: bloom mip chain, heat shimmer, exposure, filmic curve, per-hour grade, vignette, dither.
 import * as THREE from 'three';
 import { fsMaterial, renderFS, makeRT } from '../core/fsq.js';
 
@@ -44,7 +44,7 @@ precision highp float;
 varying vec2 vUv;
 uniform sampler2D tScene, tBloom;
 uniform vec2 uRes;
-uniform float uExposure, uBloom, uTime, uSat, uCon, uVignette, uGrain, uFade;
+uniform float uExposure, uBloom, uTime, uSat, uCon, uVignette, uFade;
 uniform vec3 uShadowTint, uHighTint, uFadeColor;
 uniform vec4 uHeat[2];     // xy screen pos of flame, z strength, w radius
 uniform vec2 uHeatUp[2];   // screen-space up direction
@@ -58,7 +58,15 @@ vec3 aces(vec3 x){
   return clamp(O * (a / b), 0., 1.);
 }
 vec3 toSRGB(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1. / 2.4)) - 0.055, step(0.0031308, c)); }
-vec3 sceneAt(vec2 uv){ return texture(tScene, uv).rgb; }
+// light unsharp mask: the temporal resolve softens a touch, this gives the edges back
+vec3 sceneAt(vec2 uv){
+  vec2 t = 1. / uRes;
+  vec3 c = texture(tScene, uv).rgb;
+  vec3 n = texture(tScene, uv + vec2(t.x, 0)).rgb + texture(tScene, uv - vec2(t.x, 0)).rgb + texture(tScene, uv + vec2(0, t.y)).rgb + texture(tScene, uv - vec2(0, t.y)).rgb;
+  vec3 d = c - n * 0.25;
+  // scale by local brightness so the halo stays proportional in HDR
+  return max(c + d * 0.6 / (1. + abs(d) / (c + 1e-3)), 0.);
+}
 void main(){
   vec2 uv = vUv;
   // heat shimmer above burner flames
@@ -92,36 +100,9 @@ void main(){
   col *= 1. - uVignette * dot(q, q) * 1.6;
   col = toSRGB(col);
   col = mix(col, uFadeColor, uFade);
-  // film grain and dither
-  float g = hash(vUv * uRes + fract(uTime * 13.) * 100.) - 0.5;
-  col += g * uGrain + (hash(vUv * uRes.yx + 3.1) - 0.5) / 255.;
+  // dither the 8-bit output so gradients don't band
+  col += (hash(vUv * uRes + fract(uTime * 13.) * 100.) - 0.5) / 255.;
   gl_FragColor = vec4(col, 1.);
-}
-`;
-
-const FXAA = /* glsl */`
-precision highp float;
-varying vec2 vUv;
-uniform sampler2D tSrc;
-uniform vec2 uTexel;
-float lum(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
-void main(){
-  vec3 rgbNW = texture(tSrc, vUv + vec2(-1., -1.) * uTexel).rgb;
-  vec3 rgbNE = texture(tSrc, vUv + vec2(1., -1.) * uTexel).rgb;
-  vec3 rgbSW = texture(tSrc, vUv + vec2(-1., 1.) * uTexel).rgb;
-  vec3 rgbSE = texture(tSrc, vUv + vec2(1., 1.) * uTexel).rgb;
-  vec3 rgbM = texture(tSrc, vUv).rgb;
-  float lNW = lum(rgbNW), lNE = lum(rgbNE), lSW = lum(rgbSW), lSE = lum(rgbSE), lM = lum(rgbM);
-  float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
-  float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
-  vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), ((lNW + lSW) - (lNE + lSE)));
-  float red = max((lNW + lNE + lSW + lSE) * 0.03125, 1. / 128.);
-  float rcp = 1. / (min(abs(dir.x), abs(dir.y)) + red);
-  dir = clamp(dir * rcp, -8., 8.) * uTexel;
-  vec3 a = 0.5 * (texture(tSrc, vUv + dir * (1. / 3. - 0.5)).rgb + texture(tSrc, vUv + dir * (2. / 3. - 0.5)).rgb);
-  vec3 b = a * 0.5 + 0.25 * (texture(tSrc, vUv + dir * -0.5).rgb + texture(tSrc, vUv + dir * 0.5).rgb);
-  float lB = lum(b);
-  gl_FragColor = vec4((lB < lMin || lB > lMax) ? a : b, 1.);
 }
 `;
 
@@ -134,13 +115,11 @@ export class Post {
     this.comp = fsMaterial(COMPOSITE, {
       tScene: { value: null }, tBloom: { value: null }, uRes: { value: new THREE.Vector2() },
       uExposure: { value: 1 }, uBloom: { value: 1 }, uTime: { value: 0 }, uSat: { value: 1 }, uCon: { value: 1 },
-      uVignette: { value: 0.32 }, uGrain: { value: 0.005 }, uFade: { value: 0 }, uFadeColor: { value: new THREE.Color(0.75, 0.78, 0.84) },
+      uVignette: { value: 0.32 }, uFade: { value: 0 }, uFadeColor: { value: new THREE.Color(0.75, 0.78, 0.84) },
       uShadowTint: { value: new THREE.Vector3() }, uHighTint: { value: new THREE.Vector3(1, 1, 1) },
       uHeat: { value: [new THREE.Vector4(), new THREE.Vector4()] }, uHeatUp: { value: [new THREE.Vector2(0, 1), new THREE.Vector2(0, 1)] },
     });
-    this.fxaa = fsMaterial(FXAA, { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() } });
     this.chain = [];
-    this.ldr = null;
   }
   setSize(w, h) {
     for (const t of this.chain) t.dispose();
@@ -150,8 +129,6 @@ export class Post {
       cw = Math.max(1, Math.floor(cw / 2)); ch = Math.max(1, Math.floor(ch / 2));
       this.chain.push(makeRT(cw, ch));
     }
-    if (this.ldr) this.ldr.dispose();
-    this.ldr = makeRT(w, h, { type: THREE.UnsignedByteType });
     this.w = w; this.h = h;
   }
   render(src, look, time) {
@@ -179,9 +156,6 @@ export class Post {
     u.uExposure.value = look.exposure; u.uBloom.value = look.bloom; u.uTime.value = time;
     u.uSat.value = look.sat; u.uCon.value = look.con;
     u.uShadowTint.value.fromArray(look.sh); u.uHighTint.value.fromArray(look.hi);
-    renderFS(r, this.comp, this.ldr);
-    this.fxaa.uniforms.tSrc.value = this.ldr.texture;
-    this.fxaa.uniforms.uTexel.value.set(1 / this.w, 1 / this.h);
-    renderFS(r, this.fxaa, null);
+    renderFS(r, this.comp, null);
   }
 }

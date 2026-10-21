@@ -12,6 +12,7 @@ const c3 = () => new THREE.Color();
 
 export const U = {
   uTime: { value: 0 },
+  uTAAFrame: { value: 0 },
   uSunDir: { value: v3() },
   uMoonDir: { value: v3() },
   uKeyDir: { value: new THREE.Vector3(0, 1, 0) },

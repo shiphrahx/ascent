@@ -1,7 +1,7 @@
 // Shared GLSL: uniforms, noise, terrain sampling, shadows, lighting and aerial perspective.
 
 export const DECL = /* glsl */`
-uniform float uTime;
+uniform float uTime, uTAAFrame;
 uniform vec3 uSunDir, uMoonDir, uKeyDir;
 uniform vec3 uKeyColor, uSunColor, uSkyAmb, uGroundAmb;
 uniform float uKeyElev, uKeyIsSun;
@@ -193,7 +193,8 @@ float sampleCascade(sampler2D map, mat4 m, vec3 P, float bias, float radius, flo
   return s / 8.;
 }
 float cascadeShadow(vec3 P, vec3 N){
-  float rot = ign(gl_FragCoord.xy) * 6.283;
+  // rotates every frame so the temporal pass averages the pattern away
+  float rot = ign(gl_FragCoord.xy + 5.588238 * uTAAFrame) * 6.283;
   float ndl = abs(dot(N, uKeyDir));
   float sb = 1.0 + 2.5 * (1. - ndl);
   float s0 = sampleCascade(uShadow0, uShadowM0, P + N * uShadowWT.x * 1.5, uShadowK.x * uShadowWT.x * sb, 1.8, rot);
