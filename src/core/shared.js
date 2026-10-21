@@ -42,7 +42,6 @@ export const U = {
   uShadowM2: { value: new THREE.Matrix4() },
   uShadowK: { value: new THREE.Vector3(1, 1, 1) },
   uShadowWT: { value: new THREE.Vector3(0.1, 1, 4) },
-  uShadowTexel: { value: new THREE.Vector2(1 / 2048, 1 / 2048) },
   uTerrShadow: { value: null },
   uTerrShadowOuter: { value: null },
   uHeightCore: { value: null },

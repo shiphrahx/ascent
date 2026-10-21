@@ -5,19 +5,20 @@ import { casters } from '../core/mat.js';
 
 
 export class Shadows {
-  constructor(renderer, res = 2048) {
+  constructor(renderer, res = 2048, mainRes = res) {
     this.renderer = renderer;
-    const RES = this.res = res;
     this.cascades = [];
-    const sizes = [55, 900, 6000];
+    // the middle cascade carries the ground and cliffs around the view, so it gets the most texels
+    const sizes = [55, 600, 6000];
     for (let i = 0; i < 3; i++) {
+      const RES = i === 1 ? mainRes : res;
       const rt = new THREE.WebGLRenderTarget(RES, RES, { depthBuffer: true });
       rt.depthTexture = new THREE.DepthTexture(RES, RES);
       rt.depthTexture.type = THREE.FloatType;
       rt.depthTexture.minFilter = rt.depthTexture.magFilter = THREE.NearestFilter;
       const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 10);
       cam.layers.set(i === 2 ? 3 : 1);
-      this.cascades.push({ rt, cam, size: sizes[i], range: 7000 });
+      this.cascades.push({ rt, cam, size: sizes[i], range: 7000, res: RES });
     }
     U.uShadow0.value = this.cascades[0].rt.depthTexture;
     U.uShadow1.value = this.cascades[1].rt.depthTexture;
@@ -55,7 +56,7 @@ export class Shadows {
       cam.position.copy(centers[i]).addScaledVector(L, back);
       cam.lookAt(centers[i]);
       cam.updateMatrixWorld();
-      const texel = (2 * half) / this.res;
+      const texel = (2 * half) / c.res;
       this._v.copy(centers[i]).applyMatrix4(cam.matrixWorldInverse);
       const sx = this._v.x - Math.round(this._v.x / texel) * texel;
       const sy = this._v.y - Math.round(this._v.y / texel) * texel;
@@ -71,6 +72,5 @@ export class Shadows {
     }
     scene.background = oldBg;
     for (const m of casters) m.material = m.userData._mat;
-    U.uShadowTexel.value.set(1 / this.res, 1 / this.res);
   }
 }

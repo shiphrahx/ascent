@@ -6,6 +6,8 @@ import { COMMON, VCOMMON, ROCK } from '../glsl/common.js';
 import { makeMaterial } from '../core/mat.js';
 
 const GRID = 64;
+// shadow-casting ground: covers the main cascade at 4m spacing
+const SHADOW_SIZE = 1300, SHADOW_GRID = 325;
 
 function gridGeometry(n) {
   // (n+1)^2 grid plus a skirt ring that drops down to hide LOD cracks
@@ -285,6 +287,30 @@ export class Terrain {
     this._frustum = new THREE.Frustum();
     this._m = new THREE.Matrix4();
     this._v = new THREE.Vector3();
+
+    // Shadow-only copy of the ground under the main cascade. The view chunks are culled to the
+    // camera, so cliffs behind us would never cast; this grid covers the whole cascade instead.
+    const sg = gridGeometry(SHADOW_GRID);
+    const sinst = new THREE.InstancedBufferAttribute(new Float32Array(4), 4);
+    sinst.setUsage(THREE.DynamicDrawUsage);
+    sg.setAttribute('aChunk', sinst);
+    const sig = new THREE.InstancedBufferGeometry();
+    sig.index = sg.index; sig.attributes = sg.attributes; sig.instanceCount = 1;
+    const smat = new THREE.ShaderMaterial({ uniforms: this.mat.uniforms, vertexShader: VERT, fragmentShader: 'void main(){ gl_FragColor = vec4(1.); }', defines: { DEPTH_PASS: 1 }, side: THREE.DoubleSide });
+    this.shadowMesh = new THREE.Mesh(sig, smat);
+    this.shadowMesh.frustumCulled = false;
+    this.shadowMesh.layers.set(1);
+    this.shadowInst = sinst;
+    this.group.add(this.shadowMesh);
+  }
+  // centre the shadow grid on the main cascade, snapped so its triangles don't swim
+  setShadowCenter(c) {
+    const step = SHADOW_SIZE / SHADOW_GRID;
+    const a = this.shadowInst.array;
+    a[0] = Math.round(c.x / step) * step - SHADOW_SIZE / 2;
+    a[1] = Math.round(c.z / step) * step - SHADOW_SIZE / 2;
+    a[2] = SHADOW_SIZE; a[3] = 0;
+    this.shadowInst.needsUpdate = true;
   }
 
   // pick LOD per chunk by projected density; call once per camera before rendering

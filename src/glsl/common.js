@@ -11,7 +11,6 @@ uniform vec2 uWindDir, uGustOffset;
 uniform float uWindStrength;
 uniform sampler2D uShadow0, uShadow1, uShadow2;
 uniform mat4 uShadowM0, uShadowM1, uShadowM2;
-uniform vec2 uShadowTexel;
 uniform vec3 uShadowK, uShadowWT;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
 uniform highp sampler2D uHeightCore, uHeightOuter;
@@ -183,30 +182,39 @@ float sampleCascade(sampler2D map, mat4 m, vec3 P, float bias, float radius, flo
   vec3 c = sc.xyz / sc.w * 0.5 + 0.5;
   if (c.x < 0.002 || c.x > 0.998 || c.y < 0.002 || c.y > 0.998 || c.z > 1.) return -1.;
   float s = 0.;
+  vec2 texel = 1. / vec2(textureSize(map, 0));
   float cr = cos(rot), sr = sin(rot);
   mat2 R = mat2(cr, sr, -sr, cr);
   for (int i = 0; i < 8; i++) {
-    vec2 o = R * POISSON[i] * radius * uShadowTexel;
+    vec2 o = R * POISSON[i] * radius * texel;
     float d = texture(map, c.xy + o).r;
     s += step(c.z - bias, d);
   }
   return s / 8.;
 }
-float cascadeShadow(vec3 P, vec3 N){
+float cascadeShadow(vec3 P, vec3 N, out float cover){
   // rotates every frame so the temporal pass averages the pattern away
   float rot = ign(gl_FragCoord.xy + 5.588238 * uTAAFrame) * 6.283;
   float ndl = abs(dot(N, uKeyDir));
   float sb = 1.0 + 2.5 * (1. - ndl);
+  cover = 1.;
   float s0 = sampleCascade(uShadow0, uShadowM0, P + N * uShadowWT.x * 1.5, uShadowK.x * uShadowWT.x * sb, 1.8, rot);
   if (s0 >= 0.) return s0;
+  // the middle cascade has the ground in it; fade to the coarse terrain shadow at its edges
+  vec3 c1 = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  vec2 e = min(c1.xy, 1. - c1.xy);
+  cover = smoothstep(0.0, 0.08, min(e.x, e.y));
   float s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
   if (s1 >= 0.) return s1;
+  cover = 0.;
   float s2 = sampleCascade(uShadow2, uShadowM2, P + N * uShadowWT.z * 1.0, uShadowK.z * uShadowWT.z * sb, 1.2, rot);
   if (s2 >= 0.) return s2;
   return 1.;
 }
 float keyShadow(vec3 P, vec3 N){
-  return keyHorizon(P) * min(terrainShadow(P), cascadeShadow(P, N)) * cloudShadow(P);
+  float cover;
+  float c = cascadeShadow(P, N, cover);
+  return keyHorizon(P) * min(mix(terrainShadow(P), 1., cover), c) * cloudShadow(P);
 }
 `;
 

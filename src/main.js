@@ -104,7 +104,7 @@ async function boot() {
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer);
-  const shadows = new Shadows(renderer, tier === 'lite' ? 1024 : 2048);
+  const shadows = new Shadows(renderer, tier === 'lite' ? 1024 : 2048, tier === 'lite' ? 1024 : 4096);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   hero.flight.wind = wind;
@@ -322,6 +322,7 @@ async function boot() {
     village.update(camera);
     landmarks.update(camera, lite);
     // lite mode refreshes the shadow maps every third frame
+    terrain.setShadowCenter(viewC);
     if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
     terrain.update(camera, lite ? 0.22 : 1);
     if (!dbg.norefl) river.render(scene, camera, st);
