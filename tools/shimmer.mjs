@@ -1,10 +1,10 @@
 // Flicker benchmark. Two 5 second captures at a fixed 60 steps per second, every frame read back:
-//   A: sun frozen, camera sliding sideways at balloon speed
+//   A: sun frozen, the shadow cascades sliding at balloon speed as if the camera moved
 //   B: camera still, sun moving at the normal timelapse rate
 // Prints the mean frame-to-frame luma change the smooth trend doesn't explain (second difference along
 // each surface point's motion, 8-bit levels) over the whole frame and over a cliff-heavy crop. Lower is steadier. Runs on the shadow-only view by default
 // (textures moving past the camera score too, and would bury the shadow numbers); FULL=1 for the image.
-// usage: node tools/shimmer.mjs [A|B|C]   (env CAM overrides the view hash, RUNS repeats each test,
+// usage: node tools/shimmer.mjs [A|B|C|P]   (env CAM overrides the view hash, RUNS repeats each test,
 // SHOT=1 also saves the last frame and a heat map of where it flickered)
 import puppeteer from 'puppeteer-core';
 import path from 'path';
@@ -15,7 +15,11 @@ const W = 1600, H = 900;
 const CAM = process.env.CAM || 'at=church&d=150&up=55';
 const CROP = (process.env.CROP || '0.05,0.05,0.95,0.6').split(',').map(Number);
 const tests = {
-  A: `#h=15&freeze&hold&fixdt&res=1&${CAM}&pan=5,0,0`,
+  // the camera stays still: sliding it past hard edges scores high even when nothing flickers, as
+  // the reprojection resamples them. Sliding the shadow centres alone is what a moving balloon does
+  // to the shadows. P is the camera really panning, for the whole picture.
+  A: `#h=15&freeze&hold&fixdt&res=1&${CAM}&shadowpan=4,3`,
+  P: `#h=15&freeze&hold&fixdt&res=1&${CAM}&pan=5,0,0`,
   B: `#h=15&hold&fixdt&res=1&${CAM}`,
   // reference: nothing moves, so this is the floor the jitter and the noise leave behind
   C: `#h=15&freeze&fixdt&res=1&${CAM}`,

@@ -366,6 +366,12 @@ async function boot() {
     viewC.lerp(camera.position, 0.45);
     viewC.y = Math.max(viewC.y, data.height(viewC.x, viewC.z));
     farC.copy(viewC);
+    // test hook: shadowpan=x,z slides every shadow centre at that many m/s under a still camera, the
+    // way a moving balloon drags them, without the camera motion that would blur the measurement
+    if (dbg.shadowpan && !hold.on) {
+      const [px, pz] = dbg.shadowpan.split(',').map(Number), t = time - hold.t;
+      for (const v of [focus, viewC, farC]) { v.x += px * t; v.z += pz * t; }
+    }
     rocks.update(camera);
     veg.update(camera);
     village.update(camera);
