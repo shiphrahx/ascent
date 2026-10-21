@@ -9,9 +9,11 @@ uniform sampler2D uSkyLUT, uAmbCube;
 uniform float uHaze, uSnow, uFrost, uWet, uStorm, uNight, uCloud;
 uniform vec2 uWindDir, uGustOffset;
 uniform float uWindStrength;
-uniform sampler2D uShadow0, uShadow1, uShadow2;
-uniform mat4 uShadowM0, uShadowM1, uShadowM2;
-uniform vec3 uShadowK, uShadowWT;
+uniform sampler2D uShadow0, uShadow1, uShadow2, uShadow3;
+uniform mat4 uShadowM0, uShadowM1, uShadowM2, uShadowM3;
+uniform vec4 uShadowK, uShadowWT;
+uniform vec2 uShadowSplit;
+uniform vec3 uShadowEye;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
 uniform highp sampler2D uHeightCore, uHeightOuter;
 uniform sampler2D uNormCore, uNormOuter, uAttrCore;
@@ -89,17 +91,18 @@ float terrainShadow(vec3 P){
   float r = m > 0.5 ? smoothstep(hc - 3.0, hc + 0.5, P.y) : smoothstep(ho - 90., ho + 10., P.y);
   return r;
 }
-// cheaper single-tap version for volumetrics and particles
+// cheaper single-tap version for volumetrics and particles: the first slice that holds the point
+float tapCascade(sampler2D map, mat4 m, vec3 P, float bias, out bool inside){
+  vec3 c = (m * vec4(P, 1.)).xyz * 0.5 + 0.5;
+  inside = all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.;
+  return inside ? step(c.z - bias, textureLod(map, c.xy, 0.).r) : 1.;
+}
 float cascadeShadowFast(vec3 P){
-  float r = 1.;
-  vec3 c = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-  if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.) {
-    r = step(c.z - uShadowK.y * 1.5, textureLod(uShadow1, c.xy, 0.).r);
-  } else {
-    c = (uShadowM2 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-    if (all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.) r = step(c.z - uShadowK.z * 4., textureLod(uShadow2, c.xy, 0.).r);
-  }
-  return r;
+  bool in1, in2, in3;
+  float r = tapCascade(uShadow1, uShadowM1, P, uShadowK.y * 1.5, in1);
+  if (in1) return r;
+  if (uShadowSplit.y > 0.) { r = tapCascade(uShadow2, uShadowM2, P, uShadowK.z * 2., in2); if (in2) return r; }
+  return tapCascade(uShadow3, uShadowM3, P, uShadowK.w * 4., in3);
 }
 float cloudDensity2D(vec2 xz){
   vec2 uv = (xz + uCloudOffset) / 12000.;
@@ -216,6 +219,21 @@ float sampleCascade(sampler2D map, mat4 m, vec3 P, float bias, float radius, flo
   }
   return s / 8.;
 }
+// the view slices, picked by distance from the camera rather than by which map holds the point, so
+// turning the camera never moves a point from one slice to another
+float sliceShadow(vec3 P, vec3 N, float sb, float rot, out float cover){
+  float d = distance(P, uShadowEye);
+  cover = 1. - smoothstep(uShadowSplit.x * 0.85, uShadowSplit.x, d);
+  float s1 = -1., s2 = -1.;
+  float k = uShadowSplit.y > 0. ? smoothstep(uShadowSplit.x * 0.85, uShadowSplit.x, d) : 0.;
+  if (k < 1.) s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
+  if (k > 0. && d < uShadowSplit.y) s2 = sampleCascade(uShadow2, uShadowM2, P + N * uShadowWT.z * 1.5, uShadowK.z * uShadowWT.z * sb, 1.4, rot);
+  // a point outside a map (reflections see past the view) takes the other slice
+  if (s1 < 0.) { s1 = s2; k = 1.; }
+  if (s2 < 0.) { s2 = s1; k = 0.; }
+  if (s1 < 0.) { cover = 0.; return -1.; }
+  return mix(s1, s2, k);
+}
 float cascadeShadow(vec3 P, vec3 N, out float cover){
   // rotates every frame so the temporal pass averages the pattern away
   float rot = ign(gl_FragCoord.xy + 5.588238 * uTAAFrame) * 6.283;
@@ -224,23 +242,21 @@ float cascadeShadow(vec3 P, vec3 N, out float cover){
   cover = 1.;
   float s0 = sampleCascade(uShadow0, uShadowM0, P + N * uShadowWT.x * 1.5, uShadowK.x * uShadowWT.x * sb, 1.8, rot);
   if (s0 >= 0.) {
-    // fade into the main cascade over the outer edge, so its coarser shadows don't pop in
+    // fade into the slices over the outer edge, so their coarser shadows don't pop in
     vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
     vec2 e0 = min(c0.xy, 1. - c0.xy);
     float k = smoothstep(0.0, 0.12, min(e0.x, e0.y));
     if (k >= 1.) return s0;
-    float s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
+    float cv;
+    float s1 = sliceShadow(P, N, sb, rot, cv);
     return s1 >= 0. ? mix(s1, s0, k) : s0;
   }
-  // the middle cascade has the ground in it; fade to the coarse terrain shadow at its edges
-  vec3 c1 = (uShadowM1 * vec4(P, 1.)).xyz * 0.5 + 0.5;
-  vec2 e = min(c1.xy, 1. - c1.xy);
-  cover = smoothstep(0.0, 0.08, min(e.x, e.y));
-  float s1 = sampleCascade(uShadow1, uShadowM1, P + N * uShadowWT.y * 1.5, uShadowK.y * uShadowWT.y * sb, 1.4, rot);
+  // only the near slice has the ground grid in it; past it the coarse terrain shadow takes over
+  float s1 = sliceShadow(P, N, sb, rot, cover);
   if (s1 >= 0.) return s1;
   cover = 0.;
-  float s2 = sampleCascade(uShadow2, uShadowM2, P + N * uShadowWT.z * 1.0, uShadowK.z * uShadowWT.z * sb, 1.2, rot);
-  if (s2 >= 0.) return s2;
+  float s3 = sampleCascade(uShadow3, uShadowM3, P + N * uShadowWT.w * 1.0, uShadowK.w * uShadowWT.w * sb, 1.2, rot);
+  if (s3 >= 0.) return s3;
   return 1.;
 }
 float keyShadow(vec3 P, vec3 N){

@@ -109,7 +109,7 @@ async function boot() {
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer);
-  const shadows = new Shadows(renderer, tier === 'lite' ? 1024 : 2048, tier === 'lite' ? 1024 : 4096);
+  const shadows = new Shadows(renderer, tier);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   hero.flight.wind = wind;
@@ -359,27 +359,27 @@ async function boot() {
     }
     prof.begin('terrShadow');
     if (!lite || fN % 30 === 0) tshadow.update(fN < 2);
-    // cascades: basket detail, the area the camera looks at, wide for far balloons
+    // cascades: basket detail, slices of the view, wide for far balloons
     focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
     if (camera.position.distanceTo(focus) > 140) focus.copy(camera.position);
-    camera.getWorldDirection(viewC).multiplyScalar(500).add(camera.position);
-    viewC.lerp(camera.position, 0.45);
-    viewC.y = Math.max(viewC.y, data.height(viewC.x, viewC.z));
-    farC.copy(viewC);
+    camera.getWorldDirection(farC).multiplyScalar(275).add(camera.position);
+    farC.y = Math.max(farC.y, data.height(farC.x, farC.z));
     // test hook: shadowpan=x,z slides every shadow centre at that many m/s under a still camera, the
     // way a moving balloon drags them, without the camera motion that would blur the measurement
+    let shift = null;
     if (dbg.shadowpan && !hold.on) {
       const [px, pz] = dbg.shadowpan.split(',').map(Number), t = time - hold.t;
-      for (const v of [focus, viewC, farC]) { v.x += px * t; v.z += pz * t; }
+      shift = viewC.set(px * t, 0, pz * t);
     }
+    shadows.fit(camera, focus, farC, shift);
     rocks.update(camera);
     veg.update(camera);
     village.update(camera);
     landmarks.update(camera, lite);
     // lite mode refreshes the shadow maps every third frame
-    terrain.setShadowCenter(viewC);
+    terrain.setShadowCenter(shadows.cascades[1].center);
     prof.begin('shadows');
-    if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene, focus, viewC, farC);
+    if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene);
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
