@@ -108,7 +108,7 @@ async function boot() {
   G.hero = hero;
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
-  const tshadow = new TerrainShadow(renderer);
+  const tshadow = new TerrainShadow(renderer, tier);
   const shadows = new Shadows(renderer, tier);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
@@ -358,7 +358,7 @@ async function boot() {
       U.uGlowComp.value = 1 / (1 + 0.14 * exposure);
     }
     prof.begin('terrShadow');
-    if (!lite || fN % 30 === 0) tshadow.update(fN < 2);
+    tshadow.update(fN < 2);
     // cascades: basket detail, slices of the view, wide for far balloons
     focus.copy(hero.basket.position).add(new THREE.Vector3(0, 3, 0));
     if (camera.position.distanceTo(focus) > 140) focus.copy(camera.position);

@@ -48,6 +48,7 @@ export const U = {
   uShadowEye: { value: new THREE.Vector3() },
   uTerrShadow: { value: null },
   uTerrShadowOuter: { value: null },
+  uTerrBlend: { value: 1 },
   uHeightCore: { value: null },
   uHeightOuter: { value: null },
   uNormCore: { value: null },

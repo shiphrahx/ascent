@@ -15,6 +15,7 @@ uniform vec4 uShadowK, uShadowWT;
 uniform vec2 uShadowSplit;
 uniform vec3 uShadowEye;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
+uniform float uTerrBlend;
 uniform highp sampler2D uHeightCore, uHeightOuter;
 uniform sampler2D uNormCore, uNormOuter, uAttrCore;
 uniform vec4 uCoreBounds, uOuterBounds;
@@ -84,19 +85,18 @@ float keyHorizon(vec3 P){
   float dip = uDipK * sqrt(max(P.y + 20., 0.));
   return smoothstep(-0.004, 0.012, uKeyElev + dip);
 }
-float terrainShadow(vec3 P){
-  float m = coreMask(P.xz);
-  float hc = texture(uTerrShadow, coreUV(P.xz)).r;
+// lit nudges the edge that many metres toward lit. The penumbra widens with distance to the ridge
+// that casts it, about as fast as the sun's disc would spread it.
+float terrainShadowAt(vec3 P, float lit){
+  // one exit: the D3D compiler warns about the early return otherwise
+  vec4 t = texture(uTerrShadow, coreUV(P.xz));
+  vec2 s = mix(t.ba, t.rg, uTerrBlend);
+  float w = 0.6 + s.y * 0.005;
   float ho = texture(uTerrShadowOuter, outerUV(P.xz)).r;
-  float r = m > 0.5 ? smoothstep(hc - 3.0, hc + 0.5, P.y) : smoothstep(ho - 90., ho + 10., P.y);
-  return r;
+  return coreMask(P.xz) > 0.5 ? smoothstep(s.x - lit - w, s.x - lit + w, P.y) : smoothstep(ho - 90., ho + 10., P.y);
 }
-float terrainShadowSoft(vec3 P){
-  float m = coreMask(P.xz);
-  float hc = texture(uTerrShadow, coreUV(P.xz)).r;
-  float ho = texture(uTerrShadowOuter, outerUV(P.xz)).r;
-  return m > 0.5 ? smoothstep(hc - 4.0, hc - 0.5, P.y) : smoothstep(ho - 90., ho + 10., P.y);
-}
+float terrainShadow(vec3 P){ return terrainShadowAt(P, 0.); }
+float terrainShadowSoft(vec3 P){ return terrainShadowAt(P, 1.5); }
 // cheaper single-tap version for volumetrics and particles: the first slice that holds the point
 float tapCascade(sampler2D map, mat4 m, vec3 P, float bias, out bool inside){
   vec3 c = (m * vec4(P, 1.)).xyz * 0.5 + 0.5;
