@@ -27,7 +27,7 @@ uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
-uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn;
+uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
