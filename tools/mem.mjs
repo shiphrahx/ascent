@@ -23,13 +23,13 @@ const procMB = () => {
 };
 const secs = +(process.argv[2] || 90);
 await page.keyboard.down('KeyW');
-for (let t = 0; t <= secs; t += 10) {
+for (let t = 0; t <= secs; t += 5) {
   const m = await page.metrics();
   const p = procMB();
   const e = await page.evaluate(() => window.__dbg.extra());
-  console.log(`t=${String(t).padStart(3)}s heap=${(m.JSHeapUsedSize / 1048576).toFixed(0)}MB edge=${p.total}MB gpuProc=${p.gpu}MB fps=${e.fps} scale=${e.scale.toFixed(2)}`);
+  console.log(`t=${String(t).padStart(3)}s heap=${(m.JSHeapUsedSize / 1048576).toFixed(0)}MB edge=${p.total}MB gpuProc=${p.gpu}MB fps=${e.fps} gpu=${e.gpuMs}ms cpu=${e.cpuMs}ms scale=${e.scale.toFixed(2)} pos=${e.pos}`);
   if (t === 30) { await page.keyboard.up('KeyW'); await page.keyboard.down('KeyA'); }
   if (t === 50) { await page.keyboard.up('KeyA'); await page.keyboard.down('KeyW'); }
-  await new Promise(r => setTimeout(r, 10000));
+  await new Promise(r => setTimeout(r, 5000));
 }
 await browser.close();

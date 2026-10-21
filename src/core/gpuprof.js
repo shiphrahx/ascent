@@ -48,3 +48,34 @@ export class GpuProf {
     return o;
   }
 }
+
+// One timer around the whole frame's GPU work, for the resolution governor. Frame intervals are
+// rounded to whole vsync periods, so they can't tell 17ms of work from 30; this can.
+export class FrameTimer {
+  constructor(gl) {
+    this.gl = gl;
+    this.ext = gl.getExtension('EXT_disjoint_timer_query_webgl2');
+    this.pending = []; this.cur = null;
+    this.ms = 0; this.samples = 0;
+  }
+  get ok() { return !!this.ext && this.samples > 10; }
+  begin() {
+    if (!this.ext || this.cur || this.pending.length > 6) return;
+    this.cur = this.gl.createQuery();
+    this.gl.beginQuery(this.ext.TIME_ELAPSED_EXT, this.cur);
+  }
+  end() {
+    if (!this.cur) return;
+    this.gl.endQuery(this.ext.TIME_ELAPSED_EXT);
+    this.pending.push(this.cur); this.cur = null;
+    const gl = this.gl;
+    const disjoint = gl.getParameter(this.ext.GPU_DISJOINT_EXT);
+    while (this.pending.length && gl.getQueryParameter(this.pending[0], gl.QUERY_RESULT_AVAILABLE)) {
+      const q = this.pending.shift();
+      const ms = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6;
+      gl.deleteQuery(q);
+      if (disjoint || !(ms > 0)) continue;
+      this.ms = this.samples++ ? this.ms + (ms - this.ms) * 0.1 : ms;
+    }
+  }
+}
