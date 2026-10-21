@@ -23,7 +23,8 @@ export const U = {
   uSkyAmb: { value: c3() },
   uGroundAmb: { value: c3() },
   uSkyLUT: { value: null },
-  uAmbCube: { value: null },
+  // ambient cube: +x -x +y -y +z -z irradiance, from the sky probe
+  uAmb: { value: [0, 1, 2, 3, 4, 5].map(() => new THREE.Vector3(0.1, 0.12, 0.16)) },
   uHaze: { value: 1 },
   uSnow: { value: 0 },
   uFrost: { value: 0 },
@@ -40,7 +41,6 @@ export const U = {
   uShadowM1: { value: new THREE.Matrix4() },
   uShadow2: { value: null },
   uShadowM2: { value: new THREE.Matrix4() },
-  uShadow3: { value: null },
   uShadowM3: { value: new THREE.Matrix4() },
   uShadowK: { value: new THREE.Vector4(1, 1, 1, 1) },
   uShadowWT: { value: new THREE.Vector4(0.1, 1, 1, 4) },

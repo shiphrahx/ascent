@@ -49,7 +49,7 @@ export class Probe {
     this.renderer = renderer;
     this.rt = makeRT(6, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     this.mat = fsMaterial(FRAG, Object.assign({}, U, { uGroundAlbedo: { value: new THREE.Color(0.42, 0.37, 0.32) } }));
-    U.uAmbCube.value = this.rt.texture;
+    // read back to uniforms rather than sampled: every terrain texture unit is spoken for
     this.buf = new Float32Array(24);
     this.pending = false;
     this.frame = 0;
@@ -60,13 +60,19 @@ export class Probe {
     this.mat.uniforms.uGroundAlbedo.value.setRGB(0.42 + 0.4 * snow, 0.37 + 0.45 * snow, 0.32 + 0.52 * snow);
     renderFS(this.renderer, this.mat, this.rt);
     this.frame++;
-    if (!this.pending && (this.frame % 6 === 0 || !this.ok)) {
+    // the first read waits for the answer, so nothing renders unlit; after that it lands a frame or two late
+    if (!this.ok) { this.renderer.readRenderTargetPixels(this.rt, 0, 0, 6, 1, this.buf); this.take(); }
+    else if (!this.pending && this.renderer.readRenderTargetPixelsAsync) {
       this.pending = true;
-      const p = this.renderer.readRenderTargetPixelsAsync
-        ? this.renderer.readRenderTargetPixelsAsync(this.rt, 0, 0, 6, 1, this.buf)
-        : Promise.resolve(this.renderer.readRenderTargetPixels(this.rt, 0, 0, 6, 1, this.buf));
-      p.then(() => { this.pending = false; this.ok = true; this.up.setRGB(this.buf[8], this.buf[9], this.buf[10]); })
+      this.renderer.readRenderTargetPixelsAsync(this.rt, 0, 0, 6, 1, this.buf)
+        .then(() => { this.pending = false; this.take(); })
         .catch(() => { this.pending = false; });
-    }
+    } else if (!this.pending) { this.renderer.readRenderTargetPixels(this.rt, 0, 0, 6, 1, this.buf); this.take(); }
+  }
+  take() {
+    this.ok = true;
+    const b = this.buf, a = U.uAmb.value;
+    for (let i = 0; i < 6; i++) a[i].set(b[i * 4], b[i * 4 + 1], b[i * 4 + 2]);
+    this.up.setRGB(b[8], b[9], b[10]);
   }
 }

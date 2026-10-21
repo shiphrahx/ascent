@@ -5,11 +5,13 @@ uniform float uTime, uTAAFrame;
 uniform vec3 uSunDir, uMoonDir, uKeyDir;
 uniform vec3 uKeyColor, uSunColor, uSkyAmb, uGroundAmb;
 uniform float uKeyElev, uKeyIsSun;
-uniform sampler2D uSkyLUT, uAmbCube;
+uniform sampler2D uSkyLUT;
+uniform vec3 uAmb[6];
 uniform float uHaze, uSnow, uFrost, uWet, uStorm, uNight, uCloud;
 uniform vec2 uWindDir, uGustOffset;
 uniform float uWindStrength;
-uniform sampler2D uShadow0, uShadow1, uShadow2, uShadow3;
+// uShadow0 holds the basket cascade on its left half and the balloon cascade on its right
+uniform sampler2D uShadow0, uShadow1, uShadow2;
 uniform mat4 uShadowM0, uShadowM1, uShadowM2, uShadowM3;
 uniform vec4 uShadowK, uShadowWT;
 uniform vec2 uShadowSplit;
@@ -99,17 +101,18 @@ float terrainShadowAt(vec3 P, float lit){
 float terrainShadow(vec3 P){ return terrainShadowAt(P, 0.); }
 float terrainShadowSoft(vec3 P){ return terrainShadowAt(P, 1.5); }
 // cheaper single-tap version for volumetrics and particles: the first slice that holds the point
-float tapCascade(sampler2D map, mat4 m, vec3 P, float bias, out bool inside){
+// atl: x scale and offset of this cascade's square within its texture (the atlas holds two)
+float tapCascade(sampler2D map, mat4 m, vec3 P, float bias, vec2 atl, out bool inside){
   vec3 c = (m * vec4(P, 1.)).xyz * 0.5 + 0.5;
   inside = all(greaterThan(c.xy, vec2(0.003))) && all(lessThan(c.xy, vec2(0.997))) && c.z < 1.;
-  return inside ? step(c.z - bias, textureLod(map, c.xy, 0.).r) : 1.;
+  return inside ? step(c.z - bias, textureLod(map, vec2(c.x * atl.x + atl.y, c.y), 0.).r) : 1.;
 }
 float cascadeShadowFast(vec3 P){
-  bool in1, in2, in3;
-  float r = tapCascade(uShadow1, uShadowM1, P, uShadowK.y * 1.5, in1);
-  if (in1) return r;
-  if (uShadowSplit.y > 0.) { r = tapCascade(uShadow2, uShadowM2, P, uShadowK.z * 2., in2); if (in2) return r; }
-  return tapCascade(uShadow3, uShadowM3, P, uShadowK.w * 4., in3);
+  bool in1, in2 = false, in3;
+  float r = tapCascade(uShadow1, uShadowM1, P, uShadowK.y * 1.5, vec2(1, 0), in1);
+  if (!in1 && uShadowSplit.y > 0.) r = tapCascade(uShadow2, uShadowM2, P, uShadowK.z * 2., vec2(1, 0), in2);
+  if (!in1 && !in2) r = tapCascade(uShadow0, uShadowM3, P, uShadowK.w * 4., vec2(0.5, 0.5), in3);
+  return r;
 }
 float cloudDensity2D(vec2 xz){
   vec2 uv = (xz + uCloudOffset) / 12000.;
@@ -135,9 +138,9 @@ vec3 skyLut(vec3 d){
 }
 vec3 ambCube(vec3 n){
   vec3 n2 = n * n;
-  vec3 x = texelFetch(uAmbCube, ivec2(n.x > 0. ? 0 : 1, 0), 0).rgb;
-  vec3 y = texelFetch(uAmbCube, ivec2(n.y > 0. ? 2 : 3, 0), 0).rgb;
-  vec3 z = texelFetch(uAmbCube, ivec2(n.z > 0. ? 4 : 5, 0), 0).rgb;
+  vec3 x = n.x > 0. ? uAmb[0] : uAmb[1];
+  vec3 y = n.y > 0. ? uAmb[2] : uAmb[3];
+  vec3 z = n.z > 0. ? uAmb[4] : uAmb[5];
   return x * n2.x + y * n2.y + z * n2.z;
 }
 float hgPhase(float c, float g){ float g2 = g*g; return (1. - g2) / (12.566 * pow(1. + g2 - 2.*g*c, 1.5)); }
@@ -223,12 +226,14 @@ vec2 vogel(int i, int n, float rot){
 // texW: metres per texel, K: 1 / depth range in metres, floorW / searchW: smallest filter and widest
 // search radius in metres. -1 when P is outside this map.
 // One exit per function throughout: the D3D compiler warns about early returns from these.
-float sampleCascade(sampler2D map, mat4 m, vec3 P, vec3 N, float ndl, float texW, float K, float floorW, float searchW, float rot){
+float sampleCascade(sampler2D map, mat4 m, vec3 P, vec3 N, float ndl, float texW, float K, float floorW, float searchW, float rot, vec2 atl){
   vec4 sc = m * vec4(P + N * texW * 1.5, 1.);
   vec3 c = sc.xyz / sc.w * 0.5 + 0.5;
   float res = -1.;
   if (c.x > 0.002 && c.x < 0.998 && c.y > 0.002 && c.y < 0.998 && c.z <= 1.) {
-    float texel = 1. / float(textureSize(map, 0).x);
+    float texel = 1. / float(textureSize(map, 0).y);
+    // taps stay inside this cascade's square, so they never read the atlas neighbour
+    vec2 lo = vec2(0.5 * texel), hi = vec2(1. - 0.5 * texel);
     float tanT = min(sqrt(max(1. - ndl * ndl, 0.)) / max(ndl, 0.05), 4.);
     float rw = floorW;
     int n = 8;
@@ -238,7 +243,8 @@ float sampleCascade(sampler2D map, mat4 m, vec3 P, vec3 N, float ndl, float texW
       float sw = max(floorW, searchW), bias = K * (texW + sw * tanT * 0.25);
       float sum = 0., cnt = 0.;
       for (int i = 0; i < 8; i++) {
-        float d = textureLod(map, c.xy + vogel(i, 8, rot + 1.3) * (sw / texW * texel), 0.).r;
+        vec2 uv = clamp(c.xy + vogel(i, 8, rot + 1.3) * (sw / texW * texel), lo, hi);
+        float d = textureLod(map, vec2(uv.x * atl.x + atl.y, uv.y), 0.).r;
         if (d < c.z - bias) { sum += d; cnt += 1.; }
       }
       // nothing in the way anywhere it could matter
@@ -250,7 +256,8 @@ float sampleCascade(sampler2D map, mat4 m, vec3 P, vec3 N, float ndl, float texW
     float s = 0., r = rw / texW * texel;
     for (int i = 0; i < 16; i++) {
       if (i >= n || lit) break;
-      s += step(c.z - bias, textureLod(map, c.xy + vogel(i, n, rot) * r, 0.).r);
+      vec2 uv = clamp(c.xy + vogel(i, n, rot) * r, lo, hi);
+      s += step(c.z - bias, textureLod(map, vec2(uv.x * atl.x + atl.y, uv.y), 0.).r);
     }
     res = lit ? 1. : s / float(n);
   }
@@ -262,8 +269,8 @@ float sliceShadow(vec3 P, vec3 N, float ndl, float d, float rot){
   float s1 = -1., s2 = -1.;
   float k = uShadowSplit.y > 0. ? smoothstep(uShadowSplit.x * 0.85, uShadowSplit.x, d) : 0.;
   float fl = d * 0.002;
-  if (k < 1.) s1 = sampleCascade(uShadow1, uShadowM1, P, N, ndl, uShadowWT.y, uShadowK.y, max(fl, uShadowWT.y), 2., rot);
-  if (k > 0. && d < uShadowSplit.y) s2 = sampleCascade(uShadow2, uShadowM2, P, N, ndl, uShadowWT.z, uShadowK.z, max(fl, uShadowWT.z), 2., rot);
+  if (k < 1.) s1 = sampleCascade(uShadow1, uShadowM1, P, N, ndl, uShadowWT.y, uShadowK.y, max(fl, uShadowWT.y), 2., rot, vec2(1, 0));
+  if (k > 0. && d < uShadowSplit.y) s2 = sampleCascade(uShadow2, uShadowM2, P, N, ndl, uShadowWT.z, uShadowK.z, max(fl, uShadowWT.z), 2., rot, vec2(1, 0));
   // a point outside a map (reflections see past the view) takes the other slice
   if (s1 < 0.) { s1 = s2; k = 1.; }
   if (s2 < 0.) { s2 = s1; k = 0.; }
@@ -273,7 +280,7 @@ float cascadeShadow(vec3 P, vec3 N){
   float rot = fract(texelFetch(uNoise2D, ivec2(gl_FragCoord.xy) & 255, 0).a + uTAAFrame * 0.618034) * 6.283;
   float ndl = abs(dot(N, uKeyDir));
   float d = distance(P, uShadowEye);
-  float s0 = sampleCascade(uShadow0, uShadowM0, P, N, ndl, uShadowWT.x, uShadowK.x, max(d * 0.002, uShadowWT.x * 1.5), 0.5, rot);
+  float s0 = sampleCascade(uShadow0, uShadowM0, P, N, ndl, uShadowWT.x, uShadowK.x, max(d * 0.002, uShadowWT.x * 1.5), 0.5, rot, vec2(0.5, 0));
   // fade from the basket cascade into the slices over its outer edge, so their coarser shadows don't pop in
   vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
   vec2 e0 = min(c0.xy, 1. - c0.xy);
@@ -281,7 +288,7 @@ float cascadeShadow(vec3 P, vec3 N){
   float s = s0;
   if (k < 1.) {
     float s1 = sliceShadow(P, N, ndl, d, rot);
-    if (s1 < 0.) s1 = sampleCascade(uShadow3, uShadowM3, P, N, ndl, uShadowWT.w, uShadowK.w, uShadowWT.w * 1.2, 0., rot);
+    if (s1 < 0.) s1 = sampleCascade(uShadow0, uShadowM3, P, N, ndl, uShadowWT.w, uShadowK.w, uShadowWT.w * 1.2, 0., rot, vec2(0.5, 0.5));
     s1 = s1 < 0. ? 1. : s1;
     s = s0 >= 0. ? mix(s1, s0, k) : s1;
   }
