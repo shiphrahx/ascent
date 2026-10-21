@@ -286,7 +286,7 @@ void main(){
 #ifdef FACADE
   vec4 wp = modelMatrix * vec4(position, 1.0);
   vN = normalize(mat3(modelMatrix) * normal);
-  vInst = vec4(0.37, 0., 0., 0.); vPaint = aPaint;
+  vInst = vec4(0.37, 0., 1., 0.); vPaint = aPaint;
   vLocalY = 10.;
 #else
   vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
@@ -296,7 +296,8 @@ void main(){
   vWorld = wp.xyz;
   vMat = aMat; vAO = aAO;
 #ifdef DEPTH_PASS
-  vDepthAlpha = 1.;
+  // shadows switch LOD at the middle of the cross-fade rather than dithering, so they don't fizz
+  vDepthAlpha = (vInst.z > 0.5) == (vInst.y < 0.5) ? 1. : 0.;
 #endif
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
@@ -312,6 +313,11 @@ varying float vLocalY;
 void main(){
   vec3 P = vWorld;
   if (P.y < uClipY) discard;
+  // LOD cross-fade: inside the band both models draw, each keeping its share of the pixels by blue
+  // noise that steps every frame, so the temporal pass blends them instead of one popping to the
+  // other. vInst.y is how far through the band (0 all detailed), vInst.z says which model this is.
+  float dn = fract(texelFetch(uNoise2D, ivec2(gl_FragCoord.xy) & 255, 0).a + uTAAFrame * 0.618034);
+  if (vInst.z > 0.5 ? dn < vInst.y : dn >= vInst.y) discard;
   vec3 V = normalize(cameraPosition - P);
   float dist = length(cameraPosition - P);
   vec3 N = normalize(vN);
@@ -330,7 +336,9 @@ void main(){
   float relief = tuffRelief(P, N, length(fwidth(P)), 2, dPx, dPy, cav);
   N = bumpNormal(N, P, relief * (vMat < 0.5 ? 1. : 0.6));
   // scanned tuff for the grain, cracks and pocks
-  MatS rk = matBiplanar(L_TUFF, P, N0, 3.4, dPx, dPy);
+  // close up, parallax occlusion on the scanned tuff (high only)
+  float pom = uPOM * (1. - smoothstep(25., 50., length(cameraPosition - P))) * 0.35;
+  MatS rk = matBiplanarP(L_TUFF, P, N0, 3.4, dPx, dPy, normalize(cameraPosition - P), pom);
   vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
   vec3 rkT = mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
   N = normalize(N + rk.dn * 0.9 * fade);
@@ -374,7 +382,7 @@ void main(){
   alb = mix(alb, vec3(0.82, 0.86, 0.92), frost * 0.18);
 
   Surf s;
-  s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.15; s.sss = 0.;
+  s.albedo = alb; s.N = N; s.rough = specAA(N, rough); s.spec = spec; s.ao = ao; s.wrap = 0.15; s.sss = 0.;
   float sh = keyShadow(P, N);
   vec3 col = shadeSurf(s, P, V, sh);
   // lit windows after dusk
@@ -522,6 +530,7 @@ export class Rocks {
     this._pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this._f.setFromProjectionMatrix(this._pm);
     const cp = camera.position;
+    const split = G.tier === 'lite' ? 60 : 230, band = G.tier === 'lite' ? 16 : 40;
     for (const v of this.variants) {
       let nh = 0, nl = 0;
       const mh = v.hiMesh.instanceMatrix.array, ml = v.loMesh.instanceMatrix.array;
@@ -534,8 +543,10 @@ export class Rocks {
         if (!this._f.intersectsSphere(this._sph) && dist > 220) continue;
         this._q.setFromAxisAngle(this._p.set(0, 1, 0), o.rot);
         this._m.compose(this._p.set(o.x, o.y, o.z), this._q, this._s.set(o.s, o.sy, o.s));
-        if (dist < (G.tier === 'lite' ? 60 : 230)) { this._m.toArray(mh, nh * 16); ih[nh * 4] = o.seed; nh++; }
-        else { this._m.toArray(ml, nl * 16); il[nl * 4] = o.seed; nl++; }
+        // detailed model near, coarse far, both across a band where they dither from one to the other
+        const t = Math.max(0, Math.min(1, (dist - split + band / 2) / band));
+        if (t < 1) { this._m.toArray(mh, nh * 16); ih[nh * 4] = o.seed; ih[nh * 4 + 1] = t; ih[nh * 4 + 2] = 1; nh++; }
+        if (t > 0) { this._m.toArray(ml, nl * 16); il[nl * 4] = o.seed; il[nl * 4 + 1] = t; il[nl * 4 + 2] = 0; nl++; }
       }
       v.hiMesh.count = nh; v.loMesh.count = nl;
       v.hiMesh.instanceMatrix.needsUpdate = true; v.loMesh.instanceMatrix.needsUpdate = true;

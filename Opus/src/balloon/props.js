@@ -14,6 +14,7 @@ attribute vec2 aUV2;
 varying vec3 vWorld, vN, vObj, vCol;
 varying float vMat, vSeed;
 varying vec2 vUV2;
+varying float vLodT, vLodSide;
 #ifdef DEPTH_PASS
 varying float vDepthAlpha;
 #endif
@@ -28,15 +29,19 @@ void main(){
   mat4 B = uBones[int(aBone)];
   lp = B * lp; ln = mat3(B) * ln;
 #endif
-  vSeed = 0.;
+  vSeed = 0.; vLodT = 0.; vLodSide = 0.;
 #ifdef USE_INSTANCING
-  lp = instanceMatrix * lp; ln = mat3(instanceMatrix) * ln;
-  vSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
+  // a LOD cross-fade rides in the instance matrix's unused bottom row: [0][3] how far through the
+  // band, [1][3] which model (+1 detailed, -1 simple, 0 not fading). See Village.update.
+  mat4 IM = instanceMatrix;
+  vLodT = IM[0][3]; vLodSide = IM[1][3]; IM[0][3] = 0.; IM[1][3] = 0.;
+  lp = IM * lp; ln = mat3(IM) * ln;
+  vSeed = fract(sin(dot(IM[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
 #endif
   vec4 wp = modelMatrix * lp;
   vWorld = wp.xyz; vN = normalize(mat3(modelMatrix) * ln); vObj = position; vMat = aMat; vCol = aCol; vUV2 = aUV2;
 #ifdef DEPTH_PASS
-  vDepthAlpha = 1.;
+  vDepthAlpha = vLodSide == 0. || (vLodSide > 0.) == (vLodT < 0.5) ? 1. : 0.;
 #endif
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
@@ -48,7 +53,13 @@ uniform vec3 uLocalLightPos, uLocalLightCol;
 varying vec3 vWorld, vN, vObj, vCol;
 varying float vMat, vSeed;
 varying vec2 vUV2;
+varying float vLodT, vLodSide;
 void main(){
+  // LOD cross-fade, as the rocks do it: each model keeps its share of the pixels in the band
+  if (vLodSide != 0. && vLodT > 0. && vLodT < 1.) {
+    float dn = fract(texelFetch(uNoise2D, ivec2(gl_FragCoord.xy) & 255, 0).a + uTAAFrame * 0.618034);
+    if (vLodSide > 0. ? dn < vLodT : dn >= vLodT) discard;
+  }
   vec3 P = vWorld;
   if (P.y < uClipY) discard;
   vec3 V = normalize(cameraPosition - P);

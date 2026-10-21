@@ -27,7 +27,7 @@ uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
-uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn;
+uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp, uPOM;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
@@ -146,21 +146,32 @@ vec3 ambCube(vec3 n){
 }
 float hgPhase(float c, float g){ float g2 = g*g; return (1. - g2) / (12.566 * pow(1. + g2 - 2.*g*c, 1.5)); }
 
-// Aerial perspective: exponential height haze lit by the sky in the view direction.
+// Aerial perspective, in the sky LUT's own terms (world/skydome.js): Rayleigh air with an 8 km scale
+// height, which takes blue out fastest, plus the hour's aerosol haze (1.5 km, grey), each integrated in
+// closed form along the view ray. So distant ridges go blue-grey and keep some of their warmth, and
+// fade per channel toward the sky behind them, which is exactly the LUT's colour at the horizon.
+// The sun's share of the in-scatter is cut where the air along the way sits in terrain shadow, so
+// shaded valleys stay cooler and darker in the haze.
+float layerDepth(float Cy, float dy, float dist, float H){
+  float k = dy / H;
+  return exp(-Cy / H) * dist * (abs(k) > 1e-3 ? (1. - exp(-k)) / k : 1.);
+}
 vec3 applyHaze(vec3 col, vec3 P){
   vec3 C = cameraPosition;
   vec3 dv = P - C;
   float dist = length(dv);
   vec3 dir = dv / max(dist, 1e-3);
-  float H = 1500.;
-  float rho0 = uHaze / 32000.;
-  float k = dv.y / H;
-  float f = abs(k) > 1e-3 ? (1. - exp(-k)) / k : 1.;
-  float od = rho0 * exp(-(C.y + 40.) / H) * dist * f;
-  float T = exp(-od);
-  vec3 sky = skyLut(normalize(vec3(dir.x, max(dir.y, 0.015) , dir.z)));
+  // world y = 0 sits about 1100 m above sea level, where the LUT puts its observer
+  vec3 odR = vec3(5.802e-6, 13.558e-6, 33.1e-6) * exp(-1100. / 8000.) * layerDepth(C.y, dv.y, dist, 8000.);
+  float odA = uHaze / 32000. * 0.7 * exp(-40. / 1500.) * layerDepth(C.y, dv.y, dist, 1500.);
+  vec3 T = exp(-(odR + odA));
+  vec3 sky = skyLut(normalize(vec3(dir.x, max(dir.y, 0.015), dir.z)));
+  // how much of the air on the way is in the sun: three looks along the ray
+  float lit = 1.;
+  if (dist > 400.) lit = (terrainShadow(C + dv * 0.3) + terrainShadow(C + dv * 0.6) + terrainShadow(C + dv * 0.9)) / 3.;
+  float aer = odA / (odA + luma(odR) + 1e-9);
   float mie = hgPhase(dot(dir, uKeyDir), 0.72) * 6.0;
-  vec3 ins = sky * 0.95 + uKeyColor * mie * 0.06 * keyHorizon(P);
+  vec3 ins = sky * 0.95 * mix(0.35, 1., lit) + uKeyColor * mie * 0.06 * keyHorizon(P) * aer * lit;
   ins = mix(ins, vec3(luma(ins)) * vec3(0.94, 0.98, 1.04), uStorm * 0.6);
   return col * T + ins * (1. - T);
 }
@@ -383,6 +394,15 @@ float tuffRelief(vec3 P, vec3 N, float px, int octaves, vec3 dPx, vec3 dPy, out 
   }
   return h;
 }
+// Specular anti-aliasing (Kaplanyan and Tokuyoshi): where the shading normal turns a lot inside one
+// pixel, widen the highlight to cover the spread instead of letting it flash on and off between
+// frames. Call with the final normal, in uniform control flow (it takes derivatives).
+float specAA(vec3 N, float rough){
+  vec3 dx = dFdx(N), dy = dFdy(N);
+  float v = 0.25 * (dot(dx, dx) + dot(dy, dy));
+  float a2 = rough * rough * rough * rough;
+  return sqrt(sqrt(min(a2 + min(2. * v, 0.18), 1.)));
+}
 // bump from a scalar height via screen derivatives (Mikkelsen's surface gradient)
 vec3 bumpNormal(vec3 N, vec3 P, float h){
   vec3 dpdx = dFdx(P), dpdy = dFdy(P);
@@ -427,15 +447,41 @@ MatS matTop(float L, vec3 P, float scale, vec3 dPx, vec3 dPy, float k){
   m.h = nh.z;
   return m;
 }
-// biplanar (two dominant axes) for cliffs and chimneys
-MatS matBiplanar(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy){
+// Parallax occlusion: march the view ray into the scanned height (nh.z, 1 = proud) until it hits,
+// then refine between the last two steps. vp is the view direction across the plane, vn along its
+// normal, depth the relief in metres. Explicit gradients, so it's safe in branches.
+vec2 pomUV(float L, vec2 uv, vec2 vp, float vn, float depth, float scale, vec2 gx, vec2 gy){
+  vec2 du = -vp / max(vn, 0.25) * depth / scale;
+  const int N = 8;
+  vec2 st = du / float(N), u = uv;
+  float cur = 0., h = 1. - textureGrad(uSurfNH, vec3(u, L), gx, gy).z, hp = h;
+  for (int i = 0; i < N; i++) {
+    if (cur >= h) break;
+    hp = h; u += st; cur += 1. / float(N);
+    h = 1. - textureGrad(uSurfNH, vec3(u, L), gx, gy).z;
+  }
+  float after = h - cur, before = hp - cur + 1. / float(N);
+  return mix(u, u - st, sat(after / min(after - before, -1e-5)));
+}
+// biplanar (two dominant axes) for cliffs and chimneys; with pom > 0 (metres of relief) each plane's
+// lookup is parallax-offset along the view direction V
+MatS matBiplanarP(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy, vec3 V, float pom);
+MatS matBiplanar(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy){ return matBiplanarP(L, P, N, scale, dPx, dPy, vec3(0.), 0.); }
+MatS matBiplanarP(float L, vec3 P, vec3 N, float scale, vec3 dPx, vec3 dPy, vec3 V, float pom){
   vec3 n = abs(N);
   ivec3 ma = (n.x > n.y && n.x > n.z) ? ivec3(0, 1, 2) : (n.y > n.z) ? ivec3(1, 2, 0) : ivec3(2, 0, 1);
   ivec3 mi = (n.x < n.y && n.x < n.z) ? ivec3(0, 1, 2) : (n.y < n.z) ? ivec3(1, 2, 0) : ivec3(2, 0, 1);
   ivec3 me = ivec3(3) - mi - ma;
   vec3 p = P / scale, gx = dPx / scale, gy = dPy / scale;
-  MatS a = matPlanar(L, vec2(p[ma.y], p[ma.z]), vec2(gx[ma.y], gx[ma.z]), vec2(gy[ma.y], gy[ma.z]));
-  MatS b = matPlanar(L, vec2(p[me.y], p[me.z]), vec2(gx[me.y], gx[me.z]), vec2(gy[me.y], gy[me.z]));
+  vec2 ua = vec2(p[ma.y], p[ma.z]), ub = vec2(p[me.y], p[me.z]);
+  vec2 gax = vec2(gx[ma.y], gx[ma.z]), gay = vec2(gy[ma.y], gy[ma.z]), gbx = vec2(gx[me.y], gx[me.z]), gby = vec2(gy[me.y], gy[me.z]);
+  if (pom > 0.) {
+    float sa = sign(N[ma.x]), sb = sign(N[me.x]);
+    ua = pomUV(L, ua, vec2(V[ma.y], V[ma.z]), V[ma.x] * sa, pom, scale, gax, gay);
+    ub = pomUV(L, ub, vec2(V[me.y], V[me.z]), V[me.x] * sb, pom, scale, gbx, gby);
+  }
+  MatS a = matPlanar(L, ua, gax, gay);
+  MatS b = matPlanar(L, ub, gbx, gby);
   vec3 da = vec3(0), db = vec3(0);
   da[ma.y] = a.dn.x; da[ma.z] = a.dn.y;
   db[me.y] = b.dn.x; db[me.z] = b.dn.y;

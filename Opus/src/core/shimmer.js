@@ -3,7 +3,8 @@
 // way the temporal pass does it), and the second difference over those three samples is scored.
 // Smooth sweeps of light and the camera's own motion score near zero; shimmer, crawl and popping
 // score high. Pixels whose surface wasn't on screen in both earlier frames (edges, disocclusions)
-// and the sky are left out, so a moving silhouette doesn't count as flicker.
+// are left out, so a moving silhouette doesn't count as flicker. The sky is tracked by direction
+// and only scored when asked for (the clouds test).
 // Reported in 8-bit display levels, for the whole frame and one crop.
 import * as THREE from 'three';
 import { fsMaterial, renderFS, makeRT } from './fsq.js';
@@ -14,6 +15,7 @@ varying vec2 vUv;
 uniform sampler2D tCol;
 uniform highp sampler2D tDepth;
 uniform mat4 uInvVP;
+uniform vec3 uCam;
 uniform float uExposure;
 void main(){
   vec3 c = texture(tCol, vUv).rgb * uExposure;
@@ -21,8 +23,10 @@ void main(){
   float l = dot(c / (1. + c), vec3(0.2126, 0.7152, 0.0722));
   l = pow(max(l, 0.), 1. / 2.2) * 255.;
   float d = texture(tDepth, vUv).r;
-  vec4 wp = uInvVP * vec4(vUv * 2. - 1., d * 2. - 1., 1.);
-  gl_FragColor = vec4(l, d >= 1. ? vec3(1e9) : wp.xyz / wp.w);
+  vec4 wp = uInvVP * vec4(vUv * 2. - 1., min(d, 0.9999999) * 2. - 1., 1.);
+  vec3 W = wp.xyz / wp.w;
+  // the sky has no surface: keep a point far out along its direction, flagged by a negative level
+  gl_FragColor = d >= 1. ? vec4(-1. - l, uCam + normalize(W - uCam) * 1e5) : vec4(l, W);
 }
 `;
 const DIFF = /* glsl */`
@@ -31,21 +35,23 @@ varying vec2 vUv;
 uniform highp sampler2D tA, tB, tC;
 uniform mat4 uVPB, uVPC;
 uniform vec3 uCam;
-float look(highp sampler2D t, mat4 vp, vec3 W, out bool ok){
+uniform float uSky;
+float look(highp sampler2D t, mat4 vp, vec3 W, bool sky, out bool ok){
   vec4 p = vp * vec4(W, 1.);
   vec2 uv = p.xy / p.w * 0.5 + 0.5;
   vec4 s = texture(t, uv);
   ok = p.w > 0. && all(greaterThan(uv, vec2(0.002))) && all(lessThan(uv, vec2(0.998)))
-    && s.g < 1e8 && distance(s.gba, W) < 0.01 * distance(W, uCam) + 0.05;
-  return s.r;
+    && (sky ? s.r < 0. : s.r >= 0. && distance(s.gba, W) < 0.01 * distance(W, uCam) + 0.05);
+  return sky ? -1. - s.r : s.r;
 }
 void main(){
   vec4 a = texture(tA, vUv);
-  if (a.g > 1e8) { gl_FragColor = vec4(0.); return; }
-  bool okB, okC;
-  float b = look(tB, uVPB, a.gba, okB);
-  float c = look(tC, uVPC, a.gba, okC);
-  gl_FragColor = (okB && okC) ? vec4(abs(a.r - 2. * b + c), 1., 0., 1.) : vec4(0.);
+  bool sky = a.r < 0., okB, okC;
+  float l = sky ? -1. - a.r : a.r;
+  float b = look(tB, uVPB, a.gba, sky, okB);
+  float c = look(tC, uVPC, a.gba, sky, okC);
+  // sky pixels are scored only when asked (uSky), so the surface numbers stay comparable
+  gl_FragColor = (okB && okC && (!sky || uSky > 0.5)) ? vec4(abs(l - 2. * b + c), 1., 0., 1.) : vec4(0.);
 }
 `;
 
@@ -54,14 +60,15 @@ export class ShimmerProbe {
     this.renderer = renderer;
     this.left = 0;
     this.result = null;
-    this.store = fsMaterial(STORE, { tCol: { value: null }, tDepth: { value: null }, uInvVP: { value: new THREE.Matrix4() }, uExposure: { value: 1 } });
-    this.diff = fsMaterial(DIFF, { tA: { value: null }, tB: { value: null }, tC: { value: null }, uVPB: { value: new THREE.Matrix4() }, uVPC: { value: new THREE.Matrix4() }, uCam: { value: new THREE.Vector3() } });
+    this.store = fsMaterial(STORE, { tCol: { value: null }, tDepth: { value: null }, uInvVP: { value: new THREE.Matrix4() }, uCam: { value: new THREE.Vector3() }, uExposure: { value: 1 } });
+    this.diff = fsMaterial(DIFF, { tA: { value: null }, tB: { value: null }, tC: { value: null }, uVPB: { value: new THREE.Matrix4() }, uVPC: { value: new THREE.Matrix4() }, uCam: { value: new THREE.Vector3() }, uSky: { value: 0 } });
     this._vp = new THREE.Matrix4();
   }
   // crop is [x0, y0, x1, y1] in 0..1 of the frame, y down. The first lead frames aren't scored:
   // whatever was held still starts moving and the history settles.
-  start(frames, crop = [0, 0, 1, 1], lead = 30) {
+  start(frames, crop = [0, 0, 1, 1], lead = 30, sky = false) {
     this.left = frames + 2 + lead; this.lead = lead; this.crop = crop;
+    this.diff.uniforms.uSky.value = sky ? 1 : 0;
     this.hist = [];
     this.sum = 0; this.sumC = 0; this.n = 0; this.valid = 0;
     this.result = null; this.acc = null;
@@ -95,6 +102,7 @@ export class ShimmerProbe {
     const rt = this.hist.length === 3 ? this.hist.pop().rt : this.rts[this.hist.length];
     const su = this.store.uniforms;
     su.tCol.value = col; su.tDepth.value = depth; su.uInvVP.value.copy(vp).invert(); su.uExposure.value = exposure;
+    su.uCam.value.copy(camera.position);
     renderFS(r, this.store, rt);
     this.hist.unshift({ rt, vp: vp.clone() });
     if (this.hist.length === 3 && this.lead-- <= 0) {

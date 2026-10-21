@@ -43,11 +43,34 @@ varying float vSkirt;
 #ifdef DEPTH_PASS
 varying float vDepthAlpha;
 #endif
+// Near the camera the weathered relief the fragment shader bumps in becomes real geometry, so cliff
+// faces get a broken silhouette and their own small shadows: the two broad octaves of tuffRelief,
+// full on steep faces and a quarter on the flats (things stand on the flats, placed on the smooth
+// heights). Faded by distance from the main camera, also in the shadow pass, so the shadow grid
+// moves with it.
+float reliefVS(vec3 P, vec3 N){
+  vec3 w = pow(abs(N), vec3(4.)); w /= (w.x + w.y + w.z);
+  float h = 0.;
+  for (int i = 0; i < 2; i++) {
+    float s = i == 0 ? 24. : 7.5, o = float(i) * 0.37;
+    vec4 a = textureLod(uNoise2D, vec2(P.z, P.y * 0.45) / s + o, 0.) * w.x + textureLod(uNoise2D, P.xz / s + o, 0.) * w.y
+      + textureLod(uNoise2D, vec2(P.x, P.y * 0.45) / s + o, 0.) * w.z;
+    h += (a.r - 0.5 - a.b * a.b * 0.3) * s * 0.07;
+  }
+  return h;
+}
 void main(){
   vec2 xz = aChunk.xy + position.xz * aChunk.z;
   float h = heightAt(xz);
   h -= position.y * (2.0 + aChunk.z * 0.03);
   vec3 wp = vec3(xz.x, h, xz.y);
+  if (uTerrDisp > 0.5) {
+    float near = 1. - smoothstep(90., 150., distance(wp, uShadowEye));
+    if (near > 0.) {
+      vec3 n = normalAt(xz);
+      wp += n * reliefVS(wp, n) * mix(0.25, 1., smoothstep(0.25, 0.65, 1. - n.y)) * near;
+    }
+  }
   vWorld = wp; vSkirt = position.y;
 #ifdef DEPTH_PASS
   vDepthAlpha = 1.;
@@ -120,7 +143,9 @@ void main(){
   // a texture that contributes nothing isn't sampled; this stands in for it (its own mean, flat, mid height)
   MatS none; none.alb = vec3(0.); none.dn = vec3(0.); none.h = 0.5;
   MatS rk = none; rk.alb = vec3(0.44, 0.26, 0.125);
-  if (soilAmt < 0.999) rk = matBiplanar(L_TUFF, P, N0, 4.2, dPx, dPy);
+  // close up, cliffs get parallax occlusion on the scanned tuff (high only)
+  float pom = uPOM * (1. - smoothstep(30., 60., dist)) * steep * 0.45;
+  if (soilAmt < 0.999) rk = matBiplanarP(L_TUFF, P, N0, 4.2, dPx, dPy, V, pom);
   vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
   vec3 rock = tuffColor(P.y, rose, P.xz, var) * mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
   vec3 alb = rock;
@@ -221,7 +246,7 @@ void main(){
   alb = mix(alb, vec3(0.80, 0.84, 0.90), frost * 0.25);
 
   Surf s;
-  s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.12; s.sss = 0.;
+  s.albedo = alb; s.N = N; s.rough = specAA(N, rough); s.spec = spec; s.ao = ao; s.wrap = 0.12; s.sss = 0.;
   float sh = keyShadow(P, N);
   gHag = 0.;
   vec3 col = shadeSurf(s, P, V, sh);
@@ -248,10 +273,14 @@ export class Terrain {
     U.uAttrCore.value = data.texA;
     this.mat = makeMaterial({ vertex: VERT, fragment: FRAG, shadow: false });
     this.group = new THREE.Group();
-    // LOD levels: chunk grids with GRID, GRID/2, GRID/4, GRID/8 quads
+    // LOD levels: chunk grids with GRID*2 (high only, near the camera, for the displaced relief),
+    // GRID, GRID/2, GRID/4, GRID/8 quads
     this.levels = [];
-    for (let l = 0; l < 4; l++) {
-      const geo = gridGeometry(GRID >> l);
+    this.fine = tier === 'high';
+    U.uTerrDisp.value = this.fine ? 1 : 0;
+    U.uPOM.value = this.fine ? 1 : 0;
+    for (let l = 0; l < 5; l++) {
+      const geo = gridGeometry((GRID * 2) >> l);
       const maxInst = 1600;
       const inst = new THREE.InstancedBufferAttribute(new Float32Array(maxInst * 4), 4);
       inst.setUsage(THREE.DynamicDrawUsage);
@@ -334,7 +363,7 @@ export class Terrain {
   update(camera, lodBias = 1) {
     this._m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this._frustum.setFromProjectionMatrix(this._m);
-    const counts = [0, 0, 0, 0];
+    const counts = [0, 0, 0, 0, 0];
     const cp = camera.position;
     // nearest chunks first, so the ground in front hides the ground behind before it's shaded
     const vis = this._vis || (this._vis = []);
@@ -350,14 +379,14 @@ export class Terrain {
       const d = c.d;
       // spacing of a vertex at this LOD vs. distance
       let l;
-      if (c.core) l = d < 700 * lodBias ? 0 : d < 1600 * lodBias ? 1 : d < 3200 * lodBias ? 2 : 3;
-      else l = c.s <= 640 ? (d < 2500 * lodBias ? 1 : d < 6000 * lodBias ? 2 : 3) : (d < 6000 * lodBias ? 1 : d < 16000 * lodBias ? 2 : 3);
+      if (c.core) l = this.fine && d < 130 ? 0 : d < 700 * lodBias ? 1 : d < 1600 * lodBias ? 2 : d < 3200 * lodBias ? 3 : 4;
+      else l = c.s <= 640 ? (d < 2500 * lodBias ? 2 : d < 6000 * lodBias ? 3 : 4) : (d < 6000 * lodBias ? 2 : d < 16000 * lodBias ? 3 : 4);
       const L = this.levels[l];
       const k = counts[l]++;
       const a = L.inst.array;
       a[k * 4] = c.x; a[k * 4 + 1] = c.z; a[k * 4 + 2] = c.s; a[k * 4 + 3] = 0;
     }
-    for (let l = 0; l < 4; l++) {
+    for (let l = 0; l < 5; l++) {
       const L = this.levels[l];
       L.geo.instanceCount = counts[l];
       L.inst.needsUpdate = true;
