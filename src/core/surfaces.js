@@ -4,7 +4,7 @@
 //   uSurfNH  : OpenGL normal xy in rg, height in b
 // Layers: 0 tuff (sandstone_cracks), 1 steppe (grass_path_2), 2 soil (gravelly_sand), 3 plowed (brown_mud_dry).
 import * as THREE from 'three';
-import { U } from './shared.js';
+import { U, G } from './shared.js';
 import tuffAlb from '../assets/tuff_alb.jpg';
 import tuffNH from '../assets/tuff_nh.jpg';
 import steppeAlb from '../assets/steppe_alb.jpg';
@@ -34,7 +34,8 @@ async function arrayTexture(urls, srgb) {
   t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter;
-  t.generateMipmaps = true; t.anisotropy = 8;
+  // as much anisotropy as the GPU has: from the balloon nearly all the ground is seen at a slant
+  t.generateMipmaps = true; t.anisotropy = G.renderer ? G.renderer.capabilities.getMaxAnisotropy() : 8;
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   t.needsUpdate = true;
   return t;
