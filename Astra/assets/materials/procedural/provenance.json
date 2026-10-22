@@ -14,9 +14,10 @@
     "albedo": "sRGB base color; no directional lighting",
     "surface": "Linear RGB: roughness, height, ambient cavity visibility"
   },
+  "cavity": "Eight horizon directions, five radii, periodic height field; cosine-weighted visible hemisphere",
   "reliefMetres": {
-    "tuff": 0.1,
-    "soil": 0.035,
+    "tuff": 0.16,
+    "soil": 0.045,
     "masonry": 0.045
   }
 }

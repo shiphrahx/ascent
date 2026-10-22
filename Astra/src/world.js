@@ -24,7 +24,9 @@ export function createWorld(scene,renderer,camera){
  configureGeology(renderer.ascentQuality);
  const terrain=terrainGeometry();colors(terrain,(x,y,z)=>{const n=noise(x*3,z*3)*.025,shade=.95+n;return new THREE.Color(shade,shade*.97,shade*.92);});landscapeCells(terrain,stoneMaterial('#fff8ed',4),scene,600).name='Valley terrain';
  const farTerrain=createFarTerrain(scene,renderer);
- for(let i=0;i<6;i++)landscapeCells(erodedRidge(i),i%3===0?rose:cream,scene).name=`Eroded ridge ${i}`;
+ const ridgeSoilDetail=renderer.ascentQuality.name==='high';
+ const ridgeStone=[stoneMaterial('#dfcab2',6,ridgeSoilDetail),stoneMaterial('#d0a39a',6,ridgeSoilDetail)];
+ for(let i=0;i<6;i++)landscapeCells(erodedRidge(i),ridgeStone[i%3===0?1:0],scene).name=`Eroded ridge ${i}`;
  const volcano=mesh(volcanicMassif(),stoneMaterial('#e6dfd6',3),scene,[-6000,100,-17000],[1.8,1.8,1.8]);volcano.castShadow=false;
  const variants=Array.from({length:12},(_,i)=>chimneyGeometry(i+10));const capVariants=Array.from({length:6},(_,i)=>chimneyGeometry(i+70,true));const batches=Array.from({length:12},()=>[]),caps=Array.from({length:6},()=>[]);const dummy=new THREE.Object3D();
  // Related columns share overlapping talus bases along the first cliff feet.

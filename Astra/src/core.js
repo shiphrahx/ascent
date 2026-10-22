@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {tuffAlbedo,soilAlbedo,tuffSurface,soilSurface,masonryAlbedo,masonrySurface} from './material-assets.js';
 import {terraceHeight,valleyErosion} from './landforms.js';
+import {materialStrataGLSL} from './material-strata.js';
 export {THREE,mergeGeometries};
 export const TAU=Math.PI*2,clamp=THREE.MathUtils.clamp,lerp=THREE.MathUtils.lerp,smooth=THREE.MathUtils.smoothstep;
 export function rng(seed=4){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -123,11 +124,11 @@ export function landscapeCells(geometry,material,parent,cellSize=500){
  geometry.dispose();parent.add(result);return result;
 }
 export const rockTexture=tuffAlbedo;
-export function stoneMaterial(color='#c8a78d',type=0){
- const masonry=type===5;
+export function stoneMaterial(color='#c8a78d',type=0,soilDetail=true){
+ const masonry=type===5,terrain=type===4||type===6;
  const m=mat(color,{map:masonry?masonryAlbedo:rockTexture,bumpMap:masonry?masonrySurface:tuffSurface,bumpScale:.1,vertexColors:true});
  m.userData.surfaceOcclusion=true;
- m.color.lerp(new THREE.Color('#ffffff'),type===2?.15:.72);
+ m.color.lerp(new THREE.Color('#ffffff'),type===2?.12:.45);
  m.onBeforeCompile=s=>{
   Object.assign(s.uniforms,{uSnow:uniforms.snow,uFrost:uniforms.frost,uStorm:uniforms.storm,uSoil:{value:soilAlbedo},uSoilSurface:{value:soilSurface}});
   s.vertexShader='varying vec3 vWorld;varying vec3 vWN;attribute float aSurfaceAO;varying float vSurfaceAO;\n'+s.vertexShader;
@@ -140,6 +141,7 @@ export function stoneMaterial(color='#c8a78d',type=0){
   s.fragmentShader=`varying vec3 vWorld;varying vec3 vWN;varying float vSurfaceAO;uniform float uSnow,uFrost,uStorm;uniform sampler2D uSoil,uSoilSurface;
    float rh(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
    float rn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(rh(i),rh(i+vec2(1,0)),f.x),mix(rh(i+vec2(0,1)),rh(i+vec2(1,1)),f.x),f.y);}
+   ${materialStrataGLSL}
    `+s.fragmentShader;
   // World-space mapping removes stretched UVs on steep rock faces. Texture
   // mipmaps and derivative filtering suppress subpixel strata and frost sparkle.
@@ -149,25 +151,22 @@ export function stoneMaterial(color='#c8a78d',type=0){
    vec3 texel=texture2D(map,rockUV.zy).rgb*triWeight.x+texture2D(map,rockUV.xz).rgb*triWeight.y+texture2D(map,rockUV.xy).rgb*triWeight.z;
    vec3 surface=texture2D(bumpMap,rockUV.zy).rgb*triWeight.x+texture2D(bumpMap,rockUV.xz).rgb*triWeight.y+texture2D(bumpMap,rockUV.xy).rgb*triWeight.z;
    vec3 broadUV=vWorld*.027;
-   ${type===4||masonry?'':`vec3 broad=texture2D(map,vec2(broadUV.x+broadUV.z,broadUV.y)+vec2(.37,.63)).rgb;
+   ${terrain||masonry?'':`vec3 broad=texture2D(map,vec2(broadUV.x+broadUV.z,broadUV.y)+vec2(.37,.63)).rgb;
    texel=mix(texel,broad,.22);`}
-   ${type===4?`float soilBlend=smoothstep(.68,.96,normalize(vWN).y);
+   ${terrain?`float soilBlend=smoothstep(.64,.94,normalize(vWN).y);
    vec3 soil=texture2D(uSoil,vWorld.xz*.34).rgb;
    float soilPatch=rn(vWorld.xz*.014)*.65+rn(vWorld.xz*.045)*.35;
-   soil*=mix(vec3(.68,.72,.58),vec3(1.02,.93,.8),smoothstep(.25,.68,soilPatch));
+   float dryGrass=smoothstep(.44,.66,soilPatch)*smoothstep(.74,.96,normalize(vWN).y);
+   soil*=mix(vec3(.92,.84,.73),vec3(.76,.82,.56),dryGrass);
    texel=mix(texel,soil,soilBlend*.93);`:''}
-   ${type===4?'surface=mix(surface,texture2D(uSoilSurface,vWorld.xz*.34).rgb,soilBlend);':''}
+   ${terrain?(soilDetail?'surface=mix(surface,texture2D(uSoilSurface,vWorld.xz*.34).rgb,soilBlend);':'surface.r=mix(surface.r,.93,soilBlend);surface.b=mix(surface.b,.92,soilBlend);'):''}
    diffuseColor.rgb*=texel;
-   float channelWarp=rn(vec2(vWorld.y*.13,(vWorld.x+vWorld.z)*.12))*1.2;
-   float erosion=rn(vWorld.xz*.65)*triWeight.y+rn(vec2(vWorld.x*.65+channelWarp,vWorld.y*.045))*triWeight.z+rn(vec2(vWorld.z*.65+channelWarp,vWorld.y*.045))*triWeight.x;
-   float detailFade=1.-smoothstep(.4,1.8,length(fwidth(vWorld)));
-   diffuseColor.rgb*=.92+erosion*.16*detailFade;
-   float stoneHeight=surface.g*${masonry?'.045':type===4?'.035':'.10'};`);
+   // Fine colour/relief comes from mipmapped baked fields. Removing the old
+   // extra procedural grain avoids shimmer and pays for metre-scale strata.
+   float stoneHeight=surface.g*${masonry?'.045':terrain?'mix(.16,.045,soilBlend)':'.16'};`);
   s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-   float sediment=vWorld.y*1.15+rn(vWorld.xz*.035)*3.;
-   float band=sin(sediment)*exp(-.5*pow(fwidth(sediment),2.));
-   float mineral=rn(vWorld.xz*.031+vWorld.y*.008);
-   diffuseColor.rgb*=.9+.2*mineral+.025*band;
+   ${masonry?'':`diffuseColor.rgb*=mineralTint(vWorld);`}
+   ${masonry||type===2?'':`diffuseColor.rgb*=mix(vec3(1.),strataTint(vWorld),${terrain?'1.-soilBlend*.85':'.8'});`}
    float drift=rn(vWorld.xz*.025)*.5+rn(vWorld.xz*.08+5.)*.32+rn(vWorld.xz*.27)*.18;
    float edge=max(.055,fwidth(drift)*1.5);
    float shelter=rn(vWorld.xz*.012+11.);
@@ -185,10 +184,10 @@ export function stoneMaterial(color='#c8a78d',type=0){
    roughnessFactor=mix(surface.r,.88,cover);`);
   s.fragmentShader=s.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
    reflectedLight.indirectDiffuse*=vSurfaceAO*surface.b;
-   reflectedLight.indirectSpecular*=mix(1.,vSurfaceAO,.7);`);
+   reflectedLight.indirectSpecular*=mix(1.,vSurfaceAO*surface.b,.7);`);
   if(type===3)s.fragmentShader=s.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\nfloat fogFactor=1.-exp(-fogDensity*fogDensity*vFogDepth*vFogDepth*(.025+uStorm*.975));gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,fogFactor);\n#endif');
  };
- m.customProgramCacheKey=()=>`tuff-material-${type}`;
+ m.customProgramCacheKey=()=>`tuff-material-${type}-${soilDetail}`;
  return m;
 }
 export function colors(geo,f){const p=geo.attributes.position,a=[];for(let i=0;i<p.count;i++){const c=f(p.getX(i),p.getY(i),p.getZ(i),i);a.push(c.r,c.g,c.b);}geo.setAttribute('color',new THREE.Float32BufferAttribute(a,3));return geo;}

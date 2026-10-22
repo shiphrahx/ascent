@@ -215,3 +215,17 @@ File: `src/lighting.js`
 - Medium scene flicker: whole RMS 0.00150975, cliff RMS 0.00097668. Content changed; this remains a new baseline, not an isolated filter comparison.
 - Footings sample the whole sloping footprint while preserving summit heights; entrances follow local terrain. Browser checks test every actual base vertex against collision terrain. Minimum burial is 2.38 m on medium/lite and 0.17 m on high. The close-up harness waits for the launch fade before pausing.
 - Validation: deterministic placement tests, all three formation browser checks, gameplay, graphics and temporal suites passed. Personally inspected all matched views and a close carved-cone view. The grouping and silhouettes improve, while the flat lighting, repeated surface appearance and snow coverage still need the following phases.
+
+### Phase 2 - procedural materials
+
+- Added height-aligned 4-12 m cream, ochre, pink and grey mineral beds, with derivative filtering once beds become subpixel. World-space triplanar mapping continues across steep faces. Broader mineral fields and slope-weighted soil/dry-grass patches break up the single beige surface. Material colours retain more of their original tint.
+- All six maps remain deterministic procedural assets. Cavity visibility is now calculated from each height field along eight horizon directions and five radii with periodic boundaries; it affects indirect diffuse/specular light, not baked directional colour. Tuff has deeper pitted relief and broader roughness variation, with mipmaps, anisotropy and distance-faded bump normals. Mean cavity visibility is 0.887 for tuff, 0.819 for soil and 0.944 for masonry.
+- The initial shader cost more than the baseline. Removed a redundant procedural grain layer and kept the extra soil surface sample on ridge tops high-only. Medium/lite use averaged soil roughness/cavity there; close valley terrain retains the full soil material on every tier. Distant rings use the averaged soil surface on every tier. No geometry or material swaps occur during flight.
+
+| Final paired native flight, medium | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 1.3 build | 61.73 | 16.60 | 27.29 | 41.50 | 147/1852 |
+| Procedural strata and cavities | 67.47 | 16.60 | 25.00 | 25.10 | 36/2024 |
+
+- Scene flicker: whole RMS 0.00147737, cliff RMS 0.00089886, about 2% and 8% below Phase 1.3 respectively. These are scene proxies with changed materials, not proof that every source of temporal instability is resolved. The remaining long-tail stalls and recording-resolution budget are still open.
+- Validation: cavity-field unit tests, decoded material-channel checks, all three tier browser checks, gameplay, graphics and temporal suites passed. Personally inspected all four matched views: mineral beds and variation are visible, with the existing sky and scene layout preserved. Lighting remains too flat and is next.

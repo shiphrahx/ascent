@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {cavityVisibility} from '../tools/material-cavity.mjs';
+const size=32,flat=new Float32Array(size*size).fill(.5);
+assert(cavityVisibility(flat,size,4,.1).every(v=>v===1),'A flat field sees the full hemisphere');
+const pit=flat.slice();pit[16*size+16]=0;
+const v=cavityVisibility(pit,size,4,.5);
+assert(v[16*size+16]<.4,'A deep cavity loses ambient visibility');
+assert.equal(v[16*size+17],1,'Unobstructed rim stays unoccluded');
+const edge=flat.slice();edge[0]=0;
+assert.equal(cavityVisibility(edge,size,4,.5)[0],v[16*size+16],'Toroidal sampling preserves cavities across tile edges');
+assert(v.every(n=>Number.isFinite(n)&&n>=0&&n<=1));
+console.log('Material cavity: flat field, pit, rim, periodic boundary and finite range passed.');

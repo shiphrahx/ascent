@@ -1,0 +1,77 @@
+{
+  "maps": [
+    {
+      "name": "tuffSurface",
+      "colorSpace": "",
+      "width": 1024,
+      "height": 1024,
+      "minimum": [
+        206,
+        0,
+        115
+      ],
+      "maximum": [
+        234,
+        167,
+        255
+      ],
+      "mean": [
+        0.846433624578334,
+        0.4118587157310909,
+        0.8870376624329106
+      ],
+      "cavityFraction": 0.30061912536621094,
+      "mipmaps": true,
+      "anisotropy": 16
+    },
+    {
+      "name": "soilSurface",
+      "colorSpace": "",
+      "width": 1024,
+      "height": 1024,
+      "minimum": [
+        209,
+        32,
+        115
+      ],
+      "maximum": [
+        239,
+        188,
+        255
+      ],
+      "mean": [
+        0.9278603123777439,
+        0.28805092082320594,
+        0.8189737058202925
+      ],
+      "cavityFraction": 0.758784294128418,
+      "mipmaps": true,
+      "anisotropy": 16
+    },
+    {
+      "name": "masonrySurface",
+      "colorSpace": "",
+      "width": 1024,
+      "height": 1024,
+      "minimum": [
+        224,
+        30,
+        155
+      ],
+      "maximum": [
+        239,
+        192,
+        255
+      ],
+      "mean": [
+        0.9082827138109815,
+        0.563371968736136,
+        0.9440475538680382
+      ],
+      "cavityFraction": 0.24391937255859375,
+      "mipmaps": true,
+      "anisotropy": 16
+    }
+  ],
+  "errors": []
+}

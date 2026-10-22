@@ -37,7 +37,7 @@ export function createFarTerrain(scene,renderer){
    }
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ix);g.computeVertexNormals();
-  const material=stoneMaterial('#c9b9a8'),compile=material.onBeforeCompile,key=material.customProgramCacheKey();
+  const material=stoneMaterial('#c9b9a8',6,false),compile=material.onBeforeCompile,key=material.customProgramCacheKey();
   material.onBeforeCompile=shader=>{
    compile(shader);
    Object.assign(shader.uniforms,{uFarHeight:{value:texture},uFarCenter:center,uFarEye:eye,uFarStep:{value:step},uFarParentStep:{value:parentStep},uFarExtent:{value:extent}});

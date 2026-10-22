@@ -1,0 +1,74 @@
+[
+  {
+    "tier": {
+      "name": "medium",
+      "pixelBudget": 2800000,
+      "maxDpr": 2,
+      "samples": 4,
+      "shadowSize": 2048,
+      "reflectionSize": 768,
+      "reflectionHz": 30,
+      "reflectionFrames": 2,
+      "skyWidth": 4096,
+      "cloudSteps": 96,
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "source": "override"
+    },
+    "msaa": 4,
+    "shadow": 2048,
+    "reflection": 768,
+    "sky": 4096,
+    "trees": 240,
+    "terrainTriangles": 326000,
+    "contextLost": false,
+    "errors": []
+  },
+  {
+    "tier": {
+      "name": "lite",
+      "pixelBudget": 1300000,
+      "maxDpr": 1,
+      "samples": 2,
+      "shadowSize": 1024,
+      "reflectionSize": 384,
+      "reflectionHz": 15,
+      "reflectionFrames": 4,
+      "skyWidth": 2048,
+      "cloudSteps": 48,
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "source": "override"
+    },
+    "msaa": 2,
+    "shadow": 1024,
+    "reflection": 384,
+    "sky": 2048,
+    "trees": 240,
+    "terrainTriangles": 326000,
+    "contextLost": false,
+    "errors": []
+  },
+  {
+    "tier": {
+      "name": "high",
+      "pixelBudget": 8300000,
+      "maxDpr": 2,
+      "samples": 4,
+      "shadowSize": 2048,
+      "reflectionSize": 1024,
+      "reflectionHz": 30,
+      "reflectionFrames": 2,
+      "skyWidth": 4096,
+      "cloudSteps": 96,
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "source": "override"
+    },
+    "msaa": 4,
+    "shadow": 2048,
+    "reflection": 1024,
+    "sky": 4096,
+    "trees": 240,
+    "terrainTriangles": 980000,
+    "contextLost": false,
+    "errors": []
+  }
+]

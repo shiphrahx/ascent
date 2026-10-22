@@ -1,5 +1,6 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import {deflateSync} from 'node:zlib';
+import {cavityVisibility} from './material-cavity.mjs';
 
 // Deterministic, seamless material fields. Build-time work never enters a frame.
 const size=1024,clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
@@ -11,7 +12,7 @@ function png(pixels){const header=Buffer.alloc(13);header.writeUInt32BE(size);he
 export async function generateMaterials(){
  await mkdir('assets/materials/procedural',{recursive:true});
  for(const kind of ['tuff','soil','masonry']){
-  const albedo=Buffer.alloc(size*size*3),surface=Buffer.alloc(size*size*3);
+  const albedo=Buffer.alloc(size*size*3),surface=Buffer.alloc(size*size*3),heights=new Float32Array(size*size);
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
    const u=x/size,v=y/size,q=(x+y*size)*3;
    const broad=noise(u,v,4,71),medium=noise(u,v,16,13),fine=noise(u,v,64,33),grain=noise(u,v,256,91);
@@ -19,10 +20,10 @@ export async function generateMaterials(){
    if(kind==='tuff'){
     // Mineral color is independent of elevation: dark grains are not cavities.
     const bedding=noise(u,v,8,45),pore=clamp((.32-fine)*5),pit=clamp((.24-grain)*5);
-    h=.45+(medium-.5)*.28+(fine-.5)*.13-pore*.2-pit*.055;
-    const mineral=(broad-.5)*22+(bedding-.5)*12, fleck=(grain-.5)*4;
-    r=183+mineral+fleck;g=165+mineral*.92+fleck;b=143+mineral*.84+fleck;
-    rough=.84+fine*.09;ao=1-pore*.2-pit*.08;
+    h=.45+(medium-.5)*.30+(fine-.5)*.13-pore*.24-pit*.07;
+    const mineral=(broad-.5)*18+(bedding-.5)*10, fleck=(grain-.5)*2;
+    r=191+mineral+fleck;g=179+mineral*.92+fleck;b=160+mineral*.84+fleck;
+    rough=.76+fine*.16+pore*.06;
    }else if(kind==='soil'){
     const cell=128,cx=Math.floor(u*cell),cy=Math.floor(v*cell),fx=u*cell-cx,fy=v*cell-cy;
     let pebble=0,tone=0;
@@ -47,9 +48,14 @@ export async function generateMaterials(){
    }
    albedo[q]=clamp(r,0,255);albedo[q+1]=clamp(g,0,255);albedo[q+2]=clamp(b,0,255);
    surface[q]=rough*255;surface[q+1]=clamp(h)*255;surface[q+2]=ao*255;
+   heights[y*size+x]=clamp(h);
   }
+  // Actual height-based horizon visibility supplies cavities, without baking
+  // a directional shadow into base colour or darkening open high points.
+  const visibility=cavityVisibility(heights,size,kind==='soil'?3:4,kind==='tuff'?.16:kind==='soil'?.045:.045);
+  for(let i=0;i<visibility.length;i++)surface[i*3+2]=Math.round(255*Math.max(.45,visibility[i]));
   await writeFile(`assets/materials/procedural/${kind}-albedo.png`,png(albedo));
   await writeFile(`assets/materials/procedural/${kind}-surface.png`,png(surface));
  }
- await writeFile('assets/materials/procedural/provenance.json',JSON.stringify({generator:'tools/generate-materials.mjs',source:'Seeded mathematical fields; no photographs, scans, or generated bitmap artwork.',resolution:[size,size],tileMetres:{tuff:4,soil:3,masonry:4},channels:{albedo:'sRGB base color; no directional lighting',surface:'Linear RGB: roughness, height, ambient cavity visibility'},reliefMetres:{tuff:.10,soil:.035,masonry:.045}},null,2)+'\n');
+ await writeFile('assets/materials/procedural/provenance.json',JSON.stringify({generator:'tools/generate-materials.mjs',source:'Seeded mathematical fields; no photographs, scans, or generated bitmap artwork.',resolution:[size,size],tileMetres:{tuff:4,soil:3,masonry:4},channels:{albedo:'sRGB base color; no directional lighting',surface:'Linear RGB: roughness, height, ambient cavity visibility'},cavity:'Eight horizon directions, five radii, periodic height field; cosine-weighted visible hemisphere',reliefMetres:{tuff:.16,soil:.045,masonry:.045}},null,2)+'\n');
 }
