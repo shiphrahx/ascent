@@ -1,6 +1,6 @@
 // A/B a runtime toggle in one session, alternating several times so laptop GPU throttling drifts
 // out of the comparison. Reports the mean GPU ms of one pass under each setting.
-// usage: node tools/ab.mjs "#h=14.5" pass "jsA" "jsB" [rounds]
+// usage: node tools/ab.mjs "#h=14.5" pass "jsA" "jsB" [rounds]   (pass: a GPU pass, total, or cpu)
 import puppeteer from 'puppeteer-core';
 import path from 'path';
 import { pathToFileURL } from 'url';
@@ -19,8 +19,9 @@ const res = { A: [], B: [] };
 for (let i = 0; i < +rounds; i++) for (const [k, js] of [['A', A], ['B', B]]) {
   await page.evaluate(js);
   await wait(3500);
-  const r = await page.evaluate(() => window.__dbg.gpu());
-  res[k].push(pass === 'total' ? r.total : r[pass]);
+  // pass 'cpu': the frame's CPU time (an average over the last second or so) instead of a GPU pass
+  const r = await page.evaluate(() => Object.assign(window.__dbg.gpu(), { cpu: window.__dbg.extra().cpuMs }));
+  res[k].push(r[pass]);
 }
 const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
 // the median holds up better when the laptop throttles partway through
