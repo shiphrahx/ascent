@@ -66,6 +66,10 @@ export const U = {
   uHazeLit: { value: 1 },
   uHeroBurnerPos: { value: new THREE.Vector3() },
   uHeroBurnerCol: { value: new THREE.Color(0, 0, 0) },
+  // what's in the burner light's way: the envelope's mouth (w: 0 while it's lying on the ground) and
+  // the basket floor's centre
+  uHeroMouth: { value: new THREE.Vector4() },
+  uHeroBasket: { value: new THREE.Vector3() },
   uCoreBounds: { value: new THREE.Vector4(WORLD.core.minX, WORLD.core.minZ, WORLD.core.sizeX, WORLD.core.sizeZ) },
   uOuterBounds: { value: new THREE.Vector4(WORLD.outer.minX, WORLD.outer.minZ, WORLD.outer.sizeX, WORLD.outer.sizeZ) },
   uNoise2D: { value: null },

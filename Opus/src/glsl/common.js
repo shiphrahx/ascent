@@ -5,7 +5,8 @@ uniform float uTime, uTAAFrame;
 uniform vec3 uSunDir, uMoonDir, uKeyDir;
 uniform vec3 uKeyColor, uSunColor, uSkyAmb, uGroundAmb;
 uniform float uKeyElev, uKeyIsSun;
-uniform vec3 uHeroBurnerPos, uHeroBurnerCol;
+uniform vec3 uHeroBurnerPos, uHeroBurnerCol, uHeroBasket;
+uniform vec4 uHeroMouth;
 uniform sampler2D uSkyLUT;
 uniform vec3 uAmb[6];
 uniform float uHaze, uSnow, uFrost, uWet, uStorm, uNight, uCloud;
@@ -228,50 +229,74 @@ vec3 groundBounce(vec3 P, vec3 n, float hag, float vis){
 // alpha; alpha 1, the default, means unknown and gets the old treatment.
 float gDirect = 0.;
 float gBurner = 1.;
+// How much of the hero's burner reaches P: the envelope above the flame (an ellipsoid over the
+// mouth, envelope.js's profile) and the basket below it (an upright cylinder) are tested against the
+// line to the flame, softly at their edges. No shadow map: the ground right under the basket goes
+// dark, and nothing above the mouth sees the flame through the fabric.
+float burnerVis(vec3 P){
+  vec3 B = uHeroBurnerPos;
+  float v = 1.;
+  if (uHeroMouth.w > 0.5) {
+    vec3 R = vec3(8.7, 10.6, 8.7), C = uHeroMouth.xyz + vec3(0., 11.2, 0.);
+    vec3 b = (B - C) / R, d = (P - C) / R - b;
+    float t = sat(-dot(b, d) / max(dot(d, d), 1e-6));
+    v = smoothstep(0.92, 1.05, length(b + d * t));
+    // where the line drops through the top of the basket, how far it is from the basket's middle
+    float top = uHeroBasket.y + 1.12;
+    if (P.y < top && B.y > top) {
+      vec2 q = mix(B.xz, P.xz, (B.y - top) / (B.y - P.y)) - uHeroBasket.xz;
+      v *= smoothstep(0.8, 1.2, length(q));
+    }
+  }
+  return v;
+}
 float litAlpha(vec3 c){ return 1. - 0.999 * sat(gDirect / max(luma(c), 1e-5)); }
 vec3 shadeSurf(Surf s, vec3 P, vec3 V, float shadow){
   // test hook: shadowview shows only the key light's shadow term, grey on grey; shadowview=flat
   // shows flat grey, the control for everything that isn't the shadows
-  if (uDbgShadow > 0.5) return vec3(uDbgShadow > 2.5 ? 0.04 + 0.5 * terrainShadowSoft(P) : uDbgShadow > 1.5 ? 0.3 : 0.04 + 0.5 * shadow);
-  vec3 L = uKeyDir, N = s.N;
-  float ndlRaw = dot(N, L);
-  float ndl = max(ndlRaw, 0.);
-  float ndv = max(dot(N, V), 1e-3);
-  float w = max(0., s.wrap - 0.2);
-  float diff = max(0., (ndlRaw + w) / ((1. + w) * (1. + w)));
-  vec3 key = uKeyColor * diff * shadow;
-  // translucency through thin things lit from behind
-  key += uKeyColor * s.sss * pow(sat(dot(-V, L)), 3.) * (0.35 + 0.65 * shadow) * 0.6;
-  float rough = clamp(s.rough, 0.04, 1.);
-  float a = rough * rough, a2 = a * a;
-  vec3 H = normalize(L + V);
-  float ndh = max(dot(N, H), 0.), ldh = max(dot(L, H), 0.);
-  float dd = ndh * ndh * (a2 - 1.) + 1.;
-  float D = a2 / (3.14159 * dd * dd);
-  float vis = 0.5 / (ndl * sqrt(ndv * ndv * (1. - a2) + a2) + ndv * sqrt(ndl * ndl * (1. - a2) + a2) + 1e-5);
-  // spec scales reflectance: 0.04 is any common dielectric, wet and icy surfaces push past it
-  float F0 = 0.02 + 0.06 * s.spec;
-  float F = F0 + (1. - F0) * pow(1. - ldh, 5.);
-  float hag = hagAt(P);
-  vec4 sv = skyVisAt(P, hag);
-  vec3 An = normalize(N + sv.xyz);
-  vec3 amb = max(ambCube(An) * sv.w + groundBounce(P, An, hag, sv.w), 0.);
-  vec3 col = s.albedo * (key + amb * s.ao) * (1. - F0);
-  col += uKeyColor * (D * vis * F * ndl * shadow);
-  gDirect = luma(s.albedo * key * (1. - F0) + uKeyColor * (D * vis * F * ndl * shadow));
-  // sky reflection, darkened where the surface is occluded (specular occlusion from AO)
-  float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);
-  float so = sat(pow(ndv + s.ao, exp2(-16. * a - 1.)) - 1. + s.ao);
-  col += envSpecular(reflect(-V, N), rough) * Fe * so * sv.w;
-  // the hero's burner as a point light, out to 90 m: enough to reach the ground from the height it
-  // flies at (props.js lights the basket and crew itself, so it turns this off with gBurner)
-  if (uHeroBurnerCol.r > 1e-3 && gBurner > 0.5) {
-    vec3 tb = uHeroBurnerPos - P;
-    float d2 = dot(tb, tb);
-    if (d2 < 8100.) {
-      float w = max(0., s.wrap - 0.2);
-      float nl = max(0., (dot(N, tb * inversesqrt(d2)) + w) / (1. + w));
-      col += s.albedo * uHeroBurnerCol * nl / (1. + d2) * (1. - smoothstep(4900., 8100., d2));
+  // (one exit: the D3D compiler warns about the early return otherwise)
+  vec3 col = vec3(uDbgShadow > 2.5 ? 0.04 + 0.5 * terrainShadowSoft(P) : uDbgShadow > 1.5 ? 0.3 : 0.04 + 0.5 * shadow);
+  if (uDbgShadow < 0.5) {
+    vec3 L = uKeyDir, N = s.N;
+    float ndlRaw = dot(N, L);
+    float ndl = max(ndlRaw, 0.);
+    float ndv = max(dot(N, V), 1e-3);
+    float w = max(0., s.wrap - 0.2);
+    float diff = max(0., (ndlRaw + w) / ((1. + w) * (1. + w)));
+    vec3 key = uKeyColor * diff * shadow;
+    // translucency through thin things lit from behind
+    key += uKeyColor * s.sss * pow(sat(dot(-V, L)), 3.) * (0.35 + 0.65 * shadow) * 0.6;
+    float rough = clamp(s.rough, 0.04, 1.);
+    float a = rough * rough, a2 = a * a;
+    vec3 H = normalize(L + V);
+    float ndh = max(dot(N, H), 0.), ldh = max(dot(L, H), 0.);
+    float dd = ndh * ndh * (a2 - 1.) + 1.;
+    float D = a2 / (3.14159 * dd * dd);
+    float vis = 0.5 / (ndl * sqrt(ndv * ndv * (1. - a2) + a2) + ndv * sqrt(ndl * ndl * (1. - a2) + a2) + 1e-5);
+    // spec scales reflectance: 0.04 is any common dielectric, wet and icy surfaces push past it
+    float F0 = 0.02 + 0.06 * s.spec;
+    float F = F0 + (1. - F0) * pow(1. - ldh, 5.);
+    float hag = hagAt(P);
+    vec4 sv = skyVisAt(P, hag);
+    vec3 An = normalize(N + sv.xyz);
+    vec3 amb = max(ambCube(An) * sv.w + groundBounce(P, An, hag, sv.w), 0.);
+    col = s.albedo * (key + amb * s.ao) * (1. - F0);
+    col += uKeyColor * (D * vis * F * ndl * shadow);
+    gDirect = luma(s.albedo * key * (1. - F0) + uKeyColor * (D * vis * F * ndl * shadow));
+    // sky reflection, darkened where the surface is occluded (specular occlusion from AO)
+    float Fe = F0 + (max(1. - rough, F0) - F0) * pow(1. - ndv, 5.);
+    float so = sat(pow(ndv + s.ao, exp2(-16. * a - 1.)) - 1. + s.ao);
+    col += envSpecular(reflect(-V, N), rough) * Fe * so * sv.w;
+    // the hero's burner as a point light, out to 90 m: enough to reach the ground from the height it
+    // flies at (props.js lights the basket and crew itself, so it turns this off with gBurner)
+    if (uHeroBurnerCol.r > 1e-3 && gBurner > 0.5) {
+      vec3 tb = uHeroBurnerPos - P;
+      float d2 = dot(tb, tb);
+      if (d2 < 8100.) {
+        float w = max(0., s.wrap - 0.2);
+        float nl = max(0., (dot(N, tb * inversesqrt(d2)) + w) / (1. + w));
+        col += s.albedo * uHeroBurnerCol * nl / (1. + d2) * (1. - smoothstep(4900., 8100., d2)) * burnerVis(P);
+      }
     }
   }
   return col;

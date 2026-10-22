@@ -170,7 +170,7 @@ export class Village {
   constructor(scene, data, rocks) {
     this.data = data;
     const rng = mulberry32(31);
-    this.mat = propMaterial(false);
+    this.mat = propMaterial(false, true);
     this.chimneys = [];
     this.lamps = [];
     this.windows = [];

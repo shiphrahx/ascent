@@ -74,22 +74,24 @@ function transmittance(elev, out, haze = 1) {
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const lerp = (a, b, t) => a + (b - a) * t;
 
-// keyframed look, by hour (wraps). Colours are linear.
+// keyframed look, by hour (wraps). Colours are linear. Exposures and shadow tints sit 0.72^(1/contrast)
+// below what they were tuned at: that's where the tone curve's old input scale went (post/post.js),
+// so UE's curve runs at its own defaults and each hour comes out as bright as before.
 const KEYS = [
   // h, exposure, shadowTint, highTint, sat, contrast, bloom
-  { h: 0.0, exp: 1.0, sh: [0.010, 0.020, 0.050], hi: [0.80, 0.92, 1.12], sat: 0.72, con: 1.04, bloom: 0.9 },
-  { h: 4.7, exp: 1.0, sh: [0.012, 0.022, 0.055], hi: [0.82, 0.92, 1.10], sat: 0.78, con: 1.04, bloom: 0.9 },
-  { h: 6.0, exp: 1.0, sh: [0.012, 0.022, 0.060], hi: [0.95, 0.92, 1.05], sat: 0.95, con: 1.06, bloom: 1.0 },
-  { h: 6.6, exp: 1.0, sh: [0.010, 0.020, 0.055], hi: [1.12, 0.98, 0.84], sat: 1.12, con: 1.08, bloom: 1.15 },
-  { h: 7.4, exp: 1.0, sh: [0.008, 0.016, 0.040], hi: [1.08, 1.00, 0.88], sat: 1.10, con: 1.08, bloom: 1.0 },
-  { h: 9.0, exp: 1.0, sh: [0.006, 0.012, 0.026], hi: [1.02, 1.00, 0.97], sat: 1.04, con: 1.08, bloom: 0.8 },
-  { h: 13.0, exp: 0.94, sh: [0.004, 0.008, 0.02], hi: [1.02, 1.00, 0.97], sat: 1.08, con: 1.14, bloom: 0.7 },
-  { h: 15.6, exp: 1.0, sh: [0.010, 0.010, 0.026], hi: [1.10, 0.99, 0.86], sat: 1.14, con: 1.08, bloom: 0.95 },
-  { h: 16.9, exp: 1.0, sh: [0.020, 0.008, 0.040], hi: [1.14, 0.94, 0.86], sat: 1.22, con: 1.08, bloom: 1.15 },
-  { h: 17.5, exp: 1.0, sh: [0.024, 0.010, 0.060], hi: [1.08, 0.90, 1.00], sat: 1.20, con: 1.06, bloom: 1.2 },
-  { h: 18.2, exp: 1.0, sh: [0.012, 0.018, 0.070], hi: [0.88, 0.92, 1.12], sat: 1.06, con: 1.05, bloom: 1.1 },
-  { h: 19.5, exp: 1.0, sh: [0.010, 0.020, 0.050], hi: [0.80, 0.92, 1.12], sat: 0.74, con: 1.04, bloom: 0.9 },
-  { h: 24.0, exp: 1.0, sh: [0.010, 0.020, 0.050], hi: [0.80, 0.92, 1.12], sat: 0.72, con: 1.04, bloom: 0.9 },
+  { h: 0.0, exp: 0.729, sh: [0.0073, 0.0146, 0.0365], hi: [0.80, 0.92, 1.12], sat: 0.72, con: 1.04, bloom: 0.9 },
+  { h: 4.7, exp: 0.729, sh: [0.0087, 0.0160, 0.0401], hi: [0.82, 0.92, 1.10], sat: 0.78, con: 1.04, bloom: 0.9 },
+  { h: 6.0, exp: 0.734, sh: [0.0088, 0.0161, 0.0440], hi: [0.95, 0.92, 1.05], sat: 0.95, con: 1.06, bloom: 1.0 },
+  { h: 6.6, exp: 0.738, sh: [0.0074, 0.0148, 0.0406], hi: [1.12, 0.98, 0.84], sat: 1.12, con: 1.08, bloom: 1.15 },
+  { h: 7.4, exp: 0.738, sh: [0.0059, 0.0118, 0.0295], hi: [1.08, 1.00, 0.88], sat: 1.10, con: 1.08, bloom: 1.0 },
+  { h: 9.0, exp: 0.738, sh: [0.0044, 0.0089, 0.0192], hi: [1.02, 1.00, 0.97], sat: 1.04, con: 1.08, bloom: 0.8 },
+  { h: 13.0, exp: 0.705, sh: [0.0030, 0.0060, 0.0150], hi: [1.02, 1.00, 0.97], sat: 1.08, con: 1.14, bloom: 0.7 },
+  { h: 15.6, exp: 0.738, sh: [0.0074, 0.0074, 0.0192], hi: [1.10, 0.99, 0.86], sat: 1.14, con: 1.08, bloom: 0.95 },
+  { h: 16.9, exp: 0.738, sh: [0.0148, 0.0059, 0.0295], hi: [1.14, 0.94, 0.86], sat: 1.22, con: 1.08, bloom: 1.15 },
+  { h: 17.5, exp: 0.734, sh: [0.0176, 0.0073, 0.0440], hi: [1.08, 0.90, 1.00], sat: 1.20, con: 1.06, bloom: 1.2 },
+  { h: 18.2, exp: 0.731, sh: [0.0088, 0.0132, 0.0512], hi: [0.88, 0.92, 1.12], sat: 1.06, con: 1.05, bloom: 1.1 },
+  { h: 19.5, exp: 0.729, sh: [0.0073, 0.0146, 0.0365], hi: [0.80, 0.92, 1.12], sat: 0.74, con: 1.04, bloom: 0.9 },
+  { h: 24.0, exp: 0.729, sh: [0.0073, 0.0146, 0.0365], hi: [0.80, 0.92, 1.12], sat: 0.72, con: 1.04, bloom: 0.9 },
 ];
 function sampleKeys(h, keys) {
   let i = 0; while (i < keys.length - 2 && keys[i + 1].h < h) i++;
@@ -210,9 +212,12 @@ export class Sky {
     s.grade = look;
     // storm grade pulls everything to soft cool grey
     if (st > 0) {
+      const con0 = look.con;
       look.sat = lerp(look.sat, 0.62, st); look.con = lerp(look.con, 0.96, st);
+      // the exposures carry the tone curve's old input scale as 0.72^(1/contrast) (see KEYS)
+      look.exp *= Math.pow(0.72, 1 / look.con - 1 / con0);
       for (let i = 0; i < 3; i++) {
-        look.sh[i] = lerp(look.sh[i], [0.03, 0.035, 0.045][i], st);
+        look.sh[i] = lerp(look.sh[i], [0.0213, 0.0249, 0.0320][i], st);
         look.hi[i] = lerp(look.hi[i], [0.96, 1.0, 1.05][i], st);
       }
       look.bloom = lerp(look.bloom, 1.2, st);

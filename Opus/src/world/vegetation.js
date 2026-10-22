@@ -208,6 +208,8 @@ uniform float uScaleH, uGrid, uCellSize, uLodHi;
 uniform vec3 uCamGrid;
 varying vec3 vWorld, vN;
 varying float vKind, vSway, vSeed, vLodT;
+// where the plant meets the ground, so shading knows its height above it without a heightmap lookup
+varying float vBaseY;
 #ifdef DEPTH_PASS
 varying float vDepthAlpha;
 #endif
@@ -236,7 +238,8 @@ void main(){
   float rot = h2.x * 6.283;
   p.xz = mat2(cos(rot), sin(rot), -sin(rot), cos(rot)) * p.xz;
   p *= sc;
-  wp = vec4(xz.x + p.x, heightAt(xz) + p.y - 0.02, xz.y + p.z, 1.);
+  vBaseY = heightAt(xz);
+  wp = vec4(xz.x + p.x, vBaseY + p.y - 0.02, xz.y + p.z, 1.);
   vec3 root = vec3(xz.x, 0., xz.y);
 #else
   // the LOD cross-fade rides in the instance matrix's unused corner (see update)
@@ -245,6 +248,7 @@ void main(){
   wp = modelMatrix * IM * vec4(p, 1.);
   n = mat3(modelMatrix) * mat3(IM) * n;
   vec3 root = (modelMatrix * IM * vec4(0, 0, 0, 1)).xyz;
+  vBaseY = root.y;
   seed = fract(root.x * 0.137 + root.z * 0.371);
 #endif
   // wind: whole plant leans with the local gust, tips flutter
@@ -266,6 +270,7 @@ const FRAG = /* glsl */`
 ${COMMON}
 varying vec3 vWorld, vN;
 varying float vKind, vSway, vSeed, vLodT;
+varying float vBaseY;
 uniform float uLodHi;
 void main(){
   vec3 P = vWorld;
@@ -305,6 +310,7 @@ void main(){
   alb *= 1. - 0.25 * uWet * (k < 2. ? 1. : 0.);
   Surf s; s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = mix(0.75, 1., vSway); s.wrap = wrap; s.sss = sss;
   float sh = keyShadow(P, N);
+  gHag = max(P.y - vBaseY, 0.);
   vec3 col = shadeSurf(s, P, V, sh);
   col = applyHaze(col, P);
   gl_FragColor = vec4(col, litAlpha(col));
@@ -316,12 +322,13 @@ ${VCOMMON}
 ${WIND}
 uniform vec4 uCrown;   // centre y, radius xz, radius y (local)
 varying vec3 vWorld, vLocal, vCamLocal;
-varying float vScale;
+varying float vScale, vBaseY;
 void main(){
   vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.);
   mat4 M = modelMatrix * instanceMatrix;
   vScale = length(M[0].xyz);
   vec3 root = (M * vec4(0, 0, 0, 1)).xyz;
+  vBaseY = root.y;
   // lean with the gust like the branches do
   float s = sat((position.y - uCrown.y + uCrown.w) / (2. * uCrown.w));
   wp.xz += windAt(root.xz) * 0.06 * s * s * 0.8;
@@ -334,7 +341,7 @@ const CROWN_FRAG = /* glsl */`
 ${COMMON}
 uniform vec4 uCrown;
 varying vec3 vWorld, vLocal, vCamLocal;
-varying float vScale;
+varying float vScale, vBaseY;
 void main(){
   vec3 P = vWorld;
   if (P.y < uClipY) discard;
@@ -360,6 +367,7 @@ void main(){
   alb = mix(alb, vec3(0.93, 0.95, 0.99), uSnow * 0.35);
   Surf s; s.albedo = alb; s.N = N; s.rough = 0.9; s.spec = 0.03; s.ao = 0.55 + 0.45 * sat(mm.y * 0.5 + 0.5); s.wrap = 0.8; s.sss = 0.5;
   float sh = keyShadow(P, N);
+  gHag = max(P.y - vBaseY, 0.);
   vec3 col = shadeSurf(s, P, V, sh);
   col = applyHaze(col, P);
   gl_FragColor = vec4(col, litAlpha(col));
