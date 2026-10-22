@@ -1,3 +1,4 @@
+import {copyShadowDepth} from './shadow-depth-copy.js';
 import * as THREE from 'three';
 
 // A fixed Poisson disk avoids screen-space noise and animated sample rotation.
@@ -49,7 +50,7 @@ export function createShadowFiltering(renderer,csm,high){
    history[i]?.dispose();history[i]=target(source.width);renderer.initRenderTarget(history[i]);
    uniforms['uPreviousShadow'+i].value=history[i].depthTexture;
   }
-  renderer.copyTextureToTexture(source.depthTexture,history[i].depthTexture);matrices[i].copy(light.shadow.matrix);
+  copyShadowDepth(renderer,source,history[i]);matrices[i].copy(light.shadow.matrix);
   updated[i]=time;blend.setComponent(i-1,0);stats.copies++;
  },apply(shader,worldVarying){
   Object.assign(shader.uniforms,uniforms);

@@ -1,0 +1,36 @@
+{
+  "tier": "medium",
+  "results": [
+    {
+      "batches": 26,
+      "parts": 362,
+      "visibleParts": 362,
+      "error": 0.00006086435473662277,
+      "missing": 0,
+      "duplicates": 0,
+      "draws": 697,
+      "triangles": 2387374
+    },
+    {
+      "batches": 26,
+      "parts": 362,
+      "visibleParts": 311,
+      "error": 0.00006010150559632166,
+      "missing": 0,
+      "duplicates": 0,
+      "draws": 1061,
+      "triangles": 4584619
+    },
+    {
+      "batches": 26,
+      "parts": 362,
+      "visibleParts": 362,
+      "error": 0.000059030700413131854,
+      "missing": 0,
+      "duplicates": 0,
+      "draws": 1047,
+      "triangles": 3967474
+    }
+  ],
+  "errors": []
+}

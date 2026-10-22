@@ -378,3 +378,20 @@ File: `src/lighting.js`
 
 - Throughput improves about 0.9%, with unchanged tails and no skipped application renders. Flicker at exposure 1.1565: whole RMS 0.00179099 (+16.7%), cliff RMS 0.00079806 (-12.4%). Removing FXAA exposes more fine geometry contrast, so the whole-frame metric worsens despite a better cliff score; this tradeoff is explicit, and subpixel vegetation still needs attention.
 - Validation: lens and exposure GPU fixtures, gameplay, graphics and temporal suites pass without errors or warnings. Personally inspected all four matched before/after views and the six lighting pairs. Thin detail is clearer; remaining frame stalls are the next task.
+
+### Phase 8 - rendering cost and frame stalls
+
+- Shadow history uses a depth-only framebuffer blit through Three's cached state. The general texture-copy path read five GL unpack parameters synchronously before its depth branch; those queries are now removed. All three tier fixtures record zero unpack queries while checking refresh counts, blend interpolation and cascade snapping. The helper relies on Three 0.180 render-target internals and requires initialized, single-sample targets.
+- Repeated rigid balloon parts, bird bodies/wings and horse parts use 26 batches for 362 meshes. Exact geometry-buffer matching and shared material identity preserve shape and shading. Animation/collision hierarchies remain in place; instance matrices follow their world transforms. Reflection and shadow layers, ancestor visibility and reactive alpha are retained. Matrix buffers do not upload again when transforms remain unchanged. GPU/browser checks verify all tiers and the hide/restore path.
+- A fleet-envelope batching experiment was rejected: it saved few additional visible draws while submitting roughly 170k extra triangles because its shared bounds defeated individual balloon culling. Individual envelope culling and animation remain. The retained rigid batches submit about 1.9% more triangles in the final paired flight due to conservative shared bounds, while cutting draw calls by 22%.
+- Medium cloud-cache refreshes use 32 smaller tiles instead of 16, retaining the same 4096-wide texture and 96 ray-march steps. Each partial update covers at most 262,144 pixels; high/lite retain their existing tile sizes. Time/weather jumps still refresh the full cache. Added asynchronous GPU-stage timing for the atmosphere update and scene/post render.
+- Oversized windows now obey each tier's fixed pixel budget. Native 1440 x 900 resolution is preserved at every tier. At 2848 x 1590, medium renders about 2239 x 1250 and lite about 1525 x 851, then upscales; high remains native. This fixed cap does not oscillate with adaptive quality. The resolution change is explicit, and it is not native-resolution performance.
+
+| Final paired native medium flight | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms | Mean draws | Mean triangles |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Phase 7 | 65.87 | 8.40 | 41.70 | 60.33 | 275/1976 | 861.5 | 2.551M |
+| Optimised rendering | 67.96 | 16.60 | 25.50 | 41.50 | 171/2040 | 669.9 | 2.600M |
+
+- This final pair improves throughput by 3.2% and p95 by 39%; the >25 ms share falls from 13.9% to 8.4%. The initial optimisation run had better absolute pacing, demonstrating session variability rather than a guaranteed rate. No application renders were skipped. **The strict sustained-60-fps gate remains open.** The final-check task will add per-tier measurements and the remaining visual acceptance limits.
+
+- Validation: geometry/transform and render-budget units, all three tier quality/shadow/batching fixtures, gameplay (17), graphics (23), temporal (11) and high-DPI controls (8) pass without errors or warnings. Personally inspected all four matched optimisation views: terrain, clouds, fabric designs and lighting are preserved. The final build hash is recorded in fidelity-8-validation.json.

@@ -23,9 +23,11 @@ export class SceneRenderPass extends RenderPass {
  dispose(){this.target.dispose();}
 }
 
-// Preserve at least one rendered pixel per CSS pixel. The old 0.7 floor caused
-// thin branches to disappear as automatic quality changes reduced resolution.
+// Preserve native CSS resolution within the tier's budget. Oversized windows
+// use a fixed pixel cap, rather than exceeding it or oscillating below native.
+// Ordinary 1440 x 900 views keep the floor that stabilizes thin branches.
 export function renderPixelRatio(width,height,dpr,quality=1,tier=QUALITY_TIERS.medium){
- const native=Math.max(1,Math.min(dpr,tier.maxDpr,Math.sqrt(tier.pixelBudget/(width*height))));
- return Math.max(1,native*Math.sqrt(.7+.3*quality));
+ const cap=Math.sqrt(tier.pixelBudget/(width*height)),floor=Math.min(1,cap);
+ const native=Math.max(floor,Math.min(dpr,tier.maxDpr,cap));
+ return Math.max(floor,native*Math.sqrt(.7+.3*quality));
 }

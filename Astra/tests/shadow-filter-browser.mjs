@@ -12,12 +12,13 @@ try{
  await page.evaluate(()=>{const a=__ascent;a.pause();a.setHour(9);a.setStorm(0);a.setCamera(0);const look=a.camera.lookAt;a.camera.lookAt=function(){this.position.set(-25,147,745);look.call(this,90,88,300);};});
  await page.waitForTimeout(1000);
  const result=await page.evaluate(async()=>{
-  const a=__ascent,s=a.atmo.shadows,f=s.filtering,start=f.stats.updates.slice(),blends=[];
-  for(let i=0;i<40;i++){await new Promise(requestAnimationFrame);blends.push(f.blend.toArray());}
+  const a=__ascent,s=a.atmo.shadows,f=s.filtering,start=f.stats.updates.slice(),blends=[],gl=a.renderer.getContext(),get=gl.getParameter,unpack=new Set([gl.UNPACK_ROW_LENGTH,gl.UNPACK_IMAGE_HEIGHT,gl.UNPACK_SKIP_PIXELS,gl.UNPACK_SKIP_ROWS,gl.UNPACK_SKIP_IMAGES]);let unpackQueries=0;
+  gl.getParameter=function(parameter){if(unpack.has(parameter))unpackQueries++;return get.call(this,parameter);};
+  try{for(let i=0;i<40;i++){await new Promise(requestAnimationFrame);blends.push(f.blend.toArray());}}finally{gl.getParameter=get;}
   const snapping=s.csm.lights.map(l=>{const p=l.position.clone().applyQuaternion(l.shadow.camera.quaternion.clone().invert()),texel=(l.shadow.camera.right-l.shadow.camera.left)/l.shadow.mapSize.x;return Math.max(Math.abs(p.x/texel-Math.round(p.x/texel)),Math.abs(p.y/texel-Math.round(p.y/texel)));});
-  return {tier:a.tier.name,updates:f.stats.updates.map((n,i)=>n-start[i]),copies:f.stats.copies,blends,snapping,sizes:s.csm.lights.map(l=>l.shadow.mapSize.x),history:f.history.map(t=>t?[t.width,t.height]:null)};
+  return {tier:a.tier.name,unpackQueries,updates:f.stats.updates.map((n,i)=>n-start[i]),copies:f.stats.copies,blends,snapping,sizes:s.csm.lights.map(l=>l.shadow.mapSize.x),history:f.history.map(t=>t?[t.width,t.height]:null)};
  });
- assert(result.updates[0]>=39);assert(result.snapping.every(n=>n<.0001));
+ assert.equal(result.unpackQueries,0,'Depth history must stay on GPU without synchronous unpack queries');assert(result.updates[0]>=39);assert(result.snapping.every(n=>n<.0001));
  if(tier==='high'){
   assert.deepEqual(result.updates,[result.updates[0],result.updates[0],result.updates[0]]);assert.equal(result.sizes[0],4096);assert.equal(result.copies,0);
  }else{

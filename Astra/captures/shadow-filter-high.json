@@ -1,5 +1,6 @@
 {
   "tier": "high",
+  "unpackQueries": 0,
   "updates": [
     40,
     40,

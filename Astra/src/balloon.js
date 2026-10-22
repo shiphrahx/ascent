@@ -1,5 +1,6 @@
 import {paintBalloonFabric,balloonPatternNames} from './balloon-patterns.js';
 import {THREE,rand,rng,TAU,mat,mesh,sphere,box,rod,tube,combine,canvasTexture,uniforms,lerp,smooth,clamp} from './core.js';
+const skirtMaterial=mat('#523f35',{side:THREE.DoubleSide});
 const leather=mat('#4a3026',{roughness:.68}),rope=mat('#a99774'),steel=mat('#69747b',{metalness:.85,roughness:.27}),black=mat('#292e2e'),brass=mat('#bc8c48',{metalness:.7,roughness:.35}),skin=mat('#c89472'),boot=mat('#383533');
 const palettes=[['#ac4934','#e8c68a','#4b7378','#e6d6ab'],['#c28e48','#ebe0b8','#476a6a','#cb6e46'],['#874347','#e6bb79','#b6774c','#ded2ac'],['#466c73','#d8b980','#e1d4ae','#54636f'],['#c28c54','#f0d5a0','#7e4a46','#d8b886'],['#637e77','#e6d0a0','#b55744','#d7b570'],['#8c6273','#e4c7a0','#5e6071','#c68c70']];
 const fabrics=palettes.map((pal,k)=>{const texture=canvasTexture(1024,(c,s)=>paintBalloonFabric(c,s,pal,k,rng(k+3)));texture.name='Balloon fabric - '+balloonPatternNames[k];texture.userData.pattern=balloonPatternNames[k];return texture;});
@@ -19,7 +20,7 @@ totalEmissiveRadiance+=diffuseColor.rgb*(.055+transmission+inner)*vec3(1.0,.72,.
 const envelope=mesh(hero?highEnv:lowEnv,material,group);envelope.castShadow=true;
 const detail=new THREE.Group(),crown=new THREE.Group();group.add(crown);
 if(hero){const ring=mesh(new THREE.TorusGeometry(1.3,.06,8,64),rope,crown,[0,28.12,0]);ring.rotation.x=Math.PI/2;const vent=mesh(new THREE.CircleGeometry(1.24,48),mat('#724333',{side:THREE.DoubleSide}),crown,[0,28.14,0]);vent.rotation.x=-Math.PI/2;for(let i=0;i<24;i++){const a=i*TAU/24;rod(detail,[Math.cos(a)*1.2,27.98,Math.sin(a)*1.2],[Math.cos(a)*.4,28.25,Math.sin(a)*.4],.025,rope,5);}tube(crown,[[.9,5.2,.1],[.7,12,.1],[.45,20,.05],[0,28.1,0]],.024,rope,50);}
-const skirt=mesh(new THREE.CylinderGeometry(1.15,.87,1.3,32,1,true),mat('#523f35',{side:THREE.DoubleSide}),detail,[0,4.85,0]);
+const skirt=mesh(new THREE.CylinderGeometry(1.15,.87,1.3,32,1,true),skirtMaterial,detail,[0,4.85,0]);
 if(hero){
  const w=1.8,d=1.25,h=1.18;
  box(detail,wicker,[0,.12,0],[w*2,.24,d*2]);for(const x of[-w,w])box(detail,wicker,[x,h/2,0],[.14,h,d*2]);for(const z of[-d,d])box(detail,wicker,[0,h/2,z],[w*2,h,.14]);

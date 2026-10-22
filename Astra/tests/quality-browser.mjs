@@ -16,7 +16,11 @@ try{
   assert.equal(result.msaa,result.tier.samples);assert.equal(result.shadow,result.tier.shadowNearSize);
   assert.equal(result.reflection,result.tier.reflectionSize);assert.equal(result.sky,result.tier.skyWidth);
   assert.equal(result.trees,{high:720,medium:480,lite:320}[tier]);assert.equal(result.contextLost,false);assert.deepEqual(errors,[]);
-  report.push({...result,errors});await page.close();
+  await page.setViewportSize({width:2848,height:1590});await page.waitForTimeout(2500);
+  const large=await page.evaluate(()=>{const a=__ascent,r=a.renderer;return {ratio:r.getPixelRatio(),width:r.domElement.width,height:r.domElement.height,skyCache:a.atmo.skyCache,trees:a.world.trees.children.reduce((n,t)=>n+t.count,0)};});
+  assert(large.width*large.height<=result.tier.pixelBudget);assert.equal(large.trees,result.trees);assert(large.skyCache.partialUpdates>0);
+  assert.equal(large.skyCache.maxPartialPixels,result.tier.skyWidth**2/(2*large.skyCache.columns*large.skyCache.rows));assert.deepEqual(errors,[]);
+  report.push({...result,large,errors});await page.close();
  }
  assert(report[2].terrainTriangles>report[0].terrainTriangles*2,'High tier enables the dense terrain grid');
  assert.equal(report[0].terrainTriangles,report[1].terrainTriangles,'Lower tiers retain stable terrain topology');

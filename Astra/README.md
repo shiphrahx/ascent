@@ -10,7 +10,7 @@ Open [`Ascent.html`](Ascent.html) in a browser. It includes its runtime assets a
 
 Controls: Space/W for the burner, V/S to vent, A/D to rotate, C to change camera, drag to look or orbit, wheel to zoom, T to accelerate time, M for sound, and F for fullscreen.
 
-Quality is selected from the reported GPU: discrete graphics use `high`, integrated or unknown adapters use `medium`, and software renderers use `lite`. Override detection by opening `Ascent.html?quality=high`, `?quality=medium`, or `?quality=lite`; reload to apply a different tier. The selected tier and GPU are available in `window.__ascent.tier` for diagnostics. Medium targets the integrated-GPU budget; lite further reduces shadows, reflections, cloud-cache and MSAA costs. High permits a larger pixel budget, reflection map, 4 m terrain grid, and 4096-pixel near shadows with every cascade refreshed each frame. Lower tiers blend their cached distant maps. Tiers retain stable geometry and a native CSS-pixel resolution floor.
+Quality is selected from the reported GPU: discrete graphics use `high`, integrated or unknown adapters use `medium`, and software renderers use `lite`. Override detection by opening `Ascent.html?quality=high`, `?quality=medium`, or `?quality=lite`; reload to apply a different tier. The selected tier and GPU are available in `window.__ascent.tier` for diagnostics. Medium targets the integrated-GPU budget; lite further reduces shadows, reflections, cloud-cache and MSAA costs. High permits a larger pixel budget, reflection map, 4 m terrain grid, and 4096-pixel near shadows with every cascade refreshed each frame. Lower tiers blend their cached distant maps. Tiers retain stable geometry and native resolution at 1440 x 900. Oversized windows use the tier's fixed pixel budget; medium and lite may upscale there, without repeatedly changing scale as frame rate varies.
 
 ## Build
 
@@ -42,7 +42,7 @@ npm run test:temporal
 npm run preview
 ```
 
-Screenshots, validation reports, performance measurements, and historical comparison builds are in `captures/`. The phase-by-phase results and remaining realism work are recorded in [FIDELITY_PLAN.md](FIDELITY_PLAN.md). Open `captures/fidelity-7-comparison.html` for matched landform views. Run `node benchmark.mjs --flight --tier=medium` for a 30-second frame-pacing trace; add `--recording` for 2848×1590. Run `node flicker.mjs --tier=medium` for the fixed-step scene flicker metric. Use `--tag=name` to retain successive reports. Use `node gpu-budget.mjs --tier=medium --tag=name` for asynchronous GPU timing at a fixed view. Run GPU harnesses sequentially.
+Screenshots, validation reports, performance measurements, and historical comparison builds are in `captures/`. The phase-by-phase results and remaining realism work are recorded in [FIDELITY_PLAN.md](FIDELITY_PLAN.md). Open `captures/fidelity-8-comparison.html` for the final optimisation review. Run `node benchmark.mjs --flight --tier=medium` for a 30-second frame-pacing trace; add `--recording` for 2848×1590. Run `node flicker.mjs --tier=medium` for the fixed-step scene flicker metric. Use `--tag=name` to retain successive reports. Use `node gpu-budget.mjs --tier=medium --tag=name` for asynchronous GPU timing at a fixed view. Run GPU harnesses sequentially.
 
 ## Repository scope
 

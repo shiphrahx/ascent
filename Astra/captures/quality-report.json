@@ -5,7 +5,8 @@
       "pixelBudget": 2800000,
       "maxDpr": 2,
       "samples": 4,
-      "shadowSize": 2048,
+      "shadowSize": 1024,
+      "shadowNearSize": 2048,
       "reflectionSize": 768,
       "reflectionHz": 30,
       "reflectionFrames": 2,
@@ -18,9 +19,22 @@
     "shadow": 2048,
     "reflection": 768,
     "sky": 4096,
-    "trees": 240,
+    "trees": 480,
     "terrainTriangles": 326000,
     "contextLost": false,
+    "large": {
+      "ratio": 0.7863401681269331,
+      "width": 2239,
+      "height": 1250,
+      "skyCache": {
+        "columns": 8,
+        "rows": 4,
+        "fullUpdates": 1,
+        "partialUpdates": 64,
+        "maxPartialPixels": 262144
+      },
+      "trees": 480
+    },
     "errors": []
   },
   {
@@ -29,7 +43,8 @@
       "pixelBudget": 1300000,
       "maxDpr": 1,
       "samples": 2,
-      "shadowSize": 1024,
+      "shadowSize": 512,
+      "shadowNearSize": 1024,
       "reflectionSize": 384,
       "reflectionHz": 15,
       "reflectionFrames": 4,
@@ -42,9 +57,22 @@
     "shadow": 1024,
     "reflection": 384,
     "sky": 2048,
-    "trees": 240,
+    "trees": 320,
     "terrainTriangles": 326000,
     "contextLost": false,
+    "large": {
+      "ratio": 0.535800508589338,
+      "width": 1525,
+      "height": 851,
+      "skyCache": {
+        "columns": 4,
+        "rows": 4,
+        "fullUpdates": 1,
+        "partialUpdates": 63,
+        "maxPartialPixels": 131072
+      },
+      "trees": 320
+    },
     "errors": []
   },
   {
@@ -54,6 +82,7 @@
       "maxDpr": 2,
       "samples": 4,
       "shadowSize": 2048,
+      "shadowNearSize": 4096,
       "reflectionSize": 1024,
       "reflectionHz": 30,
       "reflectionFrames": 2,
@@ -63,12 +92,25 @@
       "source": "override"
     },
     "msaa": 4,
-    "shadow": 2048,
+    "shadow": 4096,
     "reflection": 1024,
     "sky": 4096,
-    "trees": 240,
+    "trees": 720,
     "terrainTriangles": 980000,
     "contextLost": false,
+    "large": {
+      "ratio": 1,
+      "width": 2848,
+      "height": 1590,
+      "skyCache": {
+        "columns": 4,
+        "rows": 4,
+        "fullUpdates": 1,
+        "partialUpdates": 32,
+        "maxPartialPixels": 524288
+      },
+      "trees": 720
+    },
     "errors": []
   }
 ]

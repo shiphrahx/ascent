@@ -1,0 +1,36 @@
+{
+  "tier": "lite",
+  "results": [
+    {
+      "batches": 26,
+      "parts": 362,
+      "visibleParts": 362,
+      "error": 0.00006074348993934109,
+      "missing": 0,
+      "duplicates": 0,
+      "draws": 812,
+      "triangles": 2458956
+    },
+    {
+      "batches": 26,
+      "parts": 362,
+      "visibleParts": 311,
+      "error": 0.00004566176426124002,
+      "missing": 0,
+      "duplicates": 0,
+      "draws": 502,
+      "triangles": 1507710
+    },
+    {
+      "batches": 26,
+      "parts": 362,
+      "visibleParts": 362,
+      "error": 0.00006078362275729887,
+      "missing": 0,
+      "duplicates": 0,
+      "draws": 653,
+      "triangles": 1751776
+    }
+  ],
+  "errors": []
+}
