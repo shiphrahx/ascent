@@ -184,3 +184,25 @@ File: `src/lighting.js`
 - The final paired run improves average pacing and reduces rendered triangles by about 13%. The unchanged baseline varied from 43 to 77 fps across this session, so these results do not certify a sustained 60 fps; the strict budget remains open. Reports retain all samples, settings and camera positions. Earlier prototypes were rejected for increasing cost.
 - Final medium flicker baseline for the changed geometry: whole-frame RMS 0.00155580, cliff RMS 0.00091137. The cliff score rises with the new geometric edges; it is not comparable as an isolated shadow-filter regression because the content changed. Phase 4 will compare against this landform baseline.
 - Validation: landform field tests, all three tier browser checks, gameplay, graphics, and temporal suites passed. The matched corrected-camera review was inspected: the ridge silhouettes now show escarpments and plateaus, and the old near-plane artifacts are absent. Far landscape, chimney design, materials and lighting still need their later phases.
+
+### Phase 1.2 - far landscape
+
+- Replaced the 24 km coarse plane and four separate backdrop meshes with a continuous procedural height field rendered in four camera-centred LOD rings. The regional northern escarpments remain recognizable while relief now extends in every direction.
+- High bakes a 2049-square height field and starts at 32 m mesh spacing; medium uses 1025 and 64 m; lite uses 513 and 128 m. Outer spacing is capped at 128 m (256 m on lite) to preserve distant silhouettes. The rings require four draws per view, with fixed buffers and no per-frame CPU mesh generation.
+- Before a ring changes its origin, fine vertices converge to the adjacent coarse triangular surface. World-aligned sampling keeps terrain stationary. A border follows the exact detailed-strip vertices and overlaps the coarse field to close cracks. Tests measure the border overlap and render both sides of an origin change at an identical camera pose.
+
+| Far terrain tier | Height field | Ring triangles | Border overlap range (m) | Origin-shift image RMS |
+|---|---:|---:|---:|---:|
+| high | 2049 squared | 180224 | 7.26 to 60.40 | 0 |
+| medium | 1025 squared | 137216 | 7.26 to 61.06 | 0 |
+| lite | 513 squared | 57344 | 7.26 to 58.25 | 0 |
+
+- All three tiers pass finite-height, border-overlap and identical-camera ring-shift checks. Lite retains 128 m spacing through its first three rings so the detailed strip does not intersect a prematurely coarse surface; only its outer ring uses 256 m.
+
+| Paired 30 s native flight, medium | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms | Mean draws | Mean triangles |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Phase 1.1 build | 56.80 | 16.60 | 41.50 | 49.90 | 254/1704 | 1081 | 3018381 |
+| Continuous far terrain | 77.41 | 8.50 | 17.00 | 41.70 | 82/2323 | 943 | 2805268 |
+
+- Medium scene flicker: whole RMS 0.00156021, cliff RMS 0.00091276. The identical-camera LOD origin-change tests score zero image difference in all tiers.
+- Validation: gameplay, graphics and temporal suites passed, alongside all three far-terrain checks. Personally inspected all four matched views: regional ridge silhouettes are preserved, the terrain join is closed, and the near landscape remains intact. The paired run removes about 138 average draws; long-tail stalls and the recording-resolution target remain for Phase 8.

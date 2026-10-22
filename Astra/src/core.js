@@ -64,6 +64,10 @@ export function terrainGeometry(){
  }
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
 }
+export function terrainBoundary(){
+ const point=(j,k)=>[terrainCenters[j]+terrainOffsets[k],terrainHeights[j*terrainColumns+k],j*terrainStep-2000];
+ return [Array.from({length:terrainColumns},(_,k)=>point(0,k)),Array.from({length:terrainRows+1},(_,j)=>point(j,terrainColumns-1)),Array.from({length:terrainColumns},(_,k)=>point(terrainRows,terrainColumns-1-k)),Array.from({length:terrainRows+1},(_,j)=>point(terrainRows-j,0))];
+}
 export function riverBanks(z){
  const center=riverX(z),banks=[];
  for(const side of[-1,1]){let lo=0,hi=30;for(let i=0;i<12;i++){const mid=(lo+hi)*.5;if(ground(center+side*mid,z)<3.55)lo=mid;else hi=mid;}banks.push(center+side*(lo+hi)*.5);}

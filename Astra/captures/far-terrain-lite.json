@@ -1,0 +1,12 @@
+{
+  "tier": "lite",
+  "fieldSize": 513,
+  "finite": true,
+  "rings": 4,
+  "triangles": 57344,
+  "minOverlap": 7.2626897207519505,
+  "maxOverlap": 58.2459246981889,
+  "boundaryRms": 0,
+  "boundaryChangedFraction": 0,
+  "errors": []
+}
