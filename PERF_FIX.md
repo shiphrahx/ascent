@@ -79,3 +79,25 @@ What it shows:
 - The display runs at 120 Hz and both GPUs now take 13–20 ms a frame, so frames land on a mix of one and two refreshes, and the CPU blocks for 35–65 ms every few frames waiting on queued GPU work. That's the judder. Before the fidelity pass the frame fitted in 8.3 ms and ran a steady 120.
 - The river reflection adds 1.7–3 ms GPU on alternate frames (and on medium, the far cascade skips on the opposite frames). Medium's terrain shadow rebuild (every 3rd frame) adds 1.5 ms, the bounce rebuild (every 4th) 2.2 ms.
 - The resolution governor changed scale 3–4 times in 30 s of steady flight.
+
+### After the fixes
+
+| | leg | interval median / p95 / p99 | over 20 ms | odd/even | GPU median / p99 | scale |
+|---|---|---|---|---|---|---|
+| high, RTX 5070 Ti | straight | 16.7 / 16.9 / 17.0 | 1 of 1802 | 0.1 | 13.7 / 19.7 | 0.95 → 0.8, 2 changes |
+| | side to side | 16.7 / 16.9 / 17.0 | 0 of 1809 | 0.1 | 10.4 / 15.3 | 0.8 → 1, 2 changes |
+| medium, 890M | straight | 25.0 / 27.0 / 28.1 | (paced at 40) | 0.2 | 19.5 / 23.6 | 0.67 (floor) |
+| | side to side | 24.9 / 25.6 / 27.9 | (paced at 40) | 0.2 | 15.0 / 19.9 | 0.67 (floor) |
+
+What each item came to:
+- **Pacing (new, the main one).** The loop reads the display's refresh from the frame callbacks and renders on every second one when a frame doesn't fit in one refresh: an even 60 on 120 Hz, and an even 40 when even the lowest render scale can't make 60. No more CPU stalls on queued GPU work.
+- **2.1 river reflection.** Every frame now, on a cheap shading path (heightmap shadows only, no sky visibility, bounce or scanned textures), a third of the render size, and only the trees and houses near the water. It was vertex-bound, not pixel-bound: drawing the whole scene every frame cost more than before. On the 890M at the bridge: 1.0 ms every frame against 1.9 ms every other frame. Side by side, the water looks the same.
+- **2.2 resolution changes.** Measured with `tools/rescale.mjs`: a scale change doesn't hitch on either GPU, and the TAA history already survives it (only the render targets are reallocated, not the output). The lite fallback needs 2 s of frames over 55 ms at the floor, so a short spike can't trip it. No change made.
+- **2.3 debug hooks.** Removed before committing; the test switches left are parsed once at boot.
+- **2.4 per-frame CPU work.** CPU is 5 ms median and under 10 ms at p99 on both GPUs, with no GC spikes in the logs, so nothing was changed.
+- **2.5 every-Nth-frame work.** The terrain shadow rebuild and the bounce map are now spread over their frames in even slices; the far cascade renders every frame on medium (0.46 ms); lite refreshes one cascade per frame in turn.
+- **2.6 straight vs side to side.** Weaving is lighter than the straight leg (the straight leg sits over the launch field with the fleet in view).
+
+The GPU timer still shows an odd/even split of 1–5 ms with pacing on, but nothing in the code alternates any more and the frame intervals don't, so it reads as an artefact of timing frames with idle gaps between them.
+
+**Not met:** medium doesn't hold 60. At Cassia's window size (2525×1295) the 890M needs 15–20 ms at the 0.67 floor, so it paces at an even 40 instead of juddering between 60 and 40. The medium cost work in `FIDELITY_PLAN_2.md` phase 3 is what gets it to 60.
