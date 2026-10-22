@@ -84,3 +84,48 @@ Only start this after Phases 1–3 are done and committed.
 - Shots at sunrise, clear afternoon, snowstorm, golden hour, sunset, blue hour and night, same cameras as before. Add a before/after contact sheet to `shots/`.
 - Shimmer table (A, B, C, F split by source, K) and GPU timings per tier, at the bottom of this file.
 - An updated ranked list of what's still short of the UE look.
+
+---
+
+## Results
+
+### Phase 1: the leftover flicker in flight
+
+Test F (60 s chase flight, shadow view, high, RTX), split by source with `tools/shimmer.mjs`'s new mask pass. "Over flat" is the old measure; "over held" compares with the same flight with the cascades frozen in the world (`#shadowhold`), which has every shadow edge but nothing that changes.
+
+| source | share of pixels | shadow view | over flat | over held |
+|---|---|---|---|---|
+| hero balloon | 9.9% | 0.51 | 0.01 | 0.01 |
+| fleet | 0.2% | 5.26 | 0.04 | 0.02 |
+| terrain + rocks | 88.7% | 1.06 | 0.61 | 0.10 |
+| village | 0.7% | 1.66 | 0.11 | 0.08 |
+| sky edges | 0.5% | 3.28 | 0.43 | 0.17 |
+| **whole frame / cliff crop** | | 1.04 / 0.77 | 0.55 / 0.30 | **0.09 / 0.05** |
+
+Vegetation was under 0.1% of the pixels in this flight. Per feature (20 s runs of F, terrain score over flat; run-to-run noise about ±0.03):
+
+| switched off | terrain over flat | flat control (whole frame) |
+|---|---|---|
+| nothing | 0.50 | 1.03 |
+| PCSS (16 taps kept) | 0.53 | 1.03 |
+| contact shadows | 0.47 | 1.03 |
+| SSAO | 0.66 | **0.36** |
+| TAA history (alpha 0.5) | 0.51 | 1.51 |
+| cascade blend band | 0.48 | 1.03 |
+| motion blur | 0.47 | 1.03 (the probe reads before the blur) |
+| rock LOD swap in shadows | 0.56 | |
+| rock culling outside the view | 0.53 | |
+| terrain LODs (bias 3) | 0.48 | |
+| old anchor jumps | 0.49 | |
+| cascades held still | 0.42 | |
+
+The top causes:
+1. **SSAO noise under camera motion** was most of the real flicker in flight: switched off, the flat control fell from 1.03 to 0.36. Each pixel's samples turn a different way every frame, and a moving camera resamples the TAA history so it can't average them out.
+2. **The probe itself, on the hero balloon.** It reprojected the envelope as if it were static, so the fabric scored 3.7. Following the balloon the way TAA does, it scores 0.47, the same in both views.
+3. **Shadow edges moving across the screen.** No shadow feature moved the score; held still in the world, the cascades still scored 0.38 of the 0.44. What the live cascades add is 0.06 (20 s) to 0.09 (60 s).
+
+### Phase 1.2: fixes
+
+- SSAO: the upsample's four taps moved onto texel corners, so each averages a 2×2 block and the four cover 4×4 half-res pixels, depth weighted. Same cost; flat control in flight 0.72 → 0.46. A separate two-pass blur did less (0.52) and cost the 890M 0.24 ms.
+- The probe follows the hero's envelope and basket.
+- F's control is now the held cascades. **F on high: 0.09 / 0.05** over held (target 0.30 / 0.20). No new cost on any tier.
