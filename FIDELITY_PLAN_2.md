@@ -129,3 +129,80 @@ The top causes:
 - SSAO: the upsample's four taps moved onto texel corners, so each averages a 2×2 block and the four cover 4×4 half-res pixels, depth weighted. Same cost; flat control in flight 0.72 → 0.46. A separate two-pass blur did less (0.52) and cost the 890M 0.24 ms.
 - The probe follows the hero's envelope and basket.
 - F's control is now the held cascades. **F on high: 0.09 / 0.05** over held (target 0.30 / 0.20). No new cost on any tier.
+
+### Phase 2: small fixes
+
+| item | status |
+|---|---|
+| 2.1 anchor jump | done; the anchor moves by whole texels across the light and freely along it. Test A slid fast enough to jump: a two-frame +0.15 spike before, none after |
+| 2.2 burner light | done; the line to the flame is tested against an ellipsoid for the envelope and an upright cylinder for the basket, soft at the edges. Only pixels within 90 m of a lit burner pay, so every tier has it |
+| 2.3 tone curve | done; the curve runs at UE's defaults, and each hour's exposure and shadow tint carry 0.72^(1/contrast). The storm changes contrast on top of the table, so it adjusts its exposure too. Seven hours from the same camera: mean colour within a level, sky and ground |
+
+### Phase 3: medium and lite
+
+All on the 890M at the reference view (1600×900, `#h=15`), unless it says otherwise.
+
+| change | where | saved |
+|---|---|---|
+| frame pacing to the refresh (from `PERF_FIX.md`) | all | smoothness, not ms: an even 60 or 40 instead of 60/120 or 40/60 mixes |
+| river reflection every frame on a cheap path | all | 1.9 ms every other frame → 1.0 ms every frame |
+| near rocks cast and reflect with the simple shape | medium shadows, every reflection | main slice 1.90 → 1.54, reflection 1.98 → 1.46 |
+| no shadow-casting ground grid | medium, lite | main slice 0.9 ms; the heightmap shadow already resolves 5 m there |
+| height above ground from the instance, not the heightmap | all | eight fetches per rock, tree and house pixel |
+| terrain shadow rebuild and bounce spread over their frames | medium, lite | no heavy third or fourth frame |
+| far cascade every frame, lite one cascade a frame | medium, lite | no alternating frames |
+
+What I didn't do from the plan's list: packing sky visibility, bounce and terrain shadow into one texture (they're at different resolutions, and the bounce needs its mips; switched off one at a time, only the bounce measured above the noise, about 1 ms), and local exposure at lower res (it measured nothing: it already reads a 64×36 map). Medium already had the cheapest shadow filter (8 taps, no blocker search).
+
+Lite was done in the smoothness work: one cascade a frame in turn, which costs the same as all three every third frame. On SwiftShader it runs at about 1 fps before and after at 1600×900, so no regression, but lite isn't really playable on a software rasteriser at that size.
+
+### Phase 4: high only
+
+- **4.1 cliff shape.** A 1.25 m relief over the core, built on the GPU at load: a bicubic fit through the heightmap (the 2.5 m facets go), gullies about 14 m apart down the faces, the harder strata standing out as ledges, scree at the cliff feet. Gullies and ledges are worked out as depth into the face and turned into height through the slope, since that's the only way a heightmap can move a steep face. Stored in the core normal map's alpha, so no new texture unit. The 1.25 m mesh reaches 350 m and the 2.5 m one a kilometre, each taking coarser mips toward its switch. About 0.4 ms on the RTX.
+- **4.2 clouds.** Their own pass at a third of the render size: the same broad shapes and places as before, two worley octaves of erosion, four light steps with Beer, powder and three multiple-scattering octaves, averaged over frames by view direction. K went from 0.13 / 0.05 to 0.06 / 0.02. 0.35 ms more at 15 h, 0.7 ms more under full overcast.
+
+Also on the way: the shimmer probe's hero fix; `verify.mjs` now counts console warnings (puppeteer calls them 'warn', so it never had), which turned up the D3D X3595 warnings in SSAO and depth of field that had been there since part 1, now fixed; a stray early return in `shadeSurf` I'd added was making the 890M's compiler warn too.
+
+### Before and after
+
+`shots/fidelity2_before_after.png` (gitignored, on this machine): sunrise, clear afternoon, snowstorm, golden hour, sunset, blue hour and night from one fixed camera, then the dove cliff and the basket, start of part 2 on the left. Same colour at every hour; the cliffs and clouds are where it differs.
+
+### GPU, 1600×900, render scale 1, `#h=15`
+
+| tier / GPU | part 1 | now | notes |
+|---|---|---|---|
+| high / RTX 5070 Ti laptop | 8.6 ms* | 9.9 ms | +0.4 the cliffs, +0.35 the clouds; 16.4 ms at Cassia's 2525×1295, where the governor holds about 0.9 |
+| medium / Radeon 890M | 17.7 ms (16.6 at 0.9) | 15.5 ms (14.4 at 0.9) | holds 60 at 0.9 scale or better, under the governor's 15.5 ms ceiling |
+| lite on the 890M | 8.2 ms | 7.9 ms | |
+
+\* Part 1's write-up said 7.4 ms; the same build measures 8.6 today. The laptop has been running tests all day and throttles, so compare within a column.
+
+Read the per-pass numbers with care: since the pacer, `#gpuprof` runs at 60 fps where it used to run at 120, and passes that only work when the sun has moved (the terrain shadow) now work every frame instead of every other one, so their averages roughly doubled with no change per frame.
+
+At Cassia's own window size the 890M still can't make 60 in flight (15–20 ms at the 0.67 floor); it paces at an even 40. See `PERF_FIX.md`.
+
+### Shimmer, final (frame / crop, 8-bit levels)
+
+Shadow view, flat control, and the difference (part 1's "flicker"). F's last column is over the held cascades instead.
+
+| test | part 2 start (high) | high | medium | lite |
+|---|---|---|---|---|
+| A cascades sliding | 0.38 − 0.34 = 0.04 | 0.29 − 0.23 = 0.07 / 0.07 | 0.06 / 0.04 | 0.13 / 0.11 |
+| B sun moving | | 0.34 − 0.23 = 0.11 / 0.11 | 0.13 / 0.10 | 0.21 / 0.16 |
+| C floor | 0.38 − 0.34 = 0.04 | 0.29 − 0.23 = 0.07 / 0.07 | | |
+| F 60 s flight | 0.49 / 0.26 over flat | 0.56 / 0.31 over flat, **0.10 / 0.04 over held** | | |
+| K clouds (full image / sky) | 0.13 / 0.05 | 0.06 / 0.02 | | |
+
+The differences went up a little while the image got steadier. The shadow view itself fell from 0.38 to 0.29 at the church cliff, but the flat control fell further (0.34 to 0.23) once SSAO stopped fizzing, and the subtraction undercounted while that noise sat in both. A sits on its own floor (C), as it did. The finer cliffs add 0.01 to the floor. F by source over the held cascades: hero −0.02, fleet 0.03, terrain and rocks 0.12, village 0.08, sky edges 0.07. Lite's control still renders without noise, so its numbers aren't comparable with the others.
+
+### Still short of the UE look, ranked
+
+1. **Village and crew models.** Houses are boxes and the crew is primitives. With the cliffs eroded, these are now what breaks the photoreal read first, up close.
+2. **Medium at Cassia's own window.** The 890M holds 60 at the reference size but not at 2525×1295 in flight (15–20 ms at the 0.67 floor), so it paces at an even 40. The scene pass is 7–8 ms of it, mostly the terrain shader.
+3. **GI richness.** One bounce, off the ground only: nothing off chimneys and houses, no colour bleed between objects, and the bounce isn't occluded.
+4. **Cliffs are still a heightfield.** No overhangs, undercuts or real vertical walls; the new relief stops at a kilometre, and medium and lite don't get it at all.
+5. **Shadows past 250 m.** Terrain self-shadow there comes from the heightmap shadow only (and medium and lite now rely on it inside the near slice too), so distant cliff shadows are soft next to virtual shadow maps.
+6. **Clouds.** Structure now, but one cumulus layer only, no high cirrus, and the history doesn't follow the clouds' own drift (fine at today's wind, would smear in a gale).
+7. **Outer terrain beyond 2.5 km.** 160 m texels, no sky visibility or bounce, flat far fields.
+8. **Ground cover.** Sparse grass tufts; UE scenes carry dense foliage scatter.
+9. **Lite on a real software rasteriser** runs at about 1 fps at 1600×900. Nobody on a GPU sees it, but the fallback isn't usable as it stands.
