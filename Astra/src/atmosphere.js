@@ -1,11 +1,12 @@
+import {createLensBloom,createOpaqueOutput} from './lens-post.js';
 import {THREE,rand,rng,TAU,uniforms,lerp,clamp,smooth,mat,mesh,canvasTexture} from './core.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {FullScreenQuad} from 'three/addons/postprocessing/Pass.js';
 import {SceneRenderPass} from './rendering.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
-import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
-import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
-import {AntiAlias as FXAAShader} from './fxaa.js';
+
+
+
 import {Sky} from 'three/addons/objects/Sky.js';
 import {createSunShadows} from './lighting.js';
 import {TemporalResolvePass} from './temporal.js';
@@ -114,12 +115,12 @@ for(int i=0;i<${fogSteps};i++){
 float rays=pow(max(mu,0.),60.)*(1.-trans)*1.;col+=uWarm*rays*.08;
 // Glory centered on the anti-solar point, visible against the fog bank.
 float anti=dot(dir,-uSun);float angle=acos(clamp(anti,-1.,1.));vec3 halo=vec3(exp(-pow((angle-.042)/.005,2.)),exp(-pow((angle-.036)/.004,2.)),exp(-pow((angle-.031)/.004,2.)));col+=halo*(1.-trans)*.075*(1.-uNight);
-float vign=1.-smoothstep(.23,.9,length((vUv-.5)*vec2(1.,.85)));col*=.94+.06*vign;col=mix(col,uColor,uFade);gl_FragColor=vec4(col,sceneColor.a);}`});// ShaderPass clones uniform objects: explicitly reconnect live weather/burner state.
+float vign=1.-smoothstep(.23,.9,length((vUv-.5)*vec2(1.,.85)));col*=${tier.name==='high'?'.94+.06*vign':'1.'};col=mix(col,uColor,uFade);gl_FragColor=vec4(col,sceneColor.a);}`});// ShaderPass clones uniform objects: explicitly reconnect live weather/burner state.
 Object.assign(fogPass.uniforms,terrainLightUniforms,cloudShadowUniforms,{uNoise:noiseUniform,uSun:uniforms.sun,uTime:uniforms.time,uNight:uniforms.night,uStorm:uniforms.storm,uBurn:uniforms.flame,uWarm:skyU.uWarm});
 fogPass.textureID='sceneColor';fogPass.uniforms.tDiffuse.value=scenePass.target.texture;fogPass.uniforms.tDepth.value=scenePass.target.depthTexture;composer.addPass(fogPass);
 const temporal=new TemporalResolvePass(camera,scenePass.target.depthTexture);composer.addPass(temporal);
-const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.3,.6,.9);composer.addPass(bloom);const fxaa=new ShaderPass(FXAAShader);composer.addPass(new OutputPass());composer.addPass(fxaa);
-return {composer,scenePass,sky,skyU,skyTarget,key,shadows,cloudShadows,fogPass,bloom,temporal,exposure,render(){
+const bloom=createLensBloom(innerWidth,innerHeight);composer.addPass(bloom);const output=createOpaqueOutput();composer.addPass(output);
+return {composer,scenePass,sky,skyU,skyTarget,key,shadows,cloudShadows,fogPass,bloom,output,temporal,exposure,render(){
  temporal.beginFrame();fogPass.uniforms.invProjection.value.copy(camera.projectionMatrixInverse);
  exposure.update();try{composer.render();}finally{temporal.endFrame();}exposure.sample();
 },update(t,hour,hero,storm,fade,quality=1){
@@ -130,7 +131,7 @@ skyU.uTop.value.set('#376e9b').lerp(new THREE.Color(hour<12?'#213963':'#392e64')
 fogColor.set('#8b9caf').lerp(skyU.uHorizon.value,.18).lerp(new THREE.Color('#344b70'),night*.65);const litDir=night>.55?sun.clone().negate():sun.clone();litDir.y=Math.max(litDir.y,.035);litDir.normalize();
 sunColor.set(night>.55?'#a4bbdf':'#fff1db').lerp(new THREE.Color(hour<12?'#ffd09b':'#ffb49a'),night>.55?0:warm*.9);
 const sunIntensity=(night>.55?.65:6.*smooth(sun.y,-.08,.22))*(1-storm*.86);shadows.update(litDir,sunColor,sunIntensity);cloudShadows.update(t,litDir,storm);
-bloom.strength=.1+warm*.07+night*.12;
+bloom.setScatter(.035+warm*.015+night*.025);
 const fu=fogPass.uniforms;fu.uEye.value.copy(camera.position);fu.camWorld.value.copy(camera.matrixWorld);fu.invProjection.value.copy(camera.projectionMatrixInverse);fu.uProjection.value.set(camera.projectionMatrix.elements[0]*.5,camera.projectionMatrix.elements[5]*.5);fu.uHero.value.copy(hero);fu.uColor.value.copy(fogColor);fu.uAirColor.value.copy(skyU.uTop.value).multiplyScalar(1.7).lerp(skyU.uHorizon.value,.18).lerp(fogColor,storm*.65);fu.uFog.value=(.48*(1-smooth(hour,7,10))+.15*night+storm*.55);fu.uFade.value=fade;
 const forceSky=!Number.isFinite(skyUpdated)||Math.abs(hour-skyHour)>.15||Math.abs(storm-skyStorm)>.025;
 if(forceSky||skyTile>=0||t-skyUpdated>(quality>.6?.5:.9)){
@@ -148,7 +149,7 @@ if(!environment||Math.abs(hour-environmentHour)>.06||Math.abs(storm-environmentS
  environment=pmrem.fromEquirectangular(environmentInput.texture,environment);scene.environment=environment.texture;environmentHour=hour;environmentStorm=storm;
 }
 scene.environmentIntensity=.34*day+.22*night;
-return {day,night,warm,storm,fog:fu.uFog.value,quality,lighting:{direction:litDir,color:sunColor,intensity:sunIntensity,snow:uniforms.snow.value}};},resize(w,h){composer.setSize(w,h);const pr=renderer.getPixelRatio();fxaa.uniforms.resolution.value.set(1/(w*pr),1/(h*pr));}};
+return {day,night,warm,storm,fog:fu.uFog.value,quality,lighting:{direction:litDir,color:sunColor,intensity:sunIntensity,snow:uniforms.snow.value}};},resize(w,h){composer.setSize(w,h);}};
 }
 export function createParticles(scene){const count=5600,positions=new Float32Array(count*3),sizes=new Float32Array(count),kinds=new Float32Array(count),r=rng(889);for(let i=0;i<count;i++){positions[i*3]=(r()-.5)*420;positions[i*3+1]=r()*220;positions[i*3+2]=(r()-.5)*420;sizes[i]=1+r()*3;kinds[i]=r();}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(positions,3));g.setAttribute('aSize',new THREE.BufferAttribute(sizes,1));g.setAttribute('aKind',new THREE.BufferAttribute(kinds,1));const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uTime:uniforms.time,uStorm:uniforms.storm,uFrost:uniforms.frost,uWind:uniforms.wind,uNight:uniforms.night,uEye:{value:new THREE.Vector3()},uPixel:{value:Math.min(devicePixelRatio,1.5)}},vertexShader:`uniform float uTime,uStorm,uFrost,uPixel,uNight;uniform vec3 uEye,uWind;attribute float aSize,aKind;varying float vAlpha,vKind;void main(){vec3 p=position; p.x=mod(p.x+uTime*uWind.x+210.,420.)-210.;p.z=mod(p.z+uTime*uWind.z+210.,420.)-210.;p.y=mod(p.y-uTime*(2.+aKind*3.)+220.,220.)-70.;p+=uEye;p.x+=sin(uTime*1.6+aKind*40.+p.y*.09)*(1.+uStorm*3.);vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp(aSize*uPixel*90./max(1.,-mv.z),1.,9.);vAlpha=(uStorm*.8+(1.-uStorm)*uFrost*.25*step(.91,aKind))*(1.-smoothstep(120.,220.,-mv.z));vKind=aKind;}`,fragmentShader:`varying float vAlpha,vKind;void main(){float d=length(gl_PointCoord-.5);float a=exp(-d*d*18.)*vAlpha;gl_FragColor=vec4(mix(vec3(.82,.9,1.),vec3(1.3,1.04,.66),step(.94,vKind)),a);}`});const p=new THREE.Points(g,m);p.frustumCulled=false;scene.add(p);return {update(eye,pixelRatio=1){m.uniforms.uEye.value.copy(eye);m.uniforms.uPixel.value=pixelRatio;}};}
 export function makeSmoke(scene,sources,breath=false){const count=sources.length*(breath?4:10),ps=new Float32Array(count*3),a=new Float32Array(count);for(let i=0;i<count;i++)a[i]=rand();const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(ps,3));g.setAttribute('aSeed',new THREE.BufferAttribute(a,1));const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uTime:uniforms.time,uNight:uniforms.night,uBreath:{value:breath?1:0}},vertexShader:`attribute float aSeed;uniform float uTime,uBreath;varying float vAlpha;void main(){vec4 p=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*p;gl_PointSize=min(110.,(uBreath>.5?55.:360.)/max(1.,-p.z));vAlpha=.14;}`,fragmentShader:`varying float vAlpha;uniform float uNight;void main(){float d=length(gl_PointCoord-.5);gl_FragColor=vec4(mix(vec3(.7,.74,.76),vec3(.24,.3,.4),uNight),exp(-d*d*14.)*vAlpha);}`});const pts=new THREE.Points(g,m);pts.frustumCulled=false;scene.add(pts);return {update(t,wind){const per=breath?4:10;for(let i=0;i<count;i++){const src=sources[Math.floor(i/per)],life=(t*(breath?.45:.12)+a[i])%1;ps[i*3]=src.x+wind.x*life*(breath?.5:5);ps[i*3+1]=src.y+life*(breath?1:18);ps[i*3+2]=src.z+wind.z*life*(breath?.5:5);}g.attributes.position.needsUpdate=true;}};}

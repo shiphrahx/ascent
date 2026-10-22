@@ -1,0 +1,42 @@
+{
+  "results": [
+    {
+      "luminance": 0.18,
+      "samples": 3,
+      "pending": false,
+      "target": 0.9750639937945627,
+      "value": 1.2538773616822276,
+      "meanEV": -2.4375,
+      "error": null,
+      "width": 32,
+      "height": 18
+    },
+    {
+      "luminance": 0.01,
+      "samples": 4,
+      "pending": false,
+      "target": 1.8,
+      "value": 1.2538773616822276,
+      "meanEV": -6.5625,
+      "error": null,
+      "width": 32,
+      "height": 18
+    },
+    {
+      "luminance": 4,
+      "samples": 5,
+      "pending": false,
+      "target": 0.45,
+      "value": 1.2538773616822276,
+      "meanEV": 2.0625,
+      "error": null,
+      "width": 32,
+      "height": 18
+    }
+  ],
+  "lighting": {
+    "hemispheres": 0,
+    "environment": true
+  },
+  "errors": []
+}

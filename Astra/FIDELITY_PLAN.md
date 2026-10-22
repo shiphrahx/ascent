@@ -364,3 +364,17 @@ File: `src/lighting.js`
 
 - Average FPS is 7.6% lower in this pair despite unchanged rendering work. A paired fixed-view GPU measurement finds mean render cost 11.27 versus 11.39 ms (about 1% higher), p95 15.58 versus 16.12 ms. CPU submission p95 remains 38.9 ms. The flight difference is recorded rather than dismissed; long stalls and the strict frame budget remain Phase 8 work. No application renders were skipped.
 - Flicker at exposure 1.1576: whole RMS 0.00153467, cliff RMS 0.00091066, within 0.2% of Phase 6.3. Validation: pattern fixture, gameplay, graphics and temporal suites pass without errors or warnings. Personally inspected the seven-design sheet and all four matched scene views. The assets remain entirely procedural and offline.
+
+### Phase 7 - lens scattering and sharper presentation
+
+- Removed FXAA after the existing MSAA/temporal resolve. Bloom now blurs the complete HDR signal with no threshold and redistributes 3.5-6% of radiance between the original image and five normalized blur scales. It no longer adds uniform brightness. The final output pass explicitly restores opaque alpha while preserving the reactive actor mask throughout HDR processing. The optional 6% vignette is high-only; no film grain or motion blur was added.
+- A GPU fixture checks dark, mid-grey and HDR colours at three scattering strengths: uniform-field energy differs by at most 0.151% (half-float precision), reactive alpha is unchanged and output alpha is opaque. Updated the exposure fixture to use the sky colour after Phase 5 removed scene fog; its known-luminance results still pass.
+- Compared AgX with Three.js ACES Filmic at identical exposure/camera in sunrise, midday, snowstorm, golden hour, sunset and night. Retained AgX for more legible snow highlights and shadow detail; ACES adds contrast but crushes the late-evening valley. Three.js ACES is an approximation, not the complete UE5 grading pipeline. The twelve captures and comparison page are retained as tone-review artifacts.
+
+| Paired native medium flight | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 6.4 | 70.77 | 8.40 | 41.70 | 50.00 | 238/2123 |
+| Revised post stack | 71.43 | 8.40 | 41.70 | 50.10 | 230/2143 |
+
+- Throughput improves about 0.9%, with unchanged tails and no skipped application renders. Flicker at exposure 1.1565: whole RMS 0.00179099 (+16.7%), cliff RMS 0.00079806 (-12.4%). Removing FXAA exposes more fine geometry contrast, so the whole-frame metric worsens despite a better cliff score; this tradeoff is explicit, and subpixel vegetation still needs attention.
+- Validation: lens and exposure GPU fixtures, gameplay, graphics and temporal suites pass without errors or warnings. Personally inspected all four matched before/after views and the six lighting pairs. Thin detail is clearer; remaining frame stalls are the next task.

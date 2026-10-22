@@ -42,7 +42,7 @@ npm run test:temporal
 npm run preview
 ```
 
-Screenshots, validation reports, performance measurements, and historical comparison builds are in `captures/`. The phase-by-phase results and remaining realism work are recorded in [FIDELITY_PLAN.md](FIDELITY_PLAN.md). Open `captures/fidelity-6-4-comparison.html` for matched landform views. Run `node benchmark.mjs --flight --tier=medium` for a 30-second frame-pacing trace; add `--recording` for 2848×1590. Run `node flicker.mjs --tier=medium` for the fixed-step scene flicker metric. Use `--tag=name` to retain successive reports. Use `node gpu-budget.mjs --tier=medium --tag=name` for asynchronous GPU timing at a fixed view. Run GPU harnesses sequentially.
+Screenshots, validation reports, performance measurements, and historical comparison builds are in `captures/`. The phase-by-phase results and remaining realism work are recorded in [FIDELITY_PLAN.md](FIDELITY_PLAN.md). Open `captures/fidelity-7-comparison.html` for matched landform views. Run `node benchmark.mjs --flight --tier=medium` for a 30-second frame-pacing trace; add `--recording` for 2848×1590. Run `node flicker.mjs --tier=medium` for the fixed-step scene flicker metric. Use `--tag=name` to retain successive reports. Use `node gpu-budget.mjs --tier=medium --tag=name` for asynchronous GPU timing at a fixed view. Run GPU harnesses sequentially.
 
 ## Repository scope
 

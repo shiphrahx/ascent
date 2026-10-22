@@ -1,0 +1,79 @@
+{
+  "results": [
+    {
+      "scatter": 0.025,
+      "level": 0.001,
+      "relativeError": 0.0015029907226562708,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.025,
+      "level": 0.18,
+      "relativeError": 0.0011548239087301657,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.025,
+      "level": 2,
+      "relativeError": 0.0014648437499999631,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.025,
+      "level": 10,
+      "relativeError": 0.00078125,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.06,
+      "level": 0.001,
+      "relativeError": 0.0015029907226562708,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.06,
+      "level": 0.18,
+      "relativeError": 0.0011548239087301657,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.06,
+      "level": 2,
+      "relativeError": 0.0014648437499999631,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.06,
+      "level": 10,
+      "relativeError": 0.00078125,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.1,
+      "level": 0.001,
+      "relativeError": 0.0015029907226562708,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.1,
+      "level": 0.18,
+      "relativeError": 0.0011548239087301657,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.1,
+      "level": 2,
+      "relativeError": 0.0014648437499999631,
+      "alphaError": 0
+    },
+    {
+      "scatter": 0.1,
+      "level": 10,
+      "relativeError": 0.00078125,
+      "alphaError": 0
+    }
+  ],
+  "alphaErrors": 0,
+  "error": 0,
+  "errors": []
+}

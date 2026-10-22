@@ -17,7 +17,7 @@ try{
   await page.evaluate(level=>{
    const a=__ascent,r=a.renderer,e=a.atmo.exposure,fixture=new a.scene.constructor();
    e.setFixed(1);e.setFixed(null);
-   fixture.background=a.scene.fog.color.clone().setRGB(level,level,level);
+   fixture.background=a.atmo.skyU.uTop.value.clone().setRGB(level,level,level);
    // Complete a render, which resolves the MSAA colour target for sampling.
    r.setRenderTarget(a.atmo.scenePass.target);r.render(fixture,a.camera);r.setRenderTarget(null);
    e.sample();
@@ -33,5 +33,5 @@ try{
  assert(results.every(r=>!r.error&&Number.isFinite(r.meanEV)));
  const lighting=await page.evaluate(()=>{let hemispheres=0;__ascent.scene.traverse(o=>{if(o.isHemisphereLight)hemispheres++;});return {hemispheres,environment:!!__ascent.scene.environment};});
  assert.equal(lighting.hemispheres,0);assert(lighting.environment);assert.deepEqual(errors,[]);
- await writeFile('captures/fidelity-3-1-exposure.json',JSON.stringify({results,lighting,errors},null,2));console.log(JSON.stringify({results,lighting,errors}));
+ await writeFile('captures/exposure.json',JSON.stringify({results,lighting,errors},null,2));console.log(JSON.stringify({results,lighting,errors}));
 }finally{await browser.close();}
