@@ -140,7 +140,10 @@ async function boot() {
   pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
   if (tier === 'lite' || dbg.noao) pipe.ao.aoOn = false;
   if (tier === 'lite' || dbg.nocontact) pipe.ao.contactOn = false;
-  if (tier === 'lite' || dbg.noblur) pipe.taa.motionBlur = false;
+  // the 890M can't spare the half millisecond: medium and lite go without
+  if (tier !== 'high' || dbg.noblur) pipe.taa.motionBlur = false;
+  // and the haze's three looks for shaded air, which barely show from the balloon's height
+  if (tier !== 'high') U.uHazeLit.value = 0;
   if (tier === 'lite') { river.reflect = false; veg.grass.visible = false; veg.noGrass = true; }
   pipe.hooks.transparent = true;
   let exposure = 1;
