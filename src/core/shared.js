@@ -62,6 +62,8 @@ export const U = {
   uBounce: { value: null },
   uBounceOn: { value: 1 },
   uTerrDisp: { value: 0 },
+  // 1 when uNormCore holds the fine relief (world/terrainFine.js, high only)
+  uTerrFine: { value: 0 },
   uPOM: { value: 0 },
   uHazeLit: { value: 1 },
   uHeroBurnerPos: { value: new THREE.Vector3() },

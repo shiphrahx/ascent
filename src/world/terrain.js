@@ -39,7 +39,7 @@ function gridGeometry(n, skirts = true) {
 
 const VERT = /* glsl */`
 ${VCOMMON}
-attribute vec4 aChunk; // originX, originZ, size, unused
+attribute vec4 aChunk; // originX, originZ, size, LOD level
 varying vec3 vWorld;
 varying float vSkirt;
 #ifdef DEPTH_PASS
@@ -65,6 +65,15 @@ void main(){
   vec2 xz = aChunk.xy + position.xz * aChunk.z;
   float h = heightAt(xz);
   h -= position.y * (2.0 + aChunk.z * 0.03);
+  // the fine relief (terrainFine.js): each LOD takes the mip of its own spacing, and coarser ones
+  // toward the next switch, so the shape fades from one into the next instead of popping
+  if (uTerrFine > 0.5) {
+    float dc = distance(vec3(xz.x, h, xz.y), uShadowEye), l = aChunk.w;
+    float mip = l < 0.5 ? smoothstep(250., 350., dc) : l < 1.5 ? 1. + smoothstep(800., 1000., dc) : 2.;
+    float amp = coreMask(xz) * (1. - smoothstep(1000., 1300., dc));
+    float x = textureLod(uNormCore, coreUV(xz), mip).a * 2. - 1.;
+    if (amp > 0.) h += sign(x) * x * x * 16. * amp;
+  }
   vec3 wp = vec3(xz.x, h, xz.y);
   if (uTerrDisp > 0.5) {
     float near = 1. - smoothstep(90., 150., distance(wp, uShadowEye));
@@ -361,7 +370,8 @@ export class Terrain {
     const a = this.shadowInst.array;
     a[0] = Math.round((x - size / 2) / q) * q;
     a[1] = Math.round((z - size / 2) / q) * q;
-    a[2] = Math.round(size / step) * step; a[3] = 0;
+    // on the 2.5 m lattice: it takes that LOD's relief
+    a[2] = Math.round(size / step) * step; a[3] = 1;
     this.shadowInst.needsUpdate = true;
   }
 
@@ -385,12 +395,13 @@ export class Terrain {
       const d = c.d;
       // spacing of a vertex at this LOD vs. distance
       let l;
-      if (c.core) l = this.fine && d < 130 ? 0 : d < 700 * lodBias ? 1 : d < 1600 * lodBias ? 2 : d < 3200 * lodBias ? 3 : 4;
+      // high carries the 1.25 m mesh out to 350 m and the 2.5 m one to a kilometre, for the fine relief
+      if (c.core) l = this.fine && d < 350 ? 0 : d < (this.fine ? 1000 : 700) * lodBias ? 1 : d < 1600 * lodBias ? 2 : d < 3200 * lodBias ? 3 : 4;
       else l = c.s <= 640 ? (d < 2500 * lodBias ? 2 : d < 6000 * lodBias ? 3 : 4) : (d < 6000 * lodBias ? 2 : d < 16000 * lodBias ? 3 : 4);
       const L = this.levels[l];
       const k = counts[l]++;
       const a = L.inst.array;
-      a[k * 4] = c.x; a[k * 4 + 1] = c.z; a[k * 4 + 2] = c.s; a[k * 4 + 3] = 0;
+      a[k * 4] = c.x; a[k * 4 + 1] = c.z; a[k * 4 + 2] = c.s; a[k * 4 + 3] = l;
     }
     for (let l = 0; l < 5; l++) {
       const L = this.levels[l];
