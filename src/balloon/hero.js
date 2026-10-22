@@ -112,6 +112,8 @@ export class Hero {
     // and everything else close to it (the ground below, a cliff or a neighbour on a near pass)
     U.uHeroBurnerPos.value.copy(this.burnerWorld);
     U.uHeroBurnerCol.value.setRGB(1.0, 0.5, 0.18).multiplyScalar(this.flameI * fl * 14 * U.uGlowComp.value);
+    U.uHeroMouth.value.set(this.env.position.x, this.env.position.y, this.env.position.z, this.deflate > 0 ? 0 : 1);
+    U.uHeroBasket.value.copy(this.basket.position);
 
     // flying wires
     const mouthR = ENV.mouthR;
