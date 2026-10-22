@@ -452,14 +452,16 @@ export class Vegetation {
 
   addSet(hiGeos, loGeos, list, maxDist, swayH, cast, crowns) {
     const n = list.length;
-    const set = { hi: [], lo: [], crowns: [], list, maxDist, loDist: loGeos ? 140 : 1e9 };
-    list.forEach((o, i) => { o.v = i % hiGeos.length; });
+    const set = { hi: [], lo: [], crowns: [], refl: [], list, maxDist, loDist: loGeos ? 140 : 1e9 };
+    // The river's reflection only draws the trees near the water, in their simple model: it costs
+    // vertices, not pixels, and drawing every tree a second time made it the heaviest pass in view.
+    const C = WORLD.core, data = this.data;
+    list.forEach((o, i) => { o.v = i % hiGeos.length; o.bank = data.riverD[Math.floor((o.z - C.minZ) / data.cell) * data.nx + Math.floor((o.x - C.minX) / data.cell)] < 80; });
     const mk = (geo, cnt, hi) => {
       const mat = makeMaterial({ vertex: VERT, fragment: FRAG, side: THREE.DoubleSide, uniforms: { uScaleH: { value: swayH }, uGrid: { value: 0 }, uCellSize: { value: 0 }, uCamGrid: { value: new THREE.Vector3() }, uLodHi: { value: hi ? 1 : 0 } } });
       const m = new THREE.InstancedMesh(geo, mat, Math.max(1, cnt));
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       m.frustumCulled = false; m.count = 0;
-      m.layers.enable(2);
       if (cast) addCaster(m);
       this.group.add(m);
       return m;
@@ -468,6 +470,13 @@ export class Vegetation {
       const cnt = list.filter(o => o.v === v).length;
       set.hi.push(mk(hiGeos[v].geo || hiGeos[v], cnt, true));
       if (loGeos) set.lo.push(mk(loGeos[v].geo || loGeos[v], cnt, false));
+      const src = (loGeos ? set.lo : set.hi)[v];
+      const rm = new THREE.InstancedMesh(src.geometry, src.material, Math.max(1, list.filter(o => o.v === v && o.bank).length));
+      rm.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      rm.frustumCulled = false; rm.count = 0;
+      rm.layers.set(2);
+      this.group.add(rm);
+      set.refl.push(rm);
       if (crowns) {
         const mat = makeMaterial({ vertex: CROWN_VERT, fragment: CROWN_FRAG, shadow: false, uniforms: { uCrown: { value: crowns[v].userData.crown } } });
         const m = new THREE.InstancedMesh(crowns[v], mat, Math.max(1, cnt));
@@ -486,14 +495,17 @@ export class Vegetation {
     const cp = camera.position;
     const up = new THREE.Vector3(0, 1, 0), pos = new THREE.Vector3(), sc = new THREE.Vector3();
     for (const set of this.sets) {
-      const ch = set.hi.map(() => 0), cl = set.lo.map(() => 0), cc = set.hi.map(() => 0);
+      const ch = set.hi.map(() => 0), cl = set.lo.map(() => 0), cc = set.hi.map(() => 0), cr = set.hi.map(() => 0);
       for (const o of set.list) {
         this._sph.center.set(o.x, o.y + 5 * o.s, o.z); this._sph.radius = 10 * o.s;
         const d = cp.distanceTo(this._sph.center);
         if (d > set.maxDist * (G.tier === 'lite' ? 0.25 : 1) * (1 + Math.max(0, cp.y - 200) / 600)) continue;
-        if (!this._f.intersectsSphere(this._sph) && d > 80) continue;
+        const inView = this._f.intersectsSphere(this._sph);
+        if (!inView && d > 80 && !o.bank) continue;
         this._q.setFromAxisAngle(up, o.r);
         this._m.compose(pos.set(o.x, o.y, o.z), this._q, sc.set(o.s, o.s, o.s));
+        if (o.bank) set.refl[o.v].setMatrixAt(cr[o.v]++, this._m);
+        if (!inView && d > 80) continue;
         // both models across a 30 m band, dithering from one to the other; how far through the band
         // rides in the matrix's bottom-left corner, which a scale/rotate/translate never uses
         const t = set.lo.length ? Math.max(0, Math.min(1, (d - set.loDist + 15) / 30)) : 0;
@@ -506,6 +518,7 @@ export class Vegetation {
       set.crowns.forEach((m, i) => { m.count = cc[i]; m.instanceMatrix.needsUpdate = true; });
       set.hi.forEach((m, i) => { m.count = ch[i]; m.instanceMatrix.needsUpdate = true; });
       set.lo.forEach((m, i) => { m.count = cl[i]; m.instanceMatrix.needsUpdate = true; });
+      set.refl.forEach((m, i) => { m.count = cr[i]; m.instanceMatrix.needsUpdate = true; });
     }
     // grass only matters when the camera is near the ground
     const ground = this.data.height(cp.x, cp.z);

@@ -213,9 +213,16 @@ export class Village {
       if (!v.list.length) continue;
       const im = new THREE.InstancedMesh(v.geo, this.mat, v.list.length);
       v.list.forEach((p, i) => { q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.rot); m4.compose(new THREE.Vector3(p.x, p.y, p.z), q, new THREE.Vector3(1, 1, 1)); im.setMatrixAt(i, m4); });
-      im.layers.enable(2);
       addCaster(im);
       this.group.add(im);
+      // the river's reflection draws only the houses near the water (it's vertex-bound, not pixel)
+      const bank = v.list.filter(p => data.riverD[Math.floor((p.z - WORLD.core.minZ) / data.cell) * data.nx + Math.floor((p.x - WORLD.core.minX) / data.cell)] < 120);
+      if (bank.length) {
+        const rm = new THREE.InstancedMesh(v.geo, this.mat, bank.length);
+        bank.forEach((p, i) => { q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.rot); m4.compose(new THREE.Vector3(p.x, p.y, p.z), q, new THREE.Vector3(1, 1, 1)); rm.setMatrixAt(i, m4); });
+        rm.layers.set(2);
+        this.group.add(rm);
+      }
     }
     // street lamps between houses
     for (let i = 0; i < placed.length; i += 5) {
@@ -226,7 +233,6 @@ export class Village {
     const lampGeo = merge([tag(cyl(0.06, 0.05, 3.5, 6), 2, [0.2, 0.2, 0.2]), tag(box(0.3, 0.35, 0.3, 0, 3.4, 0), 18)]);
     const lamps = new THREE.InstancedMesh(lampGeo, this.mat, this.lamps.length);
     this.lamps.forEach((l, i) => { m4.makeTranslation(l.x, l.y - 3.6, l.z); lamps.setMatrixAt(i, m4); });
-    lamps.layers.enable(2);
     this.group.add(lamps);
 
     // bridge across the river
@@ -297,8 +303,8 @@ export class Village {
         if (!sub.length) continue;
         const im = new THREE.InstancedMesh(segGeo[k], this.mat, sub.length);
         sub.forEach((s, i) => { q.setFromAxisAngle(up, -s.ang); m4.compose(new THREE.Vector3(s.x, s.y + 0.3, s.z), q, new THREE.Vector3(1, 1, 1)); im.setMatrixAt(i, m4); });
+        // too low to show in the river's reflection
         im.computeBoundingSphere();
-        im.layers.enable(2);
         addCaster(im);
         this.group.add(im);
         tile.hi.push(im);

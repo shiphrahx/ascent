@@ -110,7 +110,7 @@ void main(){
   float px = length(fwidth(P));
   vec3 dPx = dFdx(P), dPy = dFdy(P);
   float cav;
-  float relief = tuffRelief(P, N, px, 2, dPx, dPy, cav);
+  float relief = uCheap > 0.5 ? (cav = 0., 0.) : tuffRelief(P, N, px, 2, dPx, dPy, cav);
   vec3 N0 = N;
   N = bumpNormal(N, P, relief * mix(0.22, 1., steep));
   // strata ledges catch light: tilt normal at band edges
@@ -145,7 +145,8 @@ void main(){
   MatS rk = none; rk.alb = vec3(0.44, 0.26, 0.125);
   // close up, cliffs get parallax occlusion on the scanned tuff (high only)
   float pom = uPOM * (1. - smoothstep(30., 60., dist)) * steep * 0.45;
-  if (soilAmt < 0.999) rk = matBiplanarP(L_TUFF, P, N0, 4.2, dPx, dPy, V, pom);
+  // the river's reflection goes without the scans: it's small and broken up by ripples
+  if (soilAmt < 0.999 && uCheap < 0.5) rk = matBiplanarP(L_TUFF, P, N0, 4.2, dPx, dPy, V, pom);
   vec3 rkD = rk.alb / vec3(0.44, 0.26, 0.125);
   vec3 rock = tuffColor(P.y, rose, P.xz, var) * mix(vec3(1), mix(vec3(luma(rkD)), rkD, 0.4), 0.65);
   vec3 alb = rock;
@@ -158,9 +159,9 @@ void main(){
     float wVine = smoothstep(0.92, 0.98, soilT);
     MatS st = none, so = none, pl = none;
     st.alb = vec3(0.22, 0.18, 0.105); so.alb = vec3(0.27, 0.15, 0.07); pl.alb = vec3(0.10, 0.06, 0.03);
-    if (wGrass * (1. - wPlow) * (1. - wVine) > 0.002) st = matTop(L_STEPPE, P, 3.4, dPx, dPy, rep);
-    if ((1. - wGrass) * (1. - wPlow) * (1. - wVine) + wVine > 0.002) so = matTop(L_SOIL, P, 2.6, dPx, dPy, rep);
-    if (wPlow * (1. - wVine) > 0.002) pl = matTop(L_PLOWED, P, 3.0, dPx, dPy, rep);
+    if (uCheap < 0.5 && wGrass * (1. - wPlow) * (1. - wVine) > 0.002) st = matTop(L_STEPPE, P, 3.4, dPx, dPy, rep);
+    if (uCheap < 0.5 && (1. - wGrass) * (1. - wPlow) * (1. - wVine) + wVine > 0.002) so = matTop(L_SOIL, P, 2.6, dPx, dPy, rep);
+    if (uCheap < 0.5 && wPlow * (1. - wVine) > 0.002) pl = matTop(L_PLOWED, P, 3.0, dPx, dPy, rep);
     vec3 stD = st.alb / vec3(0.22, 0.18, 0.105), soD = so.alb / vec3(0.27, 0.15, 0.07), plD = pl.alb / vec3(0.10, 0.06, 0.03);
     vec3 dryGrass = mix(vec3(0.52, 0.47, 0.30), vec3(0.42, 0.40, 0.26), nz2.g) * mix(vec3(luma(stD)), stD, 0.6);
     vec3 tuffSoil = mix(vec3(0.60, 0.51, 0.39), vec3(0.50, 0.41, 0.31), nz.g) * mix(vec3(luma(soD)), soD, 0.35);

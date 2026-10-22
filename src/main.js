@@ -98,7 +98,7 @@ async function boot() {
   rocks.addCollider(landmarks.castle);
   const village = new Village(scene, data, rocks);
   G.village = village;
-  const river = new River(scene, renderer);
+  const river = G.river = new River(scene, renderer);
   const veg = new Vegetation(scene, data, rocks, village);
   G.veg = veg;
   const parts = new Particles(scene, data, village);

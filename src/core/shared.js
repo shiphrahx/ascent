@@ -80,6 +80,8 @@ export const U = {
   uExposure: { value: 1 },
   uGlowComp: { value: 1 },
   uDbgShadow: { value: 0 },
+  // 1 while the river reflection renders: materials take their cheap path (world/river.js)
+  uCheap: { value: 0 },
   uPillars: { value: 0 },
   uDiamond: { value: 0 },
   uSunDogs: { value: 0 },
