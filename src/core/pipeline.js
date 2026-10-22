@@ -15,7 +15,7 @@ export class Pipeline {
     this.ao = new AmbientOcclusion(renderer);
     this.scale = 1;
     this.main = null;
-    this.hooks = { volumetrics: null, transparent: null };
+    this.hooks = { volumetrics: null, transparent: null, afterScene: null };
   }
   setSize(w, h, pr) {
     this.pr = pr;
@@ -45,6 +45,7 @@ export class Pipeline {
     r.setClearColor(0x000000, 1);
     r.clear(true, true, false);
     r.render(scene, camera);
+    if (this.hooks.afterScene) this.hooks.afterScene(this.main, camera);
     P && P.begin('ao');
     this.ao.render(this.main, camera);
     P && P.begin('volumetrics');

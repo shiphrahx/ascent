@@ -5,7 +5,8 @@
 // each surface point's motion, 8-bit levels) over the whole frame and over a cliff-heavy crop. Lower is steadier. Runs on the shadow-only view by default
 // (textures moving past the camera score too, and would bury the shadow numbers); FULL=1 for the image.
 // usage: node tools/shimmer.mjs [A|B|C|P|F|K]   (F runs 60 s; N sets the frame count)   (env CAM overrides the view hash, RUNS repeats each test,
-// SHOT=1 also saves the last frame and a heat map of where it flickered)
+// SHOT=1 also saves the last frame and a heat map of where it flickered, EXTRA appends to the hash, e.g.
+// EXTRA='&nocontact' for an A/B. Every test also splits its score by source: hero, fleet, ground, ...)
 import puppeteer from 'puppeteer-core';
 import path from 'path';
 import fs from 'fs';
@@ -62,5 +63,11 @@ for (const t of pick) for (let run = 0; run < +(process.env.RUNS || 1); run++) {
   // at the reprojection's limits); what the shadow view scores above that is the shadow flicker
   const s = await capture(t, '&shadowview'), c = await capture(t, '&shadowview=flat');
   console.log(`${t}: shadows ${f(s)}   flat ${f(c)}   flicker ${(s.frame - c.frame).toFixed(2)} / ${(s.crop - c.crop).toFixed(2)}   (${(s.valid * 100).toFixed(0)}% scored)`);
+  // per source (tests that move the camera mostly): shadow view, flat control, and what's left over
+  if (s.sources) for (let i = 0; i < s.sources.length; i++) {
+    const a = s.sources[i], b = c.sources[i];
+    if (a.area < 0.001) continue;
+    console.log(`   ${a.name.padEnd(14)} ${a.score.toFixed(2)} - ${b.score.toFixed(2)} = ${(a.score - b.score).toFixed(2)}   ${(a.area * 100).toFixed(1).padStart(5)}% of pixels, ${(a.share * 100).toFixed(0).padStart(3)}% of the shadow view's flicker`);
+  }
 }
 await browser.close();
