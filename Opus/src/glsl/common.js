@@ -27,7 +27,7 @@ uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
-uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp, uPOM;
+uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp, uPOM, uHazeLit;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 
@@ -168,7 +168,7 @@ vec3 applyHaze(vec3 col, vec3 P){
   vec3 sky = skyLut(normalize(vec3(dir.x, max(dir.y, 0.015), dir.z)));
   // how much of the air on the way is in the sun: three looks along the ray
   float lit = 1.;
-  if (dist > 400.) lit = (terrainShadow(C + dv * 0.3) + terrainShadow(C + dv * 0.6) + terrainShadow(C + dv * 0.9)) / 3.;
+  if (dist > 400. && uHazeLit > 0.5) lit = (terrainShadow(C + dv * 0.3) + terrainShadow(C + dv * 0.6) + terrainShadow(C + dv * 0.9)) / 3.;
   float aer = odA / (odA + luma(odR) + 1e-9);
   float mie = hgPhase(dot(dir, uKeyDir), 0.72) * 6.0;
   vec3 ins = sky * 0.95 * mix(0.35, 1., lit) + uKeyColor * mie * 0.06 * keyHorizon(P) * aer * lit;

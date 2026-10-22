@@ -210,3 +210,71 @@ File: `src/glsl/common.js` (`applyHaze`)
 - Shots at sunrise, clear afternoon, snowstorm, golden hour, sunset, blue hour and night, same cameras as the baseline. Put a before/after contact sheet in `shots/` (`tools/sheet.py` exists).
 - Shimmer numbers and GPU timings for each tier, added to the bottom of this file.
 - A short list of anything still short of the UE look, ranked, for the next pass.
+
+---
+
+## Results (2026-10-22)
+
+All five phases done, 46 commits from `80a2c86` on. Before/after contact sheet, seven hours plus the church cliff and the basket, original build on the left: `shots/fidelity_before_after.png` (shots/ is gitignored, so it lives on this machine only).
+
+### What changed, item by item
+
+| item | status |
+|---|---|
+| 0.1 shimmer tool | done, rev 3 (reprojected second difference, flat-grey control, tests A B C F K P) |
+| 1.1 texel snap | done; anchor follows the centre, not the origin (origin made the moving sun worse) |
+| 1.2 frustum-fit cascades | done; 4 on high (basket, 0–250 m, 212–900 m, balloons), picked by camera distance |
+| 1.3 ridge shadows | done; heightmap shadow always on, caster grid on the visible LOD's lattice, up-sun, no skirt |
+| 1.4 heightmap shadow | done; log-step doubling at 2048×1024, distance-based penumbra, blend between rebuilds on slow tiers |
+| 1.5 same-frame sun | done; balloon cascade every frame on high. Sun slowdown and light-direction quantising not needed (B sits at the floor) |
+| 1.6 filtering | done; PCSS + 16 taps + blue noise on high, world-space filter floor, slope-scaled bias |
+| 1.7 TAA | done; variance clipping was already there, alpha now driven by clip distance not speed |
+| 2.1 sky visibility | done; GTAO slices over the heightmap at load |
+| 2.2 ground bounce | done; 512×256 radiance map with mips, fills occluded sky and replaces the cube's ground |
+| 2.3 contact shadows | done; also made SSAO darken only indirect light |
+| 2.4 burner light | flicker added and a 90 m point light; envelope, basket and crew were already lit. No shadowing |
+| 3.1 aerial perspective | done in closed form with the LUT's coefficients; froxel LUT skipped (matches at the horizon already) |
+| 3.2 volumetrics | clouds now drift with the wind (they went upwind before); no reprojection needed (K = 0.05) |
+| 4.1 near detail | done; 1.25 m LOD + real relief within 150 m, POM within 60 m (small effect on these scans) |
+| 4.2 tiling and sparkle | specular AA and 16× anisotropy; no tiling showed from the air, so no two-scale tuff |
+| 4.3 LOD fades | done for chimneys, trees and wall tiles |
+| 5.1 tonemapper | UE5 FilmToneMap at defaults, input scaled 0.72 to keep each hour's brightness |
+| 5.2 exposure | histogram eye adaptation (relative to the hour's light) + local exposure |
+| 5.3 bloom | energy conserving, no threshold, 7 levels; the old one laid half the blur on top |
+| 5.4 motion blur | done on high, half shutter, none under 1.5 px |
+| 5.5 lens | close-up DOF, edge CA, grain; sharpen clamped (it drew a dark rim round silhouettes) |
+
+Also fixed on the way: a fresh profile dropped to lite on first load; three r170's async readback broke other reads; the D3D compiler's early-return warnings in the shadow and envelope shaders.
+
+### Shimmer, final (frame / crop, 8-bit levels, shadow flicker over the flat control)
+
+| test | baseline (high) | high | medium | lite |
+|---|---|---|---|---|
+| A cascades sliding | 0.22 / 0.28 | 0.04 / 0.04 | 0.07 / 0.07 | 0.16 / 0.17 |
+| B sun moving | 0.11 / 0.12 | 0.08 / 0.08 | 0.15 / 0.15 | 0.26 / 0.25 |
+| C floor | 0.08 / 0.09 | 0.04 / 0.05 | | |
+| F 60 s flight | 0.60 / 0.47 | 0.49 / 0.26 | | |
+| K clouds (full image, sky) | | 0.13 / 0.05 | | |
+
+A is down 82–86% on high. B is at the static floor and was barely above it to start with. F's crop halved; the rest of F is the hero balloon and camera-motion edge noise the metric can't separate. Lite's control renders without noise, so its numbers aren't comparable with the others; its shadows refresh every third frame, which is most of what it scores.
+
+### GPU, 1600×900, render scale 1, `#h=15`
+
+| tier / GPU | original | now | notes |
+|---|---|---|---|
+| high / RTX 5070 Ti laptop | 7.39 ms | 7.43 ms | holds 60 at native with lots to spare |
+| medium / Radeon 890M | 12.59 ms* | 18.6 ms | holds 60 at about 0.8 scale (was 1.0) |
+| lite on the 890M | | 8.2 ms | real lite is a software rasteriser |
+
+\* The original never actually ran medium on the 890M in a normal launch: cold shader compiles tripped the lite fallback (120 fps at lite). The figure is from `#gpuprof`, which skips the governor. The medium cost is real but spread thin over every lit pixel (sky visibility, bounce, contact shadows, local exposure ~0.3–0.7 ms each); motion blur and the haze's shadow looks were cut from medium.
+
+### Still short of the UE look, ranked
+
+1. **Cliff form between 150 m and 1 km.** That's most of the frame from a balloon, and it's still a 2.5 m heightmap with texture doing the work. UE would have Nanite-dense sculpted rock. Next step: a higher-res core heightmap for the canyons, or erosion-sculpted cliff meshes.
+2. **Clouds.** Quarter-res soft blobs with no structure. Needs a proper cumulus march (detail erosion, higher resolution, temporal upscale).
+3. **Village and crew models.** Houses are boxes and the crew is primitives; up close they break the photoreal read more than any lighting does.
+4. **GI richness.** One bounce, off the ground only: no bounce off chimneys and houses, no colour bleed between objects, and the bounce isn't occluded.
+5. **Shadows past 250 m.** Terrain self-shadow there comes from the 2.5 m heightmap only, so distant cliff shadows are soft and slightly blobby next to UE's virtual shadow maps.
+6. **Outer terrain beyond 2.5 km.** 160 m texels, no sky visibility or bounce data, flat far fields.
+7. **Ground cover.** Sparse grass tufts; UE scenes carry dense foliage scatter.
+8. **Medium tier cost.** 0.8 render scale on the 890M; worth a pass to fold the per-pixel lookups (sky visibility, bounce, terrain shadow) into fewer fetches.
