@@ -20,7 +20,7 @@ const lamps=new THREE.Group();const pillarMat=new THREE.ShaderMaterial({transpar
 markTemporalReactive([hero.group,...fleet.map(b=>b.group),...launch.map(b=>b.group),...horses.map(h=>h.group),...birds.map(b=>b.group)]);
 // Reflection layer excludes subpixel details and particles, keeping the same
 // terrain, landmarks, trees, sky and balloon envelopes as the main view.
-scene.traverse(o=>{if(o.isMesh)o.layers.enable(1);});
+scene.traverse(o=>{if(o.isMesh&&!o.userData.noReflection)o.layers.enable(1);});
 hero.group.traverse(o=>o.layers.disable(1));hero.envelope.layers.enable(1);
 for(const b of [...fleet,...launch]){b.group.traverse(o=>o.layers.disable(1));b.envelope.layers.enable(1);}
 lamps.traverse(o=>o.layers.disable(1));

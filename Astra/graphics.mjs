@@ -36,7 +36,7 @@ try{
      if(name==='scene')for(let i=3;i<pixels.length;i+=4){if(pixels[i]===0)reactivePixels++;if(pixels[i]===0x3c00)stablePixels++;}
     }
     const target=at.scenePass.target,pr=r.getPixelRatio(),batches=a.world.trees.children;
-    return {invalid,pixelRatio:pr,samples:target.samples,width:target.width,height:target.height,
+    return {tier:a.tier.name,invalid,pixelRatio:pr,samples:target.samples,width:target.width,height:target.height,
      sizeMatches:target.width===Math.floor(innerWidth*pr)&&target.height===Math.floor(innerHeight*pr),
      depthMatches:target.depthTexture.image.width===target.width&&target.depthTexture.image.height===target.height,
      temporal:{valid:at.temporal.valid,frames:at.temporal.stats.frames,reactivePixels,stablePixels,
@@ -58,7 +58,7 @@ try{
  checks.resolvedDepthDimensions=frames.every(f=>f.sizeMatches&&f.depthMatches);
  checks.liveWeather=frames.filter(f=>f.pose==='storm').every(f=>f.storm===1)&&frames.filter(f=>f.pose==='night').every(f=>f.night>.99);
  checks.liveTime=frames.every(f=>Math.abs(f.time-f.elapsed)<.001);
- checks.stableTreeInstances=frames.every(f=>f.trees===240&&f.treeVersions.every(v=>v===0));
+ checks.stableTreeInstances=frames.every(f=>f.trees===({high:720,medium:480,lite:320}[f.tier])&&f.treeVersions.every(v=>v===0));
  checks.noContextLoss=frames.every(f=>!f.contextLost);
  checks.temporalHistory=frames.every(f=>f.temporal.valid&&f.temporal.frames>0&&f.temporal.sizeMatches&&f.temporal.projectionUnchanged);
  checks.reactiveActors=frames.every(f=>f.temporal.reactivePixels>100&&f.temporal.stablePixels>100);

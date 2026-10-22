@@ -336,3 +336,18 @@ File: `src/lighting.js`
 
 - Throughput differs by 1.8%, with effectively unchanged tails and no skipped application renders. These faster session averages do not remove the sustained frame-budget requirement. Flicker at exposure 1.1529: whole RMS 0.00136650, cliff RMS 0.00089529, about 1.8%/2.5% below Phase 6.1.
 - Validation: production-shader coverage fixture, all-tier quality checks, gameplay, graphics and temporal suites pass with no errors or warnings. Personally inspected all four matched pairs: deposits are softer and less uniform, with more exposed rock on sunny slopes. The remaining scene details are vegetation and fleet designs.
+
+### Phase 6.3 - riverbank trees, cultivated terraces and ground cover
+
+- Poplar lines now contain 720/480/320 trees on high/medium/lite. Lower tiers simplify connected opaque branch geometry: medium doubles the population while reducing total poplar triangles from 472,320 to 408,960. The high silhouette retains 24 primary limbs; medium/lite use 18/14. Four seeded crown variants, static instance matrices, padded bounds and identical colour/depth wind deformation remain; trees never swap geometry or alpha masks while flying.
+- Added terraced apricot orchards, woody vines on existing trellises and plateau scrub. Final high/medium/lite orchard counts are 89/93/53; scrub counts are 2,200/1,300/600. Placement rejects steep slopes, river margins and nearby building/formation obstacles. Browser checks measure at least 3 m obstacle clearance and root-height error below 0.00005 m.
+- Ground cover uses 330 fixed 96 m terrain patches. High/medium/lite store roughly 240k/120k/60k small clumps (about 15.4/7.7/3.8 MB of instance transforms), with only nearby patches submitted; 14 patches are active at the bank review camera. Clumps shrink continuously between 80 and 140 m before whole-patch culling. They do not cast shadows or enter reflections. The initial sparse scatter was replaced after close-up review. Corrected reflection-layer initialization so the ground-cover exclusion is actually respected.
+
+| Final paired native medium flight | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 6.2 | 68.13 | 8.40 | 41.70 | 50.10 | 249/2044 |
+| Dense vegetation with obstacle clearance | 66.23 | 8.40 | 41.60 | 50.00 | 238/1987 |
+
+- Mean draws fall from 878.5 to 864.9; rendered triangles remain about 2.56M. Average throughput is 2.8% lower, while tail times are effectively unchanged. Higher population/detail is tiered. No application renders were skipped. Earlier prototype runs are not used as the final baseline.
+- Flicker at exposure 1.1569: whole RMS 0.00153388, cliff RMS 0.00090899. These rise about 12.2%/1.5% as additional fine branches and grass enter the scene; the content changed, and these scores do not establish that all subpixel vegetation shimmer is gone. Static matrices and opaque, fixed tree geometry eliminate population/LOD switching as a cause.
+- Validation: all tier vegetation/quality checks, gameplay, graphics and temporal suites pass without errors or warnings. Personally inspected the bank close-up and all four final matched pairs. Added a snapshot helper that rejects stale/failed suite reports before recording the build hash and historical comparison build. Fleet pattern variety is next.

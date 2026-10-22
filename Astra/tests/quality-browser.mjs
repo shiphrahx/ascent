@@ -15,7 +15,7 @@ try{
   assert.equal(result.tier.name,tier);assert.equal(result.tier.source,'override');
   assert.equal(result.msaa,result.tier.samples);assert.equal(result.shadow,result.tier.shadowNearSize);
   assert.equal(result.reflection,result.tier.reflectionSize);assert.equal(result.sky,result.tier.skyWidth);
-  assert.equal(result.trees,240);assert.equal(result.contextLost,false);assert.deepEqual(errors,[]);
+  assert.equal(result.trees,{high:720,medium:480,lite:320}[tier]);assert.equal(result.contextLost,false);assert.deepEqual(errors,[]);
   report.push({...result,errors});await page.close();
  }
  assert(report[2].terrainTriangles>report[0].terrainTriangles*2,'High tier enables the dense terrain grid');
