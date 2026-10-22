@@ -431,6 +431,11 @@ export class Rocks {
         this.group.add(mesh);
         v[lod + 'Mesh'] = mesh; v[lod + 'Inst'] = inst;
       }
+      // the simple model's shape with the detailed list's instances, for passes that can do with it
+      const g = new THREE.BufferGeometry(), lg = v.lo.geo;
+      g.setIndex(lg.index);
+      for (const k in lg.attributes) g.setAttribute(k, k === 'aInst' ? v.hiInst : lg.attributes[k]);
+      v.hiAsLo = g;
     }
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._s = new THREE.Vector3(); this._p = new THREE.Vector3();
     this._f = new THREE.Frustum(); this._pm = new THREE.Matrix4(); this._sph = new THREE.Sphere();
@@ -526,6 +531,11 @@ export class Rocks {
     return o.rb + (o.rt - o.rb) * Math.min(1, u);
   }
 
+  // Draw the near rocks with the simple model too, or put them back. The river's reflection and
+  // medium's shadow maps are vertex-bound, and a near chimney's 9k triangles were most of that.
+  coarse(on) {
+    for (const v of this.variants) v.hiMesh.geometry = on ? v.hiAsLo : v.hi.geo;
+  }
   update(camera) {
     this._pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this._f.setFromProjectionMatrix(this._pm);

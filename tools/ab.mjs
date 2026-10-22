@@ -23,5 +23,7 @@ for (let i = 0; i < +rounds; i++) for (const [k, js] of [['A', A], ['B', B]]) {
   res[k].push(pass === 'total' ? r.total : r[pass]);
 }
 const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
-console.log(`${pass}: A=${mean(res.A).toFixed(2)}ms B=${mean(res.B).toFixed(2)}ms  (A ${res.A.join(' ')} | B ${res.B.join(' ')})`);
+// the median holds up better when the laptop throttles partway through
+const med = a => { const s = [...a].sort((x, y) => x - y); return s.length & 1 ? s[s.length >> 1] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2; };
+console.log(`${pass}: A=${mean(res.A).toFixed(2)}ms B=${mean(res.B).toFixed(2)}ms  median A=${med(res.A).toFixed(2)} B=${med(res.B).toFixed(2)}  (A ${res.A.join(' ')} | B ${res.B.join(' ')})`);
 await browser.close();

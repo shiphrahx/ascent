@@ -89,8 +89,9 @@ export class Shadows {
     const K = U.uShadowK.value, WT = U.uShadowWT.value;
     this._up.set(0, 1, 0);
     if (Math.abs(L.y) > 0.98) this._up.set(0, 0, 1);
-    // swap every caster to its depth material
+    // swap every caster to its depth material; below high the near rocks cast with their simple shape
     for (const m of casters) { m.userData._mat = m.material; m.material = m.material.userData.depthMat; }
+    if (!this.high && G.rocks) G.rocks.coarse(true);
     const oldBg = scene.background; scene.background = null;
     const last = this.cascades.length - 1;
     for (let i = 0; i <= last; i++) {
@@ -143,5 +144,6 @@ export class Shadows {
     }
     scene.background = oldBg;
     for (const m of casters) m.material = m.userData._mat;
+    if (!this.high && G.rocks) G.rocks.coarse(false);
   }
 }

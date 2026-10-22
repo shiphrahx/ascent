@@ -152,8 +152,9 @@ export class River {
     this.mat.uniforms.uReflOn.value = this.reflect ? 1 : 0;
     if (!this.visible || !this.reflect) return;
     // Every frame, and cheap: heightmap shadows only and plain materials (uCheap), a third of the
-    // render size, and only the trees and houses near the water. It used to draw the whole scene in
-    // full every other frame, so frames alternated heavy and light whenever the river was in view.
+    // render size, only the trees and houses near the water, and the rocks in their simple shape. It
+    // used to draw the whole scene in full every other frame, so frames alternated heavy and light
+    // whenever the river was in view.
     G.tag('reflection');
     const y = WORLD.riverY;
     const cam = camera, rc = this.rcam;
@@ -173,10 +174,12 @@ export class River {
     tm.multiply(rc.projectionMatrix).multiply(rc.matrixWorldInverse);
     const r = this.renderer;
     U.uClipY.value = y - 0.1; U.uCheap.value = 1;
+    if (G.rocks) G.rocks.coarse(true);
     r.setRenderTarget(this.rt);
     r.setClearColor(0x000000, 1);
     r.clear(true, true, false);
     r.render(scene, rc);
+    if (G.rocks) G.rocks.coarse(false);
     U.uClipY.value = -1e9; U.uCheap.value = 0;
   }
 }
