@@ -241,6 +241,7 @@ async function boot() {
     { name: 'village', objs: [village.group] },
   ];
   pipe.hooks.afterScene = (main, cam) => shimmer.mask(scene, cam, main);
+  shimmer.movers = pipe.taa.movers;
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
   window.__dbg = { G, U, sky, shimmer: (n, crop, sky) => { shimmer.start(n, crop, 30, sky); if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, shimmerMap: () => shimmer.heatmap(), loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
     extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), aeLog: aeLog === null ? null : +aeLog.toFixed(2), aeCorr: +aeCorr.toFixed(2), aeB: +Math.log2(Math.max(aeB, 1e-5)).toFixed(2), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };

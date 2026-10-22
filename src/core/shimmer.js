@@ -2,7 +2,8 @@
 // that same bit of world was in the two frames before (reprojected through the depth buffer, the
 // way the temporal pass does it), and the second difference over those three samples is scored.
 // Smooth sweeps of light and the camera's own motion score near zero; shimmer, crawl and popping
-// score high. Pixels whose surface wasn't on screen in both earlier frames (edges, disocclusions)
+// score high. The hero's envelope and basket move under the camera, so their points are carried along
+// with them, as the temporal pass does. Pixels whose surface wasn't on screen in both earlier frames (edges, disocclusions)
 // are left out, so a moving silhouette doesn't count as flicker. The sky is tracked by direction
 // and only scored when asked for (the clouds test).
 // Reported in 8-bit display levels, for the whole frame and one crop. With sources set, each scored
@@ -38,6 +39,9 @@ uniform highp sampler2D tA, tB, tC;
 uniform mat4 uVPB, uVPC;
 uniform vec3 uCam;
 uniform float uSky;
+// rigid movers: world -> local now, local -> world in frames B and C, and their local boxes
+uniform mat4 uMovInv[2], uMovB[2], uMovC[2];
+uniform vec3 uMovLo[2], uMovHi[2];
 float look(highp sampler2D t, mat4 vp, vec3 W, bool sky, out bool ok){
   vec4 p = vp * vec4(W, 1.);
   vec2 uv = p.xy / p.w * 0.5 + 0.5;
@@ -50,8 +54,13 @@ void main(){
   vec4 a = texture(tA, vUv);
   bool sky = a.r < 0., okB, okC;
   float l = sky ? -1. - a.r : a.r;
-  float b = look(tB, uVPB, a.gba, sky, okB);
-  float c = look(tC, uVPC, a.gba, sky, okC);
+  vec3 WB = a.gba, WC = a.gba;
+  for (int i = 0; i < 2; i++) {
+    vec3 q = (uMovInv[i] * vec4(a.gba, 1.)).xyz;
+    if (!sky && all(greaterThanEqual(q, uMovLo[i])) && all(lessThanEqual(q, uMovHi[i]))) { WB = (uMovB[i] * vec4(q, 1.)).xyz; WC = (uMovC[i] * vec4(q, 1.)).xyz; break; }
+  }
+  float b = look(tB, uVPB, WB, sky, okB);
+  float c = look(tC, uVPC, WC, sky, okC);
   // sky pixels are scored only when asked (uSky), so the surface numbers stay comparable
   gl_FragColor = (okB && okC && (!sky || uSky > 0.5)) ? vec4(abs(l - 2. * b + c), 1., 0., 1.) : vec4(0.);
 }
@@ -90,7 +99,11 @@ export class ShimmerProbe {
     this.left = 0;
     this.result = null;
     this.store = fsMaterial(STORE, { tCol: { value: null }, tDepth: { value: null }, uInvVP: { value: new THREE.Matrix4() }, uCam: { value: new THREE.Vector3() }, uExposure: { value: 1 } });
-    this.diff = fsMaterial(DIFF, { tA: { value: null }, tB: { value: null }, tC: { value: null }, uVPB: { value: new THREE.Matrix4() }, uVPC: { value: new THREE.Matrix4() }, uCam: { value: new THREE.Vector3() }, uSky: { value: 0 } });
+    const m2 = () => ({ value: [new THREE.Matrix4(), new THREE.Matrix4()] });
+    this.diff = fsMaterial(DIFF, { tA: { value: null }, tB: { value: null }, tC: { value: null }, uVPB: { value: new THREE.Matrix4() }, uVPC: { value: new THREE.Matrix4() }, uCam: { value: new THREE.Vector3() }, uSky: { value: 0 },
+      uMovInv: m2(), uMovB: m2(), uMovC: m2(), uMovLo: { value: [new THREE.Vector3(1, 1, 1), new THREE.Vector3(1, 1, 1)] }, uMovHi: { value: [new THREE.Vector3(-1, -1, -1), new THREE.Vector3(-1, -1, -1)] } });
+    // [{ obj, lo, hi }], the temporal pass's own list
+    this.movers = [];
     this._vp = new THREE.Matrix4();
     this.maskMat = fsMaterial(MASK, { tMain: { value: null }, tOne: { value: null }, uId: { value: 0 } });
     this.edgeMat = fsMaterial(SKYEDGE, { tMain: { value: null }, uId: { value: 0 } });
@@ -170,11 +183,16 @@ export class ShimmerProbe {
     su.tCol.value = col; su.tDepth.value = depth; su.uInvVP.value.copy(vp).invert(); su.uExposure.value = exposure;
     su.uCam.value.copy(camera.position);
     renderFS(r, this.store, rt);
-    this.hist.unshift({ rt, vp: vp.clone() });
+    this.hist.unshift({ rt, vp: vp.clone(), mov: this.movers.map(m => m.obj.matrixWorld.clone()) });
     if (this.hist.length === 3 && this.lead-- <= 0) {
       const du = this.diff.uniforms;
       du.tA.value = this.hist[0].rt.texture; du.tB.value = this.hist[1].rt.texture; du.tC.value = this.hist[2].rt.texture;
       du.uVPB.value.copy(this.hist[1].vp); du.uVPC.value.copy(this.hist[2].vp);
+      this.movers.forEach((m, i) => {
+        du.uMovInv.value[i].copy(this.hist[0].mov[i]).invert();
+        du.uMovB.value[i].copy(this.hist[1].mov[i]); du.uMovC.value[i].copy(this.hist[2].mov[i]);
+        du.uMovLo.value[i].copy(m.lo); du.uMovHi.value[i].copy(m.hi);
+      });
       du.uCam.value.copy(camera.position);
       renderFS(r, this.diff, this.out);
       r.readRenderTargetPixels(this.out, 0, 0, w, h, this.buf);
