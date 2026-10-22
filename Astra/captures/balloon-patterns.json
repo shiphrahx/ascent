@@ -1,0 +1,121 @@
+{
+  "designs": 7,
+  "minimumMacroDifference": 0.11082575814906578,
+  "pairs": [
+    {
+      "a": "Gores",
+      "b": "Chevrons",
+      "rms": 0.15499340029320513
+    },
+    {
+      "a": "Gores",
+      "b": "Diamonds",
+      "rms": 0.13124458589751306
+    },
+    {
+      "a": "Gores",
+      "b": "Latitude bands",
+      "rms": 0.15416745320668093
+    },
+    {
+      "a": "Gores",
+      "b": "Sunburst",
+      "rms": 0.13553019513477577
+    },
+    {
+      "a": "Gores",
+      "b": "Stepped panels",
+      "rms": 0.12613588876555365
+    },
+    {
+      "a": "Gores",
+      "b": "Checker weave",
+      "rms": 0.15496009315227693
+    },
+    {
+      "a": "Chevrons",
+      "b": "Diamonds",
+      "rms": 0.25553591352561633
+    },
+    {
+      "a": "Chevrons",
+      "b": "Latitude bands",
+      "rms": 0.11082575814906578
+    },
+    {
+      "a": "Chevrons",
+      "b": "Sunburst",
+      "rms": 0.20130701270399384
+    },
+    {
+      "a": "Chevrons",
+      "b": "Stepped panels",
+      "rms": 0.17937158019920638
+    },
+    {
+      "a": "Chevrons",
+      "b": "Checker weave",
+      "rms": 0.20315883696333906
+    },
+    {
+      "a": "Diamonds",
+      "b": "Latitude bands",
+      "rms": 0.23256121372308666
+    },
+    {
+      "a": "Diamonds",
+      "b": "Sunburst",
+      "rms": 0.1452304642128722
+    },
+    {
+      "a": "Diamonds",
+      "b": "Stepped panels",
+      "rms": 0.16675016064037218
+    },
+    {
+      "a": "Diamonds",
+      "b": "Checker weave",
+      "rms": 0.1896639607723693
+    },
+    {
+      "a": "Latitude bands",
+      "b": "Sunburst",
+      "rms": 0.17120347073231276
+    },
+    {
+      "a": "Latitude bands",
+      "b": "Stepped panels",
+      "rms": 0.17094064967548966
+    },
+    {
+      "a": "Latitude bands",
+      "b": "Checker weave",
+      "rms": 0.1994066661301954
+    },
+    {
+      "a": "Sunburst",
+      "b": "Stepped panels",
+      "rms": 0.15140609048132264
+    },
+    {
+      "a": "Sunburst",
+      "b": "Checker weave",
+      "rms": 0.17694079211627162
+    },
+    {
+      "a": "Stepped panels",
+      "b": "Checker weave",
+      "rms": 0.1785998789351879
+    }
+  ],
+  "fleetDesigns": [
+    "Chevrons",
+    "Diamonds",
+    "Latitude bands",
+    "Sunburst",
+    "Stepped panels",
+    "Checker weave",
+    "Gores"
+  ],
+  "errors": []
+}

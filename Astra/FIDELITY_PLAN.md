@@ -351,3 +351,16 @@ File: `src/lighting.js`
 - Mean draws fall from 878.5 to 864.9; rendered triangles remain about 2.56M. Average throughput is 2.8% lower, while tail times are effectively unchanged. Higher population/detail is tiered. No application renders were skipped. Earlier prototype runs are not used as the final baseline.
 - Flicker at exposure 1.1569: whole RMS 0.00153388, cliff RMS 0.00090899. These rise about 12.2%/1.5% as additional fine branches and grass enter the scene; the content changed, and these scores do not establish that all subpixel vegetation shimmer is gone. Static matrices and opaque, fixed tree geometry eliminate population/LOD switching as a cause.
 - Validation: all tier vegetation/quality checks, gameplay, graphics and temporal suites pass without errors or warnings. Personally inspected the bank close-up and all four final matched pairs. Added a snapshot helper that rejects stale/failed suite reports before recording the build hash and historical comparison build. Fleet pattern variety is next.
+
+### Phase 6.4 - seven procedural balloon designs
+
+- Added gores, chevrons, diamonds, latitude bands, sunbursts, stepped panels and checker weave to the seven seeded fabric textures. Every design retains panel seams, gore shading and fine woven detail. Hero, launch and fleet balloons use the designs through their existing texture slots; texture dimensions, shaders, geometry and draw counts are unchanged.
+- A browser fixture paints every design with the same palette and weave seed. The minimum pairwise low-resolution pattern difference is 0.111 RMS (required >0.06), confirming that the variety comes from layout rather than colour alone. The actual fleet uses all seven designs.
+
+| Paired native medium flight | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 6.3 | 71.00 | 8.40 | 41.70 | 50.10 | 232/2130 |
+| Patterned fabrics | 65.61 | 8.40 | 41.70 | 50.00 | 225/1970 |
+
+- Average FPS is 7.6% lower in this pair despite unchanged rendering work. A paired fixed-view GPU measurement finds mean render cost 11.27 versus 11.39 ms (about 1% higher), p95 15.58 versus 16.12 ms. CPU submission p95 remains 38.9 ms. The flight difference is recorded rather than dismissed; long stalls and the strict frame budget remain Phase 8 work. No application renders were skipped.
+- Flicker at exposure 1.1576: whole RMS 0.00153467, cliff RMS 0.00091066, within 0.2% of Phase 6.3. Validation: pattern fixture, gameplay, graphics and temporal suites pass without errors or warnings. Personally inspected the seven-design sheet and all four matched scene views. The assets remain entirely procedural and offline.
