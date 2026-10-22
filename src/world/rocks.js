@@ -274,6 +274,8 @@ varying vec3 vWorld, vN;
 varying float vMat, vAO;
 varying vec4 vInst, vPaint;
 varying float vLocalY;
+// where a chimney meets the ground, so shading skips the heightmap lookup (facades: unknown, -1e4)
+varying float vBaseY;
 #ifdef FACADE
 attribute vec4 aPaint;
 #else
@@ -287,11 +289,12 @@ void main(){
   vec4 wp = modelMatrix * vec4(position, 1.0);
   vN = normalize(mat3(modelMatrix) * normal);
   vInst = vec4(0.37, 0., 1., 0.); vPaint = aPaint;
-  vLocalY = 10.;
+  vLocalY = 10.; vBaseY = -1e4;
 #else
   vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
   vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal);
   vInst = aInst; vPaint = vec4(0.); vLocalY = position.y;
+  vBaseY = (modelMatrix * instanceMatrix[3]).y;
 #endif
   vWorld = wp.xyz;
   vMat = aMat; vAO = aAO;
@@ -309,7 +312,7 @@ ${ROCK}
 varying vec3 vWorld, vN;
 varying float vMat, vAO;
 varying vec4 vInst, vPaint;
-varying float vLocalY;
+varying float vLocalY, vBaseY;
 void main(){
   vec3 P = vWorld;
   if (P.y < uClipY) discard;
@@ -384,6 +387,7 @@ void main(){
   Surf s;
   s.albedo = alb; s.N = N; s.rough = specAA(N, rough); s.spec = spec; s.ao = ao; s.wrap = 0.15; s.sss = 0.;
   float sh = keyShadow(P, N);
+  if (vBaseY > -1e3) gHag = max(P.y - vBaseY, 0.);
   vec3 col = shadeSurf(s, P, V, sh);
   // lit windows after dusk
   if (m > 2.5) {

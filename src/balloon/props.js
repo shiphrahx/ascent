@@ -15,6 +15,8 @@ varying vec3 vWorld, vN, vObj, vCol;
 varying float vMat, vSeed;
 varying vec2 vUV2;
 varying float vLodT, vLodSide;
+// GROUNDED (the village): where the instance meets the ground, so shading skips the heightmap lookup
+varying float vBaseY;
 #ifdef DEPTH_PASS
 varying float vDepthAlpha;
 #endif
@@ -37,6 +39,9 @@ void main(){
   vLodT = IM[0][3]; vLodSide = IM[1][3]; IM[0][3] = 0.; IM[1][3] = 0.;
   lp = IM * lp; ln = mat3(IM) * ln;
   vSeed = fract(sin(dot(IM[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
+  vBaseY = (modelMatrix * IM[3]).y;
+#else
+  vBaseY = modelMatrix[3].y;
 #endif
   vec4 wp = modelMatrix * lp;
   vWorld = wp.xyz; vN = normalize(mat3(modelMatrix) * ln); vObj = position; vMat = aMat; vCol = aCol; vUV2 = aUV2;
@@ -54,6 +59,7 @@ varying vec3 vWorld, vN, vObj, vCol;
 varying float vMat, vSeed;
 varying vec2 vUV2;
 varying float vLodT, vLodSide;
+varying float vBaseY;
 void main(){
   // LOD cross-fade, as the rocks do it: each model keeps its share of the pixels in the band
   if (vLodSide != 0. && vLodT > 0. && vLodT < 1.) {
@@ -174,6 +180,9 @@ void main(){
   Surf s; s.albedo = alb; s.N = N; s.rough = rough; s.spec = spec; s.ao = ao; s.wrap = 0.3; s.sss = sss;
   float sh = keyShadow(P, N);
   gBurner = 0.;
+#ifdef GROUNDED
+  gHag = max(P.y - vBaseY, 0.);
+#endif
   vec3 col = shadeSurf(s, P, V, sh);
   // burner light
   vec3 tl = uLocalLightPos - P;
@@ -185,10 +194,10 @@ void main(){
 }
 `;
 
-export function propMaterial(skinned) {
+export function propMaterial(skinned, grounded = false) {
   const uniforms = { uLocalLightPos: { value: new THREE.Vector3() }, uLocalLightCol: { value: new THREE.Color(0, 0, 0) } };
   if (skinned) uniforms.uBones = { value: Array.from({ length: 24 }, () => new THREE.Matrix4()) };
-  return makeMaterial({ vertex: VERT, fragment: FRAG, side: THREE.DoubleSide, uniforms, defines: skinned ? { SKINNED_PARTS: 1 } : {} });
+  return makeMaterial({ vertex: VERT, fragment: FRAG, side: THREE.DoubleSide, uniforms, defines: Object.assign(skinned ? { SKINNED_PARTS: 1 } : {}, grounded ? { GROUNDED: 1 } : {}) });
 }
 
 // tag a geometry with material id, colour and default uv2 (and optional bone)
