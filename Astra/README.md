@@ -10,6 +10,8 @@ Open [`Ascent.html`](Ascent.html) in a browser. It includes its runtime assets a
 
 Controls: Space/W for the burner, V/S to vent, A/D to rotate, C to change camera, drag to look or orbit, wheel to zoom, T to accelerate time, M for sound, and F for fullscreen.
 
+Quality is selected from the reported GPU: discrete graphics use `high`, integrated or unknown adapters use `medium`, and software renderers use `lite`. Override detection by opening `Ascent.html?quality=high`, `?quality=medium`, or `?quality=lite`; reload to apply a different tier. The selected tier and GPU are available in `window.__ascent.tier` for diagnostics. Medium preserves the original rendering budget; lite reduces shadow, reflection, cloud-cache and MSAA costs. High permits a larger pixel budget and reflection map. Tiers retain stable geometry and a native CSS-pixel resolution floor.
+
 ## Build
 
 Run these commands from the repository root:

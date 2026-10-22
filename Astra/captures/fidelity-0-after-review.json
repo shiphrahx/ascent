@@ -1,0 +1,258 @@
+{
+  "source": "Ascent.html",
+  "errors": [],
+  "report": [
+    {
+      "pose": "valley",
+      "state": {
+        "hour": 8.5,
+        "elapsed": 2.1736999999821185,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          -82.61798515650732,
+          6.884983019210693,
+          1059.8180299045139
+        ],
+        "camera": [
+          -25,
+          147,
+          745
+        ],
+        "thermal": 1.3134398440378026,
+        "verticalSpeed": 2.170301689743671,
+        "manual": false,
+        "targetAltitude": 40.95632999998391,
+        "landing": 0,
+        "drawCalls": 787,
+        "triangles": 2379720,
+        "fps": 0,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 41.70000000000073
+      },
+      "plots": 53,
+      "assets": [
+        {
+          "name": "Cappadocia tuff albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Valley soil albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Tuff roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Soil roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Cut tuff masonry albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Masonry roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        }
+      ]
+    },
+    {
+      "pose": "village",
+      "state": {
+        "hour": 9,
+        "elapsed": 2.1736999999821185,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          -82.61798515650732,
+          6.884983019210693,
+          1059.8180299045139
+        ],
+        "camera": [
+          200.17288396503918,
+          123.59251308397177,
+          85
+        ],
+        "thermal": 1.3134398440378026,
+        "verticalSpeed": 2.170301689743671,
+        "manual": false,
+        "targetAltitude": 40.95632999998391,
+        "landing": 0,
+        "drawCalls": 469,
+        "triangles": 1844333,
+        "fps": 0,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 8.200000000000728
+      },
+      "plots": 53,
+      "assets": [
+        {
+          "name": "Cappadocia tuff albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Valley soil albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Tuff roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Soil roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Cut tuff masonry albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Masonry roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        }
+      ]
+    },
+    {
+      "pose": "rock",
+      "state": {
+        "hour": 14,
+        "elapsed": 2.1736999999821185,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          -82.61798515650732,
+          6.884983019210693,
+          1059.8180299045139
+        ],
+        "camera": [
+          -185,
+          100,
+          500
+        ],
+        "thermal": 1.3134398440378026,
+        "verticalSpeed": 2.170301689743671,
+        "manual": false,
+        "targetAltitude": 40.95632999998391,
+        "landing": 0,
+        "drawCalls": 557,
+        "triangles": 1797397,
+        "fps": 0,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 8.400000000001455
+      },
+      "plots": 53,
+      "assets": [
+        {
+          "name": "Cappadocia tuff albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Valley soil albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Tuff roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Soil roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Cut tuff masonry albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Masonry roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        }
+      ]
+    },
+    {
+      "pose": "clouds",
+      "state": {
+        "hour": 12,
+        "elapsed": 2.1736999999821185,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          -82.61798515650732,
+          6.884983019210693,
+          1059.8180299045139
+        ],
+        "camera": [
+          0,
+          160,
+          600
+        ],
+        "thermal": 1.3134398440378026,
+        "verticalSpeed": 2.170301689743671,
+        "manual": false,
+        "targetAltitude": 40.95632999998391,
+        "landing": 0,
+        "drawCalls": 1115,
+        "triangles": 4648502,
+        "fps": 0,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.700000000000728
+      },
+      "plots": 53,
+      "assets": [
+        {
+          "name": "Cappadocia tuff albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Valley soil albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Tuff roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Soil roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Cut tuff masonry albedo",
+          "width": 1024,
+          "height": 1024
+        },
+        {
+          "name": "Masonry roughness / height / cavity",
+          "width": 1024,
+          "height": 1024
+        }
+      ]
+    }
+  ]
+}

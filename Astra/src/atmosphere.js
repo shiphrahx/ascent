@@ -19,6 +19,7 @@ const mat3 noiseRotation=mat3(.00,.80,.60,-.80,.36,-.48,-.60,-.48,.64);
 float fbm(vec3 p){float n=noise3(p)*.53;p=noiseRotation*p*2.03+3.;n+=noise3(p)*.28;p=noiseRotation*p*2.01+7.;return n+noise3(p)*.19;}
 `;
 export function createAtmosphere(scene,renderer,camera){
+const tier=renderer.ascentQuality;
 const skyU={...THREE.UniformsUtils.clone(Sky.SkyShader.uniforms),uNoise:noiseUniform,uTime:uniforms.time,uSun:uniforms.sun,uNight:uniforms.night,uStorm:uniforms.storm,uDay:uniforms.day,uTop:{value:new THREE.Color()},uHorizon:{value:new THREE.Color()},uWarm:{value:new THREE.Color()},uEye:{value:new THREE.Vector3()}};
 const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:skyU,vertexShader:`varying vec3 vPos;void main(){vPos=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`
 varying vec3 vPos;uniform vec3 uEye,uSun,uTop,uHorizon,uWarm;uniform float uTime,uNight,uStorm,uDay;
@@ -46,7 +47,7 @@ float milky=exp(-pow(dot(d,normalize(vec3(.35,.65,.4)))/.13,2.))*fbm(d*19.);col+
 // Ice-crystal parhelia, 22 degrees either side of the morning sun.
 vec3 dogL=vec3(uSun.x*.927-uSun.z*.375,uSun.y,uSun.x*.375+uSun.z*.927);vec3 dogR=vec3(uSun.x*.927+uSun.z*.375,uSun.y,-uSun.x*.375+uSun.z*.927);float dogs=pow(max(dot(d,dogL),0.),4200.)+pow(max(dot(d,dogR),0.),4200.);col+=vec3(.9,.52,.25)*dogs*twilight*(1.-uStorm)*(1.-uNight);
 // March a 3-D cloud field and sample optical density toward the sun.
-float cloudTransmission=1.;if(d.y>.045){float start=max(0.,(620.-uEye.y)/d.y);float end=min((1250.-uEye.y)/d.y,14000.);float stepSize=max(0.,end-start)/96.;float trans=1.;vec3 cloud=vec3(0.);float jitter=.5;for(int i=0;i<96;i++){float dist=start+(float(i)+jitter)*stepSize;vec3 p=uEye+d*dist;float den=density(p);if(den>.015){float shade=exp(-density(p+uSun*100.)*1.8-density(p+uSun*220.)*1.1);float forward=pow(max(mu,0.),12.);vec3 lit=mix(uHorizon*.28+vec3(.02),mix(vec3(2.8,3.05,3.4),vec3(3.5,1.85,.8),twilight)*(.22+shade*.85),uDay);lit+=uWarm*forward*shade*.5;lit=mix(lit,vec3(.53,.59,.65),uStorm*.6);float a=1.-exp(-den*stepSize*.007);cloud+=lit*a*trans;trans*=1.-a;if(trans<.025)break;}}float horizonFade=smoothstep(.045,.14,d.y);col=mix(col,col*trans+cloud,horizonFade);cloudTransmission=mix(1.,trans,horizonFade);}
+float cloudTransmission=1.;if(d.y>.045){float start=max(0.,(620.-uEye.y)/d.y);float end=min((1250.-uEye.y)/d.y,14000.);float stepSize=max(0.,end-start)/${tier.cloudSteps}.;float trans=1.;vec3 cloud=vec3(0.);float jitter=.5;for(int i=0;i<${tier.cloudSteps};i++){float dist=start+(float(i)+jitter)*stepSize;vec3 p=uEye+d*dist;float den=density(p);if(den>.015){float shade=exp(-density(p+uSun*100.)*1.8-density(p+uSun*220.)*1.1);float forward=pow(max(mu,0.),12.);vec3 lit=mix(uHorizon*.28+vec3(.02),mix(vec3(2.8,3.05,3.4),vec3(3.5,1.85,.8),twilight)*(.22+shade*.85),uDay);lit+=uWarm*forward*shade*.5;lit=mix(lit,vec3(.53,.59,.65),uStorm*.6);float a=1.-exp(-den*stepSize*.007);cloud+=lit*a*trans;trans*=1.-a;if(trans<.025)break;}}float horizonFade=smoothstep(.045,.14,d.y);col=mix(col,col*trans+cloud,horizonFade);cloudTransmission=mix(1.,trans,horizonFade);}
 col=mix(col,vec3(.37,.43,.51),uStorm*.28);gl_FragColor=vec4(col,cloudTransmission);}
 
 `});
@@ -55,7 +56,7 @@ col=mix(col,vec3(.37,.43,.51),uStorm*.28);gl_FragColor=vec4(col,cloudTransmissio
 skyMat.vertexShader='varying vec2 vSkyUv;'+Sky.SkyShader.vertexShader.replace('gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );','vSkyUv=uv;gl_Position=vec4(position.xy,0.,1.);');
 skyMat.fragmentShader=skyMat.fragmentShader.replace('varying vec3 vPos;', 'varying vec2 vSkyUv;').replace('vec3 d=normalize(vPos-uEye);','float longitude=(vSkyUv.x-.5)*6.2831853,latitude=(vSkyUv.y-.5)*3.14159265;vec3 d=vec3(cos(latitude)*cos(longitude),sin(latitude),cos(latitude)*sin(longitude));');
 skyMat.side=THREE.FrontSide;skyMat.depthTest=false;
-const skyTarget=new THREE.WebGLRenderTarget(4096,2048,{type:THREE.HalfFloatType,depthBuffer:false,wrapS:THREE.RepeatWrapping});
+const skyTarget=new THREE.WebGLRenderTarget(tier.skyWidth,tier.skyWidth/2,{type:THREE.HalfFloatType,depthBuffer:false,wrapS:THREE.RepeatWrapping});
 skyTarget.texture.mapping=THREE.EquirectangularReflectionMapping;
 const skyQuad=new FullScreenQuad(skyMat),pmrem=new THREE.PMREMGenerator(renderer);
 const environmentInput=new THREE.WebGLRenderTarget(1024,512,{type:THREE.HalfFloatType,depthBuffer:false});
@@ -103,7 +104,7 @@ Object.assign(fogPass.uniforms,{uNoise:noiseUniform,uSun:uniforms.sun,uTime:unif
 fogPass.textureID='sceneColor';fogPass.uniforms.tDiffuse.value=scenePass.target.texture;fogPass.uniforms.tDepth.value=scenePass.target.depthTexture;composer.addPass(fogPass);
 const temporal=new TemporalResolvePass(camera,scenePass.target.depthTexture);composer.addPass(temporal);
 const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.3,.6,.9);composer.addPass(bloom);const fxaa=new ShaderPass(FXAAShader);composer.addPass(new OutputPass());composer.addPass(fxaa);
-return {composer,scenePass,sky,skyU,key,shadows,fogPass,bloom,temporal,render(){
+return {composer,scenePass,sky,skyU,skyTarget,key,shadows,fogPass,bloom,temporal,render(){
  temporal.beginFrame();fogPass.uniforms.invProjection.value.copy(camera.projectionMatrixInverse);
  try{composer.render();}finally{temporal.endFrame();}
 },update(t,hour,hero,storm,fade,quality=1){
@@ -122,7 +123,7 @@ if(forceSky||skyTile>=0||t-skyUpdated>(quality>.6?.5:.9)){
  // across sixteen small tiles. Time/weather jumps refresh the entire sky immediately.
  const previous=renderer.getRenderTarget();
  skyTarget.scissorTest=!forceSky;
- if(!forceSky){if(skyTile<0)skyTile=0;skyTarget.scissor.set((skyTile%4)*1024,Math.floor(skyTile/4)*512,1024,512);}
+ if(!forceSky){if(skyTile<0)skyTile=0;skyTarget.scissor.set((skyTile%4)*tier.skyWidth/4,Math.floor(skyTile/4)*tier.skyWidth/8,tier.skyWidth/4,tier.skyWidth/8);}
  renderer.setRenderTarget(skyTarget);skyQuad.render(renderer);renderer.setRenderTarget(previous);
  if(forceSky||++skyTile===16){skyUpdated=t;skyHour=hour;skyStorm=storm;skyTile=-1;}
 }

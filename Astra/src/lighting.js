@@ -4,7 +4,7 @@ import {THREE} from './core.js';
 export function createSunShadows(scene,camera,renderer){
  const csm=new CSM({camera,parent:scene,cascades:3,maxFar:1900,
   mode:'custom',customSplitsCallback:(c,n,f,breaks)=>breaks.push(180/f,620/f,1),
-  shadowMapSize:2048,shadowBias:-.000025,lightNear:1,lightFar:4500,
+  shadowMapSize:renderer.ascentQuality.shadowSize,shadowBias:-.000025,lightNear:1,lightFar:4500,
   lightMargin:1800,lightDirection:new THREE.Vector3(-1,-1,1).normalize()});
  csm.fade=true;csm.updateFrustums();
  csm.lights.forEach((light,i)=>{light.shadow.normalBias=[.07,.18,.5][i];light.shadow.radius=2;light.shadow.autoUpdate=false;if(i>0)light.shadow.camera.layers.set(2);});

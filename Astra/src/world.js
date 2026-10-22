@@ -99,7 +99,7 @@ export function createWorld(scene,renderer){
  // Flowing water with a true mirrored scene render, distorted in the fragment shader.
  const wp=[],wi=[],wu=[];for(let j=0;j<=680;j++){const z=-1700+j*5,[left,right]=riverBanks(z);wp.push(left,3.55,z,right,3.55,z);wu.push(0,j/15,1,j/15);if(j<680){let q=j*2;wi.push(q,q+2,q+1,q+1,q+2,q+3);}}const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));wg.setAttribute('uv',new THREE.Float32BufferAttribute(wu,2));wg.setIndex(wi);wg.computeVertexNormals();
  // Reflector's plane normal is local +Z; author the river in XY, then rotate it into XZ.
- wg.rotateX(Math.PI/2);const water=new Reflector(wg,{color:0x8caab0,textureWidth:768,textureHeight:768,multisample:2,clipBias:.004});water.rotation.x=-Math.PI/2;water.material.uniforms.uTime=uniforms.time;water.material.fragmentShader=water.material.fragmentShader.replace('void main() {','uniform float uTime;\nvoid main() {').replace('vec4 base = texture2DProj( tDiffuse, vUv );','vec4 rip=vUv; rip.xy+=vec2(sin(vUv.y*160.0+uTime*1.7),cos(vUv.x*130.0+uTime))*.00065*vUv.w; vec4 base=texture2DProj(tDiffuse,rip);');scene.add(water);
+ wg.rotateX(Math.PI/2);const water=new Reflector(wg,{color:0x8caab0,textureWidth:renderer.ascentQuality.reflectionSize,textureHeight:renderer.ascentQuality.reflectionSize,multisample:2,clipBias:.004});water.rotation.x=-Math.PI/2;water.material.uniforms.uTime=uniforms.time;water.material.fragmentShader=water.material.fragmentShader.replace('void main() {','uniform float uTime;\nvoid main() {').replace('vec4 base = texture2DProj( tDiffuse, vUv );','vec4 rip=vUv; rip.xy+=vec2(sin(vUv.y*160.0+uTime*1.7),cos(vUv.x*130.0+uTime))*.00065*vUv.w; vec4 base=texture2DProj(tDiffuse,rip);');scene.add(water);
  // Reflect only features that survive the river's pixel footprint. Keep their
  // geometry unchanged, and refresh at up to 30 Hz with immediate camera-cut updates.
  const reflect=water.onBeforeRender.bind(water),lastEye=new THREE.Vector3(Infinity,0,0),lastRotation=new THREE.Quaternion();let reflectionTime=-Infinity,lastDay=-1,reflectionFrames=2;
@@ -107,7 +107,7 @@ export function createWorld(scene,renderer){
  water.onBeforeRender=(r,s,c)=>{
   reflectionFrames++;
   const now=performance.now()/1000,moved=lastEye.distanceToSquared(c.position)>16||lastRotation.angleTo(c.quaternion)>.08;
-  if((now-reflectionTime<1/30||reflectionFrames<2)&&!moved&&Math.abs(uniforms.day.value-lastDay)<.02)return;
+  if((now-reflectionTime<1/renderer.ascentQuality.reflectionHz||reflectionFrames<renderer.ascentQuality.reflectionFrames)&&!moved&&Math.abs(uniforms.day.value-lastDay)<.02)return;
   reflect(r,s,c);reflectionTime=now;reflectionFrames=0;lastEye.copy(c.position);lastRotation.copy(c.quaternion);lastDay=uniforms.day.value;
  };
  // Fresnel reflectance and a darker riverbed replace the mirror-like overlay.
