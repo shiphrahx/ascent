@@ -136,7 +136,7 @@ async function boot() {
     { obj: hero.basket, lo: new THREE.Vector3(-1.5, -0.3, -1.0), hi: new THREE.Vector3(1.5, 3.4, 1.0) },
   ];
   const probe = new Probe(renderer);
-  const vol = new Volumetrics(renderer);
+  const vol = new Volumetrics(renderer, dbg.oldclouds ? 'medium' : tier);
   pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
   const volHook = rt => vol.render(rt, camera);
   pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
