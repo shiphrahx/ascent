@@ -186,7 +186,7 @@ async function boot() {
   // test hook: u=uName:value,uOther:value sets shared uniforms after boot (feature switches for A/B shots)
   const setU = () => { if (dbg.u) for (const kv of dbg.u.split(',')) { const [k, v] = kv.split(':'); if (U[k]) { if (U[k].value && U[k].value.setScalar) U[k].value.setScalar(+v); else U[k].value = +v; } } };
   setU();
-  if (dbg.shadowview) U.uDbgShadow.value = dbg.shadowview === 'flat' ? 2 : 1;
+  if (dbg.shadowview) U.uDbgShadow.value = { flat: 2, terrain: 3 }[dbg.shadowview] || 1;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
   if (dbg.fp) { const [a, b] = dbg.fp.split(',').map(Number); cams.fpYaw = a; cams.fpPitch = b; }
@@ -412,7 +412,11 @@ async function boot() {
       const [px, pz] = dbg.shadowpan.split(',').map(Number), t = time - hold.t;
       shift = viewC.set(px * t, 0, pz * t);
     }
-    shadows.fit(camera, focus, farC, shift);
+    // test hook: shadowhold stops the cascades where they are once a shimmer capture starts, so they're
+    // fixed in the world: the control for a moving camera (it scores the shadow edges sliding across
+    // the screen, which isn't flicker)
+    const sHold = dbg.shadowhold && !hold.on && shimmer.left > 0;
+    if (!sHold) shadows.fit(camera, focus, farC, shift);
     rocks.update(camera);
     veg.update(camera);
     village.update(camera);
@@ -420,7 +424,7 @@ async function boot() {
     // lite mode refreshes the shadow maps every third frame
     terrain.setShadowCenter(shadows.cascades[1].center, shadows.cascades[1].half, U.uKeyDir.value);
     prof.begin('shadows');
-    if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene);
+    if (!sHold && ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3)) shadows.render(scene);
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);

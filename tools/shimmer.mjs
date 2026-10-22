@@ -56,18 +56,40 @@ const capture = async (t, view) => {
   return r;
 };
 const f = (r) => `${r.frame.toFixed(2)} / ${r.crop.toFixed(2)}`;
+// SPIKES=1: frames that score well above their neighbours (a one-frame tick, such as a cascade jump)
+const spikes = (r) => {
+  const s = r.series, out = [];
+  for (let i = 2; i < s.length - 2; i++) {
+    const near = [s[i - 2], s[i - 1], s[i + 1], s[i + 2]].sort((a, b) => a - b), m = (near[1] + near[2]) / 2;
+    if (s[i] > m * 1.25 + 0.02) out.push(`${i}:+${(s[i] - m).toFixed(2)}`);
+  }
+  return `${out.length} spikes ${out.slice(0, 12).join(' ')}`;
+};
 console.log('frame / crop, 8-bit levels' + (process.env.FULL ? ', full image' : ''));
 for (const t of pick) for (let run = 0; run < +(process.env.RUNS || 1); run++) {
   if (process.env.FULL || t === 'K') { console.log(`${t}: ${f(await capture(t, ''))}`); continue; }
   // the flat-grey run scores everything that isn't the shadows (haze, the temporal resolve, edges
   // at the reprojection's limits); what the shadow view scores above that is the shadow flicker
-  const s = await capture(t, '&shadowview'), c = await capture(t, '&shadowview=flat');
+  // VIEW=terrain scores the heightmap shadow alone: fixed in the world, so whatever it scores is the
+  // metric's own response to shadow edges moving across the screen, not flicker
+  const sv = '&shadowview' + (process.env.VIEW ? '=' + process.env.VIEW : '');
+  const s = await capture(t, sv), c = await capture(t, '&shadowview=flat');
   console.log(`${t}: shadows ${f(s)}   flat ${f(c)}   flicker ${(s.frame - c.frame).toFixed(2)} / ${(s.crop - c.crop).toFixed(2)}   (${(s.valid * 100).toFixed(0)}% scored)`);
+  // a moving camera slides every crisp shadow edge across the screen, and the score rises with that
+  // even when nothing changes. So F also runs with the cascades held still in the world, and what
+  // the live cascades add on top of that is the flicker.
+  let h = null;
+  if (t === 'F') {
+    h = await capture(t, sv + '&shadowhold');
+    console.log(`   held cascades ${f(h)}   flicker over held ${(s.frame - h.frame).toFixed(2)} / ${(s.crop - h.crop).toFixed(2)}`);
+  }
+  if (process.env.SPIKES) console.log(`   shadows ${spikes(s)}
+   flat    ${spikes(c)}`);
   // per source (tests that move the camera mostly): shadow view, flat control, and what's left over
   if (s.sources) for (let i = 0; i < s.sources.length; i++) {
-    const a = s.sources[i], b = c.sources[i];
+    const a = s.sources[i], b = c.sources[i], o = h ? h.sources[i] : null;
     if (a.area < 0.001) continue;
-    console.log(`   ${a.name.padEnd(14)} ${a.score.toFixed(2)} - ${b.score.toFixed(2)} = ${(a.score - b.score).toFixed(2)}   ${(a.area * 100).toFixed(1).padStart(5)}% of pixels, ${(a.share * 100).toFixed(0).padStart(3)}% of the shadow view's flicker`);
+    console.log(`   ${a.name.padEnd(14)} ${a.score.toFixed(2)} - ${b.score.toFixed(2)} = ${(a.score - b.score).toFixed(2)}` + (o ? `   over held ${(a.score - o.score).toFixed(2)}` : '') + `   ${(a.area * 100).toFixed(1).padStart(5)}% of pixels, ${(a.share * 100).toFixed(0).padStart(3)}% of the shadow view's flicker`);
   }
 }
 await browser.close();

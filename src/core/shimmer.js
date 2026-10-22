@@ -147,7 +147,7 @@ export class ShimmerProbe {
     this.left = frames + 2 + lead; this.lead = lead; this.crop = crop;
     this.diff.uniforms.uSky.value = sky ? 1 : 0;
     this.hist = [];
-    this.sum = 0; this.sumC = 0; this.n = 0; this.valid = 0;
+    this.sum = 0; this.sumC = 0; this.n = 0; this.valid = 0; this.series = [];
     this.result = null; this.acc = null;
     this.masked = false;
     if (this.sources) { const n = this.sources.length + 2; this.srcSum = new Float64Array(n); this.srcCnt = new Float64Array(n); }
@@ -214,13 +214,14 @@ export class ShimmerProbe {
         }
       }
       this.sum += s / Math.max(1, sv);
+      this.series.push(s / Math.max(1, sv));
       this.sumC += sc / Math.max(1, scv);
       this.valid += sv / (w * h);
       this.n++;
     }
     this.masked = false;
     if (--this.left === 0) {
-      this.result = { frame: this.sum / this.n, crop: this.sumC / this.n, frames: this.n, valid: this.valid / this.n };
+      this.result = { frame: this.sum / this.n, crop: this.sumC / this.n, frames: this.n, valid: this.valid / this.n, series: this.series };
       // per source: its own mean, its share of the scored pixels, and its share of all the flicker
       if (this.sources) {
         const tS = this.srcSum.reduce((a, b) => a + b, 0), tC = this.srcCnt.reduce((a, b) => a + b, 0);
