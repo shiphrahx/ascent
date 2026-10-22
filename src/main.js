@@ -437,7 +437,7 @@ async function boot() {
         pipe.post.comp.uniforms.uLumAvg.value = aeLog;
       }
       exposure += (target - exposure) * (window.__dbg.frames < 10 ? 1 : Math.min(1, dt * 2.5));
-      U.uGlowComp.value = 1 / (1 + 0.14 * exposure);
+      U.uGlowComp.value = 1 / (1 + 0.19 * exposure);
     }
     prof.begin('terrShadow');
     tshadow.update(fN < 2);
@@ -479,7 +479,9 @@ async function boot() {
     pipe.render(scene, camera, { exposure, bloom: st.grade.bloom, sat: st.grade.sat, con: st.grade.con, sh: st.grade.sh, hi: st.grade.hi, dof: dofK, focus: focusD }, time);
     prof.collect();
     ftimer.end();
-    shimmer.grab(pipe.resolved.texture, pipe.main.depthTexture, camera, exposure);
+    // the probe's stand-in for the display was set up before the hour exposures took in the tone
+    // curve's old 0.72 input scale (time.js); this keeps its numbers comparable with part 1's
+    shimmer.grab(pipe.resolved.texture, pipe.main.depthTexture, camera, exposure / 0.735);
     perf.cpu = (perf.cpu || 0) + (performance.now() - cpu0 - (perf.cpu || 0)) * 0.05;
     if (pace.rec) { pace.rec.push({ f: ftimer.frame, dt: rawDt * 1000, cpu: performance.now() - cpu0, scale: pipe.scale, tags: pace.tags.join(' ') }); pace.tags = []; }
     window.__dbg.frames++;

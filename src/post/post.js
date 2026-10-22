@@ -166,14 +166,12 @@ void main(){
   col *= uExposure;
   // split-tone before the curve: tint the shadows, warm or cool the highlights
   float L = dot(col, vec3(0.2126, 0.7152, 0.0722));
-  col *= mix(vec3(1.), uHighTint, smoothstep(0.05, 1.2, L));
-  col += uShadowTint * (1. - smoothstep(0.0, 0.35, L)) * 0.6;
+  col *= mix(vec3(1.), uHighTint, smoothstep(0.037, 0.88, L));
+  col += uShadowTint * (1. - smoothstep(0.0, 0.26, L)) * 0.6;
   // contrast in log space around 18% grey before the curve, as UE grades: it steepens the midtones
   // without clipping the shadows (linear contrast after the curve crushed everything under 5% to black)
   col = 0.18 * exp2(log2(max(col, vec3(1e-6)) / 0.18) * uCon);
-  // the scene's exposure was set up against the fitted ACES curve, which puts 18% grey out at 0.11;
-  // UE's puts it at 0.18. Scaling in by 0.72 keeps each hour's brightness and takes UE's shape.
-  col = filmUE(col * 0.72);
+  col = filmUE(col);
   float l2 = dot(col, vec3(0.2126, 0.7152, 0.0722));
   col = max(mix(vec3(l2), col, uSat), 0.);
   // vignette
