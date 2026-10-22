@@ -245,3 +245,19 @@ File: `src/lighting.js`
 - Pacing is mixed: average FPS improves while p95 worsens; the rate above 25 ms remains about 2.4%. This does not establish a sustained-60 result. The new meter adds at most two tiny draws/readbacks per second.
 - New lighting flicker baseline at locked exposure 0.7846: whole RMS 0.00155542, cliff RMS 0.00100941. The stronger lighting changes edge contrast, so these values are not an isolated shadow-filter comparison. Phase 4 will measure filtering against the updated lighting.
 - Validation: histogram/adaptation units, known-luminance GPU metering, gameplay, graphics and temporal suites passed. Personally inspected all four matched views: shadows and cloud contrast deepen without clipped terrain or missing colour. Canyon-scale ambient occlusion and bounce remain the next lighting tasks.
+
+### Phase 3.2 - terrain sky visibility and bounce
+
+- Baked directional horizon angles across the 6 x 4.8 km valley. Sky visibility integrates about the local surface normal, so an unobstructed tilted plane stays fully lit while enclosed valleys lose ambient illumination. The minimum visibility is about 0.24 on medium; exposed terrain approaches 1. The height field includes the detailed ridges and continuous distant terrain, but not separate buildings or chimneys; their material/chamber occlusion remains separate.
+- A low-resolution field estimates sunlit ground radiance from terrain normals, directional horizons, warm rock/soil albedo and snow coverage. A separable blur supplies approximate single-bounce light. High evaluates local visibility and radiance per pixel, fading with height above the ground; indirect reflections receive roughness-weighted occlusion. This is a height-field approximation, not multi-bounce global illumination.
+- GPU texture evaluation regressed medium flight pacing, including a vertex-sampled prototype. The final medium/lite path instead bakes visibility and ground proximity into static stone/terrain attributes once; instanced formations sample their footings. Existing geometry buffers are shared. Their bounce uses the field's mean radiance, oriented toward surrounding ground, with no lighting texture reads per frame. Moving actors and far LOD rings retain neutral ambient on these tiers. High keeps full local evaluation on all standard materials.
+- High/medium/lite visibility grids are 257/257/129 square with 16/8/8 horizon directions; bounce grids are 129/65/33 square. Radiance updates at most 2/2/1 Hz and skips unchanged lighting. Measured startup horizon baking was approximately 2.17/1.02/0.27 seconds; radiance updates were around 1.3/0.3/0.5 ms in the tier checks. These are local measurements, not guaranteed hardware budgets.
+
+| Final paired native flight, medium | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 3.1 build | 70.30 | 16.50 | 25.10 | 33.30 | 108/2109 |
+| Baked visibility and approximate bounce | 68.39 | 16.50 | 25.10 | 35.56 | 126/2053 |
+
+- Average pacing is about 2.7% lower in this pair, with unchanged p95 and a worse tail; session variability prevents attributing that entire difference to the feature. The expensive local lighting path is high-only. Sustained 60 fps remains an open Phase 8 requirement. The rejected texture-evaluation runs are not used as the final baseline.
+- Medium scene flicker at locked exposure 0.7824: whole RMS 0.00155102, cliff RMS 0.00100691, essentially unchanged from Phase 3.1. No random sampling or camera-triggered geometry changes were added.
+- Validation: flat/tilted-plane and canyon horizon units, all three tier browser checks, gameplay, graphics and temporal suites passed. Personally inspected all four matched pairs and the lighting toggle view: sheltered rock darkens and receives subtle warm fill; no missing surfaces or new noisy grain. Distant cast shadows and shadow filtering remain the next tasks.

@@ -1,7 +1,9 @@
 import {CSM} from 'three/addons/csm/CSM.js';
 import {THREE} from './core.js';
+import {applyTerrainLighting,bakeStaticTerrainLighting} from './terrain-lighting.js';
 
 export function createSunShadows(scene,camera,renderer){
+ const terrainPerFragment=renderer.ascentQuality.name==='high';
  const csm=new CSM({camera,parent:scene,cascades:3,maxFar:1900,
   mode:'custom',customSplitsCallback:(c,n,f,breaks)=>breaks.push(180/f,620/f,1),
   shadowMapSize:renderer.ascentQuality.shadowSize,shadowBias:-.000025,lightNear:1,lightFar:4500,
@@ -11,6 +13,7 @@ export function createSunShadows(scene,camera,renderer){
  scene.updateMatrixWorld(true);
  const materials=new Set();
  scene.traverse(object=>{
+  if(!terrainPerFragment)bakeStaticTerrainLighting(object);
   // Basket wicker, rigging and facial details are smaller than a far shadow
   // texel. Keep their full shadows in the first cascade only.
   if(object.isMesh&&object.castShadow){
@@ -21,12 +24,13 @@ export function createSunShadows(scene,camera,renderer){
   for(const material of [].concat(object.material??[])){
    if(!material.isMeshStandardMaterial||materials.has(material))continue;
    materials.add(material);
+   material.defaultAttributeValues={...material.defaultAttributeValues,aTerrainLight:[1,0]};
    // CSM replaces onBeforeCompile. Preserve the rock, cloth and wind shaders.
    const surface=material.onBeforeCompile,cacheKey=material.customProgramCacheKey.bind(material);
    const surfaceKey=cacheKey();
    csm.setupMaterial(material);const shadows=material.onBeforeCompile;
-   material.onBeforeCompile=function(shader,renderer){surface.call(this,shader,renderer);shadows.call(this,shader,renderer);};
-   material.customProgramCacheKey=()=>surfaceKey+'-csm3';
+   material.onBeforeCompile=function(shader,renderer){surface.call(this,shader,renderer);applyTerrainLighting(shader,terrainPerFragment);shadows.call(this,shader,renderer);};
+   material.customProgramCacheKey=()=>surfaceKey+'-terrain-light-'+terrainPerFragment+'-csm3';
   }
  });
  // WebGLShadowMap filters casters using the view camera's layers, not the

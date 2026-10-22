@@ -1,0 +1,20 @@
+{
+  "tier": "high",
+  "stats": {
+    "size": 257,
+    "directions": 16,
+    "bounceSize": 129,
+    "bakeMs": 2166.9000000059605,
+    "updates": 4,
+    "lastUpdateMs": 1.300000011920929
+  },
+  "visibility": {
+    "min": 0.24869738519191742,
+    "max": 0.9983839988708496,
+    "mean": 0.9423526162857919
+  },
+  "bakedValues": 0,
+  "invalid": 0,
+  "rms": 0.008445859625813365,
+  "errors": []
+}

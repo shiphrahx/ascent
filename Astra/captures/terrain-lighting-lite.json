@@ -1,0 +1,20 @@
+{
+  "tier": "lite",
+  "stats": {
+    "size": 129,
+    "directions": 8,
+    "bounceSize": 33,
+    "bakeMs": 272.30000001192093,
+    "updates": 3,
+    "lastUpdateMs": 0.5
+  },
+  "visibility": {
+    "min": 0.299867182970047,
+    "max": 0.9989720582962036,
+    "mean": 0.9572349209659669
+  },
+  "bakedValues": 576886,
+  "invalid": 0,
+  "rms": 0.007203689784450836,
+  "errors": []
+}

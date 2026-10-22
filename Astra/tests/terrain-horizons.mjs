@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const code=await readFile(new URL('../src/terrain-horizons.js',import.meta.url),'utf8');
+const {bakeTerrainHorizons}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const options={bounds:[-40,-40,40,40],size:17,directions:16,ranges:[5,10,20,40,80,160]};
+const flat=bakeTerrainHorizons({...options,heightAt:()=>20});
+assert(flat.visibility.every(v=>Math.abs(v-1)<1e-6));
+const slope=bakeTerrainHorizons({...options,heightAt:(x,z)=>20+x*.4+z*.2});
+assert(slope.visibility.every(v=>v>.999),'An open tilted plane has no ambient occlusion');
+const canyon=bakeTerrainHorizons({...options,heightAt:(x,z)=>Math.abs(x)>12?35:0}),centre=8*17+8;
+assert(canyon.visibility[centre]<.55,'Tall canyon walls occlude the sky');
+assert(canyon.visibility[8*17+16]>.95,'An exposed rim sees the sky');
+assert(canyon.angles[centre*16]>.5&&canyon.angles[centre*16+4]<0,'Horizons retain their direction for later sun visibility');
+assert(canyon.visibility.every(v=>Number.isFinite(v)&&v>=0&&v<=1));
+console.log('Terrain horizons: flat/tilted fields, canyon occlusion, exposed rims and directional horizons passed.');

@@ -8,6 +8,7 @@ import {erodedRock,erodedRidge,ridgeSurface,landNoise,volcanicMassif,configureGe
 import {configureTerrain} from './core.js';
 import {createFarTerrain} from './far-terrain.js';
 import {formationLayout} from './formations.js';
+import {createTerrainLighting} from './terrain-lighting.js';
 const cream=stoneMaterial('#dfcab2'),rose=stoneMaterial('#d0a39a',1),basalt=stoneMaterial('#5b5149',2),dark=mat('#211d21'),wood=mat('#695d50'),metal=mat('#555d61',{metalness:.7,roughness:.4});
 const windowMat=mat('#ffd2a0',{emissive:'#ff9b42',emissiveIntensity:0,roughness:.6});
 export function surfaceHeight(x,z){let y=ground(x,z);if(z<-1500||z>1500)return y;for(let i=0;i<6;i++)y=Math.max(y,ridgeSurface(x,z,i));return y;}
@@ -27,6 +28,14 @@ export function createWorld(scene,renderer,camera){
  const ridgeSoilDetail=renderer.ascentQuality.name==='high';
  const ridgeStone=[stoneMaterial('#dfcab2',6,ridgeSoilDetail),stoneMaterial('#d0a39a',6,ridgeSoilDetail)];
  for(let i=0;i<6;i++)landscapeCells(erodedRidge(i),ridgeStone[i%3===0?1:0],scene).name=`Eroded ridge ${i}`;
+ const farField=farTerrain.texture.image,farSize=farField.width;
+ function lightingHeight(x,z){
+  const u=THREE.MathUtils.clamp((x/65536+.5)*(farSize-1),0,farSize-1),v=THREE.MathUtils.clamp((z/65536+.5)*(farSize-1),0,farSize-1);
+  const ix=Math.min(farSize-2,Math.floor(u)),iz=Math.min(farSize-2,Math.floor(v)),fx=u-ix,fz=v-iz,q=iz*farSize+ix,d=farField.data;
+  const distant=lerp(lerp(d[q],d[q+1],fx),lerp(d[q+farSize],d[q+farSize+1],fx),fz);
+  return Math.max(surfaceHeight(x,z),distant);
+ }
+ const terrainLighting=createTerrainLighting(lightingHeight,renderer.ascentQuality);
  const volcano=mesh(volcanicMassif(),stoneMaterial('#e6dfd6',3),scene,[-6000,100,-17000],[1.8,1.8,1.8]);volcano.castShadow=false;
  const variants=Array.from({length:12},(_,i)=>chimneyGeometry(i+10));const capVariants=Array.from({length:6},(_,i)=>chimneyGeometry(i+70,true));const batches=Array.from({length:12},()=>[]),caps=Array.from({length:6},()=>[]);const dummy=new THREE.Object3D();
  // Related columns share overlapping talus bases along the first cliff feet.
@@ -137,7 +146,7 @@ export function createWorld(scene,renderer,camera){
  scene.attach(castleRock);
  for(const landmark of [church,dove,castle,bridge]){const baked=combine(landmark);scene.remove(landmark);scene.add(baked);}
  addWinterGrass(scene);createWildlife(scene);
- return {farTerrain,formations,formationGeometry:variants,formationCarvings,trees,water,windowMat,settlement,castleCarving,landmarks:{church:[cx,cy,cz],dovecotes:[dx,dy,dz],castle:[vx,vy,vz],bridge:[bx,3.6,bz]},update(t,dt,state){farTerrain.update(camera);windowMat.emissiveIntensity=state.night*2.7;updateWildlife(t,state);}};
+ return {farTerrain,terrainLighting,formations,formationGeometry:variants,formationCarvings,trees,water,windowMat,settlement,castleCarving,landmarks:{church:[cx,cy,cz],dovecotes:[dx,dy,dz],castle:[vx,vy,vz],bridge:[bx,3.6,bz]},update(t,dt,state){farTerrain.update(camera);terrainLighting.update(t,state.lighting);windowMat.emissiveIntensity=state.night*2.7;updateWildlife(t,state);}};
 }
 function createWildlife(scene){const feather=mat('#5c5552');for(let i=0;i<44;i++){const group=new THREE.Group(),eagle=i<2;const wing=new THREE.Shape();wing.moveTo(0,0);wing.quadraticCurveTo(.5,.3,1.5,.13);wing.lineTo(1.85,-.15);wing.lineTo(1.2,-.08);wing.lineTo(.7,-.25);wing.lineTo(0,-.12);const g=new THREE.ShapeGeometry(wing);g.rotateX(-Math.PI/2);const a=mesh(g,mat(eagle?'#423c3d':'#aaa8a3',{side:THREE.DoubleSide}),group);const b=mesh(g,a.material,group);b.scale.x=-1;sphere(group,feather,[0,0,0],[.14,.12,.43],8);group.scale.setScalar(eagle?1.3:.35);scene.add(group);birds.push({group,a,b,eagle,phase:rand()*TAU});}
  const coat=mat('#806657'),mane=mat('#352e2b'),hoof=mat('#403a39');for(let i=0;i<8;i++){const g=new THREE.Group();sphere(g,coat,[0,1.35,0],[1.1,.6,.43]);const n=sphere(g,coat,[.85,1.8,0],[.35,.7,.3]);n.rotation.z=-.4;sphere(g,coat,[1.15,2.3,0],[.46,.24,.23]);for(const z of[-.2,.2])rod(g,[.98,2.4,z],[.95,2.72,z],.08,mane,5,.02);const legs=[];for(const x of[-.7,.65])for(const z of[-.3,.3]){const l=new THREE.Group();l.position.set(x,1.1,z);rod(l,[0,0,0],[0,-.95,0],.11,coat,7,.08);box(l,hoof,[.07,-1.04,0],[.25,.17,.2]);g.add(l);legs.push(l);}tube(g,[[-.9,1.5,0],[-1.4,1.2,0],[-1.5,.7,0]],.09,mane,10);const x=pathX(780)+70+rand()*35,z=760+rand()*55;g.position.set(x,ground(x,z),z);scene.add(g);horses.push({group:g,legs,x,z,phase:rand()*TAU});}}
