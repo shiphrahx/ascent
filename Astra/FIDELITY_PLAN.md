@@ -138,3 +138,18 @@ File: `src/lighting.js`
 - Existing performance baselines describe a short fixed view, not the full scripted flight required by 0.2. That measurement and the scene flicker metric in 0.3 are next; no new 60 fps claim is made here.
 - Matched review captures: `captures/fidelity-0-before-*` and `captures/fidelity-0-after-*` at the four existing procedural review cameras/hours.
 - Validation: GPU classification checks and browser checks for all three tiers passed; `npm test`, `npm run test:graphics`, and `npm run test:temporal` passed. Personally inspected all four before/after views: medium preserves the baseline appearance. The rock camera exposes pre-existing stretched triangles, which will be investigated with landform geometry in Phase 1.
+
+### Phase 0.2 ? frame pacing baseline
+
+- Added a 30 s scripted 960 m flight with alternating camera turns at hour 8.5. Every animation-frame interval, completed application render count, camera, draw calls, triangles, and dynamic quality value is saved. Eight seconds of warm-up precede measurement. Percentiles use linear interpolation.
+- Commands: `node benchmark.mjs --flight --tier=medium --tag=phase-0` and the same with `--recording`. Other tiers use `--tier=high|lite`; duration and artifact label use `--seconds=30 --tag=...`.
+
+| Radeon 890M / medium | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms | Samples | Mean draws | Mean triangles |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1440?900 DPR 1 | 63.73 | 16.60 | 25.44 | 33.59 | 153 | 1913 | 1065 | 3318724 |
+| 2848?1590 DPR 1 | 33.07 | 33.20 | 41.70 | 41.80 | 720 | 992 | 1205 | 3920289 |
+
+- Native resolution averages above 60 fps but does **not hold** the frame budget: 8.0% of frames exceed 25 ms. Recording resolution is GPU-limited at about 33 fps, with 72.6% exceeding 25 ms. Dynamic quality reaches 0.4 there, but the native-resolution floor prevents it from reducing the 4.53M-pixel framebuffer. This needs resolution-aware tier controls and draw/triangle reduction in Phase 8.
+- Both runs had zero observer callbacks without an application render and no page errors. This rules out skipped application renders in this test; it does not establish whether a screen recorder duplicates frames. Headless Chromium presentation cadence can differ from the desktop. Raw rAF timing is not a GPU timer.
+- This task changes the harness only; `Ascent.html` is byte-identical to Phase 0.1. Matched review uses `fidelity-0-after-*` versus `fidelity-0-2-after-*`.
+- Validation: gameplay, graphics and temporal suites passed. Personally inspected all four matched before/after views; the benchmark-only change preserves the appearance.
