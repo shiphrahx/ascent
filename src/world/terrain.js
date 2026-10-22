@@ -8,8 +8,10 @@ import { makeMaterial } from '../core/mat.js';
 const GRID = 64;
 // Shadow-casting ground for the near slice. On high it sits on the same 2.5 m lattice as the nearest
 // visible LOD, with the same diagonals, so the ground shadows itself exactly where it's drawn; a
-// coarser copy self-shadowed in bands. Lower tiers trade that for a lighter grid.
-const SHADOW_GRID = { high: { size: 900, step: 2.5 }, medium: { size: 1600, step: 5 }, lite: { size: 1100, step: 10 } };
+// coarser copy self-shadowed in bands. Lower tiers go without: their heightmap shadow is already at
+// the 5 m their grid had, and side by side it looked the same, while the grid was half of medium's
+// main shadow map (0.9 ms on the 890M).
+const SHADOW_GRID = { high: { size: 900, step: 2.5 } };
 
 function gridGeometry(n, skirts = true) {
   // (n+1)^2 grid plus a skirt ring that drops down to hide LOD cracks
@@ -266,7 +268,7 @@ void main(){
 export class Terrain {
   constructor(data, tier = 'high') {
     this.data = data;
-    this.sg = SHADOW_GRID[tier] || SHADOW_GRID.high;
+    this.sg = SHADOW_GRID[tier] || null;
     U.uHeightCore.value = data.texH;
     U.uHeightOuter.value = data.texHO;
     U.uNormCore.value = data.texN;
@@ -334,22 +336,25 @@ export class Terrain {
     // Shadow-only copy of the ground under the near slice. The view chunks are culled to the camera,
     // so cliffs behind us would never cast; this grid covers the slice and reaches up-sun of it. Past
     // it, ridges shadow through the coarse terrain shadow, which every receiver always takes.
-    const sg = gridGeometry(Math.round(this.sg.size / this.sg.step), false);
-    const sinst = new THREE.InstancedBufferAttribute(new Float32Array(4), 4);
-    sinst.setUsage(THREE.DynamicDrawUsage);
-    sg.setAttribute('aChunk', sinst);
-    const sig = new THREE.InstancedBufferGeometry();
-    sig.index = sg.index; sig.attributes = sg.attributes; sig.instanceCount = 1;
-    const smat = new THREE.ShaderMaterial({ uniforms: this.mat.uniforms, vertexShader: VERT, fragmentShader: 'void main(){ gl_FragColor = vec4(1.); }', defines: { DEPTH_PASS: 1 }, side: THREE.DoubleSide });
-    this.shadowMesh = new THREE.Mesh(sig, smat);
-    this.shadowMesh.frustumCulled = false;
-    this.shadowMesh.layers.set(5);
-    this.shadowInst = sinst;
-    this.group.add(this.shadowMesh);
+    if (this.sg) {
+      const sg = gridGeometry(Math.round(this.sg.size / this.sg.step), false);
+      const sinst = new THREE.InstancedBufferAttribute(new Float32Array(4), 4);
+      sinst.setUsage(THREE.DynamicDrawUsage);
+      sg.setAttribute('aChunk', sinst);
+      const sig = new THREE.InstancedBufferGeometry();
+      sig.index = sg.index; sig.attributes = sg.attributes; sig.instanceCount = 1;
+      const smat = new THREE.ShaderMaterial({ uniforms: this.mat.uniforms, vertexShader: VERT, fragmentShader: 'void main(){ gl_FragColor = vec4(1.); }', defines: { DEPTH_PASS: 1 }, side: THREE.DoubleSide });
+      this.shadowMesh = new THREE.Mesh(sig, smat);
+      this.shadowMesh.frustumCulled = false;
+      this.shadowMesh.layers.set(5);
+      this.shadowInst = sinst;
+      this.group.add(this.shadowMesh);
+    }
   }
   // cover the near slice (centre c, half-size half) and reach up-sun of it, snapped to every other
   // lattice point so the grid's diagonals line up with the visible ground's
   setShadowCenter(c, half, L) {
+    if (!this.sg) return;
     const { size, step } = this.sg;
     const lh = Math.hypot(L.x, L.z) || 1, push = Math.max(0, size / 2 - half);
     const x = c.x + L.x / lh * push, z = c.z + L.z / lh * push, q = step * 2;
