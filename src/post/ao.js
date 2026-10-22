@@ -13,8 +13,10 @@ uniform mat4 uInvProj;
 uniform vec2 uRes;          // depth buffer size
 uniform float uProjScale;   // pixels per metre at 1m view depth
 uniform float uRadius, uFrame;
+// explicit LOD: these run in loops past an early exit, where the D3D compiler warns about
+// implicit-gradient lookups
 vec3 viewPos(vec2 uv){
-  float d = texture(tDepth, uv).r;
+  float d = textureLod(tDepth, uv, 0.).r;
   vec4 v = uInvProj * vec4(uv * 2. - 1., d * 2. - 1., 1.);
   return v.xyz / v.w;
 }
