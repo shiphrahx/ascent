@@ -1,0 +1,412 @@
+{
+  "createdAt": "2026-10-21T13:25:23.453Z",
+  "build": {
+    "path": "Ascent.html",
+    "bytes": 6326654,
+    "sha256": "3557d6e7dbaf5359928e8ff592ae1b20efc5efd749e881ebbc19bede58a3e987",
+    "previousBytes": 12965981,
+    "sizeReductionPercent": 51.205743707321496,
+    "offline": true
+  },
+  "objectiveStatus": "Implemented and validated a procedural environment realism pass. Full AAA photorealism remains unfinished.",
+  "direction": "Generate environment assets and material fields procedurally. External scanned or authored assets are not a prerequisite for this direction.",
+  "requirementsAndImplementation": [
+    {
+      "need": "Believable forms at landscape and object scales",
+      "implemented": "Asymmetric rock profiles, unequal drainage channels, tributaries, bedding undercuts, chipped capstones, interrupted ridge crests, and a broader citadel. Close landmarks retain more geometry than repeated formations.",
+      "source": "src/geology.js"
+    },
+    {
+      "need": "Coherent surface color and lighting response without artificial grain",
+      "implemented": "Build-time seeded generation of six seamless 1024x1024 maps for tuff, soil, and masonry. Base color is separate from packed linear roughness, height, and cavity fields. World-scale mapping, mipmaps, anisotropic sampling, and derivative-filtered relief preserve small features.",
+      "source": "tools/generate-materials.mjs"
+    },
+    {
+      "need": "Plausible architectural scale and construction",
+      "implemented": "53 generated buildings arranged along contour streets, one or two floors, thick walls, real window and door openings, recessed glazing, lintels, sills, courtyards, terraces, parapets, chimneys, and downpipes. Buildings are merged by material.",
+      "source": "src/settlement.js"
+    },
+    {
+      "need": "Openings with visible depth",
+      "implemented": "Citadel openings cut the front rock skin and contain recessed chamber walls and backs. The same aperture mask is used for shadow casting, eliminating the old rock/door overlay intersection.",
+      "source": "src/carving.js"
+    },
+    {
+      "need": "Natural vegetation without instance popping",
+      "implemented": "Four seeded poplar crown geometries with curved tapered branches. All 240 tree instances remain static; wind and matching shadow deformation stay in shaders. No dynamic LOD swaps were introduced.",
+      "source": "src/vegetation.js"
+    },
+    {
+      "need": "Consistent light and atmosphere",
+      "implemented": "Revised cloud density with a condensation base and eroded tops; removed the extra sky power transfer before the shared output transform; rebalanced cloud, environment, hemisphere light, and daylight exposure.",
+      "source": "src/atmosphere.js"
+    },
+    {
+      "need": "Preserve responsiveness and collision safety as geometry changes",
+      "implemented": "Ridge collision queries now interpolate cached mesh heights. Repeated rocks, capstones, and fine twigs use fewer vertices than the first procedural pass. Corrected envelope terrain clearance to avoid hovering indefinitely during hillside touchdown.",
+      "source": "src/main.js"
+    }
+  ],
+  "preserved": [
+    "Four-sample scene MSAA",
+    "Conservative temporal stabilization and reactive actor masks",
+    "Three cached cascaded shadow maps",
+    "Spatial scene culling",
+    "Bounded reflection and shadow refresh work",
+    "Opaque presentation and finite HDR buffers",
+    "Offline standalone delivery"
+  ],
+  "validation": {
+    "controls": {
+      "checks": {
+        "noVisibleText": true,
+        "noExternalRequests": true,
+        "fleet": 34,
+        "burnerRaises": true,
+        "inertialLift": true,
+        "ventCools": true,
+        "basketCamera": true,
+        "lookResponds": true,
+        "cinematicCamera": true,
+        "chaseCamera": true,
+        "fastForward": true,
+        "audioNoErrors": true,
+        "autopilotResumes": true,
+        "landingAndRestart": true,
+        "terrainClearance": true,
+        "softLanding": true,
+        "standalone": true
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "graphics": {
+      "checks": {
+        "finiteHDR": true,
+        "hardwareAntialiasing": true,
+        "nativeResolutionFloor": true,
+        "resolvedDepthDimensions": true,
+        "liveWeather": true,
+        "liveTime": true,
+        "stableTreeInstances": true,
+        "noContextLoss": true,
+        "temporalHistory": true,
+        "reactiveActors": true,
+        "embeddedMaterialTextures": true,
+        "linearSurfaceMaps": true,
+        "generatedVillage": true,
+        "terrainMatchesCollision": true,
+        "valleyShadowCoverage": true,
+        "farShadowDetailCulling": true,
+        "opaquePresentation": true,
+        "reactiveColorPreserved": true,
+        "boundedWorkOnSlowFrames": true,
+        "resize": true,
+        "capture": true,
+        "offline": true,
+        "noShaderErrors": true
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "highDpi": {
+      "checks": {
+        "deviceScaleFactor2": true,
+        "rotation": true,
+        "zoom": true,
+        "cameraSafe": true,
+        "resized": true,
+        "cameraIcon": true,
+        "noVisibleText": true,
+        "noExternalRequests": true
+      },
+      "errors": [],
+      "warnings": []
+    },
+    "temporal": {
+      "checks": {
+        "reducedFlicker": true,
+        "accurateCoverage": true,
+        "noFlickerRegressions": true,
+        "preservesFineBranches": true,
+        "noActorTrails": true,
+        "cameraCutRejectsHistory": true,
+        "resizeRejectsHistory": true,
+        "lightingRejectsHistory": true,
+        "toggleRejectsHistory": true,
+        "projectionRejectsHistory": true,
+        "noErrors": true
+      },
+      "errors": [],
+      "warnings": []
+    }
+  },
+  "collisionEvidence": {
+    "maxTerrainError": 0.00004609302511937585,
+    "maxRidgePenetration": 0.00003180867045671221,
+    "samples": 1702,
+    "textures": [
+      {
+        "name": "Cappadocia tuff albedo",
+        "width": 1024,
+        "height": 1024,
+        "decoded": true,
+        "colorSpace": "srgb"
+      },
+      {
+        "name": "Valley soil albedo",
+        "width": 1024,
+        "height": 1024,
+        "decoded": true,
+        "colorSpace": "srgb"
+      },
+      {
+        "name": "Tuff roughness / height / cavity",
+        "width": 1024,
+        "height": 1024,
+        "decoded": true,
+        "colorSpace": ""
+      },
+      {
+        "name": "Soil roughness / height / cavity",
+        "width": 1024,
+        "height": 1024,
+        "decoded": true,
+        "colorSpace": ""
+      },
+      {
+        "name": "Cut tuff masonry albedo",
+        "width": 1024,
+        "height": 1024,
+        "decoded": true,
+        "colorSpace": "srgb"
+      },
+      {
+        "name": "Masonry roughness / height / cavity",
+        "width": 1024,
+        "height": 1024,
+        "decoded": true,
+        "colorSpace": ""
+      }
+    ],
+    "cascades": 3,
+    "plots": 53
+  },
+  "shadowEvidence": {
+    "small": [
+      387,
+      0,
+      0
+    ],
+    "large": [
+      127,
+      253,
+      236
+    ],
+    "viewLayersRestored": true
+  },
+  "presentationEvidence": {
+    "transparent": 0,
+    "rmse": 0,
+    "maxError": 0
+  },
+  "temporalEvidence": {
+    "scope": "Synthetic motion and thin-geometry fixture for the unchanged temporal module; separate from the scene instance-stability checks.",
+    "cases": {
+      "slow": {
+        "msaa": {
+          "rmse": 0.03335838218043885,
+          "flicker": 0.052294594332556434,
+          "contrastRetention": 0.9982864001260061
+        },
+        "temporal": {
+          "rmse": 0.02592758280439224,
+          "flicker": 0.03618238364590192,
+          "contrastRetention": 0.9999628681254117
+        }
+      },
+      "medium": {
+        "msaa": {
+          "rmse": 0.03350113484528687,
+          "flicker": 0.05078337181762929,
+          "contrastRetention": 0.9987728670906547
+        },
+        "temporal": {
+          "rmse": 0.03035908958141898,
+          "flicker": 0.04435600827254295,
+          "contrastRetention": 1.0054861395796724
+        }
+      },
+      "fast": {
+        "msaa": {
+          "rmse": 0.029569827805325702,
+          "flicker": 0.0413809606742698,
+          "contrastRetention": 1.0013434729005797
+        },
+        "temporal": {
+          "rmse": 0.029569827805325702,
+          "flicker": 0.0413809606742698,
+          "contrastRetention": 1.0013434729005797
+        }
+      },
+      "rotation": {
+        "msaa": {
+          "rmse": 0.033544091431827856,
+          "flicker": 0.04500694537655624,
+          "contrastRetention": 0.9999881500943846
+        },
+        "temporal": {
+          "rmse": 0.03265045191685057,
+          "flicker": 0.03555290842434453,
+          "contrastRetention": 1.0128565823796174
+        }
+      },
+      "stationary": {
+        "msaa": {
+          "rmse": 0.034538913267637555,
+          "flicker": 1.1099786090181547e-9,
+          "contrastRetention": 1.0327766039070523
+        },
+        "temporal": {
+          "rmse": 0.03442517482901795,
+          "flicker": 1.066441620172642e-9,
+          "contrastRetention": 1.0345907971424835
+        }
+      },
+      "wind": {
+        "msaa": {
+          "rmse": 0.03318187278244502,
+          "flicker": 0.04321541058538797,
+          "contrastRetention": 0.9994406165139255
+        },
+        "temporal": {
+          "rmse": 0.027363463510793815,
+          "flicker": 0.03059551557267974,
+          "contrastRetention": 0.9885098993418373
+        }
+      }
+    },
+    "actors": [
+      {
+        "speed": 0.0014,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 3719
+      },
+      {
+        "speed": 0.0056,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 17646
+      },
+      {
+        "speed": 0.045,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 146065
+      }
+    ]
+  },
+  "performance": {
+    "standard": [
+      {
+        "file": "captures/pre-procedural.html",
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "pixelRatio": 1,
+        "quality": 1,
+        "hourRange": [
+          6.55,
+          6.55
+        ],
+        "fps": 59.99463735085128,
+        "meanFrameMs": 16.668156424581017,
+        "p95FrameMs": 17,
+        "meanDrawCalls": 1093.122905027933,
+        "meanTriangles": 3023604.586592179,
+        "errors": []
+      },
+      {
+        "file": "Ascent.html",
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "pixelRatio": 1,
+        "quality": 1,
+        "hourRange": [
+          6.55,
+          6.55
+        ],
+        "fps": 60.00268168409767,
+        "meanFrameMs": 16.665921787709483,
+        "p95FrameMs": 17,
+        "meanDrawCalls": 1201.8379888268157,
+        "meanTriangles": 3709041.9162011174,
+        "errors": []
+      }
+    ],
+    "highDpi": [
+      {
+        "file": "captures/pre-procedural.html",
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "pixelRatio": 1.469861839480328,
+        "quality": 1,
+        "hourRange": [
+          6.55,
+          6.55
+        ],
+        "fps": 47.52170334775797,
+        "meanFrameMs": 21.043016759776542,
+        "p95FrameMs": 33.400000000001455,
+        "meanDrawCalls": 1144.8826815642458,
+        "meanTriangles": 3293128.653631285,
+        "errors": []
+      },
+      {
+        "file": "Ascent.html",
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "pixelRatio": 1.469861839480328,
+        "quality": 1,
+        "hourRange": [
+          6.55,
+          6.55
+        ],
+        "fps": 45.12794655237615,
+        "meanFrameMs": 22.15921787709497,
+        "p95FrameMs": 33.5,
+        "meanDrawCalls": 1257.9832402234638,
+        "meanTriangles": 4009932.284916201,
+        "errors": []
+      }
+    ],
+    "method": "Sequential Chromium pages on AMD Radeon 890M, 1440x900 CSS viewport, eight-second warmup, 179 measured frame intervals in the valley at hour 6.55. High-DPI render ratio is capped at 1.46986 (about 2.8 million pixels), not full DPR 2.",
+    "caveats": [
+      "These short benchmark samples do not establish a frame-rate guarantee for the full journey. Historical runs in this environment have varied substantially.",
+      "The final pass holds roughly 60 FPS in the standard-resolution sample. At high DPI it measures 45.1 FPS versus 47.5 for the previous build; added detail retains a modest GPU cost.",
+      "The topology trim reduced high-DPI rendered triangle count from about 4.98 million to 4.01 million in these samples."
+    ],
+    "untrimmedSource": "captures/procedural-untrimmed-benchmark-retina.json"
+  },
+  "review": {
+    "comparison": "captures/procedural-comparison.html",
+    "captures": [
+      "captures/graphics-dawn.png",
+      "captures/graphics-midday.png",
+      "captures/procedural-valley.png",
+      "captures/procedural-village.png",
+      "captures/procedural-rock.png",
+      "captures/procedural-clouds.png"
+    ],
+    "captureScript": "procedural-review.mjs"
+  },
+  "assetProvenance": "assets/materials/procedural/provenance.json",
+  "remaining": [
+    "Further procedural terrain composition, fractures, talus, and vegetation distribution to reduce broad smooth surfaces and repeated motifs.",
+    "More convincing procedural anatomy, clothing, and motion for people and horses visible at close range.",
+    "Richer cloud structure and cloud-to-ground lighting correspondence.",
+    "Higher and more consistent frame rates at high DPI while retaining fine-detail stability."
+  ],
+  "completionAudit": {
+    "photorealismAchieved": false,
+    "externalAssetsRequired": false,
+    "allExecutedChecksPassed": true,
+    "note": "Passing rendering and gameplay checks establishes technical validity, not photographic realism. No user-supplied asset-library path is required to continue the procedural approach."
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "source": "captures/pre-procedural.html",
+  "errors": [],
+  "report": [
+    {
+      "pose": "valley",
+      "state": {
+        "hour": 8.5,
+        "elapsed": 2.0999999999970207,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          -82.62068911045276,
+          6.705230365227093,
+          1059.8272655787514
+        ],
+        "camera": [
+          -25,
+          147,
+          745
+        ],
+        "thermal": 1.3014079656062483,
+        "verticalSpeed": 2.0888442380500076,
+        "manual": false,
+        "targetAltitude": 40.88999999999732,
+        "landing": 0,
+        "drawCalls": 714,
+        "triangles": 1927335,
+        "fps": 0,
+        "quality": 1
+      },
+      "assets": [
+        {
+          "name": "Cappadocia tuff albedo",
+          "width": 1254,
+          "height": 1254
+        },
+        {
+          "name": "Valley soil albedo",
+          "width": 1254,
+          "height": 1254
+        }
+      ]
+    },
+    {
+      "pose": "village",
+      "state": {
+        "hour": 9,
+        "elapsed": 2.0999999999970207,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          -82.62068911045276,
+          6.705230365227093,
+          1059.8272655787514
+        ],
+        "camera": [
+          200.17288396503918,
+          123.59251308397177,
+          85
+        ],
+        "thermal": 1.3014079656062483,
+        "verticalSpeed": 2.0888442380500076,
+        "manual": false,
+        "targetAltitude": 40.88999999999732,
+        "landing": 0,
+        "drawCalls": 417,
+        "triangles": 1540313,
+        "fps": 0,
+        "quality": 1
+      },
+      "assets": [
+        {
+          "name": "Cappadocia tuff albedo",
+          "width": 1254,
+          "height": 1254
+        },
+        {
+          "name": "Valley soil albedo",
+          "width": 1254,
+          "height": 1254
+        }
+      ]
+    },
+    {
+      "pose": "rock",
+      "state": {
+        "hour": 14,
+        "elapsed": 2.0999999999970207,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          -82.62068911045276,
+          6.705230365227093,
+          1059.8272655787514
+        ],
+        "camera": [
+          -185,
+          100,
+          500
+        ],
+        "thermal": 1.3014079656062483,
+        "verticalSpeed": 2.0888442380500076,
+        "manual": false,
+        "targetAltitude": 40.88999999999732,
+        "landing": 0,
+        "drawCalls": 510,
+        "triangles": 1465045,
+        "fps": 0,
+        "quality": 1
+      },
+      "assets": [
+        {
+          "name": "Cappadocia tuff albedo",
+          "width": 1254,
+          "height": 1254
+        },
+        {
+          "name": "Valley soil albedo",
+          "width": 1254,
+          "height": 1254
+        }
+      ]
+    },
+    {
+      "pose": "clouds",
+      "state": {
+        "hour": 12,
+        "elapsed": 2.0999999999970207,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          -82.62068911045276,
+          6.705230365227093,
+          1059.8272655787514
+        ],
+        "camera": [
+          0,
+          160,
+          600
+        ],
+        "thermal": 1.3014079656062483,
+        "verticalSpeed": 2.0888442380500076,
+        "manual": false,
+        "targetAltitude": 40.88999999999732,
+        "landing": 0,
+        "drawCalls": 615,
+        "triangles": 1733595,
+        "fps": 0,
+        "quality": 1
+      },
+      "assets": [
+        {
+          "name": "Cappadocia tuff albedo",
+          "width": 1254,
+          "height": 1254
+        },
+        {
+          "name": "Valley soil albedo",
+          "width": 1254,
+          "height": 1254
+        }
+      ]
+    }
+  ]
+}

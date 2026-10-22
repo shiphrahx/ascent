@@ -1,0 +1,23 @@
+{
+  "generator": "Built-in image_gen tool, imagegen skill",
+  "sourceType": "Generated material artwork, not photogrammetry or measured PBR scans",
+  "runtime": "Embedded sRGB albedo textures; mipmapped, anisotropic world-space mapping. Surface relief and roughness are approximated in the material shader, not measured normal or displacement maps.",
+  "assets": [
+    {
+      "path": "assets/materials/tuff-albedo.png",
+      "physicalTileWidthMetres": 4,
+      "prompt": "Use case: photorealistic-natural. Asset type: seamless tileable base-color texture for a physically based 3D game material, square 2048x2048. Primary request: orthographic straight-on flat texture of natural pale beige volcanic tuff sandstone in Cappadocia, covering approximately 4 by 4 metres of rock surface. Authentic weathered soft volcanic rock, small irregular pits, eroded fine porous grains, subtly varied warm cream, faded dusty rose and grey beige mineral staining, fine discontinuous horizontal sediment layers with occasional hairline cracks. Natural subtle broad tonal variation, no large bold cracks or obvious repeating markings. Lighting must be completely diffuse, shadow-free and evenly exposed neutral overcast; this is a base color map, no directional light or baked hard shadows. Fill the entire square edge to edge with the same rock surface, tile seamlessly in both directions. No objects, landscape, horizon, perspective, border, captions, watermarks, or text. Extremely realistic surface detail, restrained contrast, physically plausible muted colors; not a stylized illustration and no artificial film grain."
+    },
+    {
+      "path": "assets/materials/valley-soil-albedo.png",
+      "physicalTileWidthMetres": 3,
+      "prompt": "Use case: photorealistic-natural. Asset type: a seamless square 2048x2048 physically based game base-color texture. Primary request: directly overhead orthographic texture of dry pale brown sandy volcanic soil from a late winter Cappadocia valley, approximately 3 by 3 metres. Densely detailed naturally packed fine earth, small irregular chalky beige tuff pebbles mostly 1 to 3 centimetres, subtle dusty olive and taupe color variation, very sparse small broken straw stems and traces of dormant dry moss mixed into the earth. Almost entirely soil and very small embedded stones, no large rocks or large plants. Photographic realism, diffuse neutral flat illumination, low contrast, no directional shadows, no gloss, no perspective, no horizon, no objects. Texture fills the square edge to edge, seamlessly tileable on all edges, even distribution without focal point. No text, no border, no watermark, no artificial film grain. This is a neutral albedo map for a 3D ground material, not a landscape photograph."
+    }
+  ],
+  "status": "Legacy generated artwork retained for reference; not imported by the current build.",
+  "currentRuntime": {
+    "generator": "tools/generate-materials.mjs",
+    "provenance": "assets/materials/procedural/provenance.json",
+    "sourceType": "Seeded procedural albedo, roughness, height, and cavity fields"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "generator": "tools/generate-materials.mjs",
+  "source": "Seeded mathematical fields; no photographs, scans, or generated bitmap artwork.",
+  "resolution": [
+    1024,
+    1024
+  ],
+  "tileMetres": {
+    "tuff": 4,
+    "soil": 3,
+    "masonry": 4
+  },
+  "channels": {
+    "albedo": "sRGB base color; no directional lighting",
+    "surface": "Linear RGB: roughness, height, ambient cavity visibility"
+  },
+  "reliefMetres": {
+    "tuff": 0.1,
+    "soil": 0.035,
+    "masonry": 0.045
+  }
+}

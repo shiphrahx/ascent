@@ -1,0 +1,18 @@
+[
+  {
+    "file": "Ascent.html",
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "pixelRatio": 1.469861839480328,
+    "quality": 1,
+    "hourRange": [
+      6.689404999999588,
+      7.0780649999996115
+    ],
+    "fps": 46.0853156009705,
+    "meanFrameMs": 21.69888579387186,
+    "p95FrameMs": 33.5,
+    "meanDrawCalls": 1605.5153203342618,
+    "meanTriangles": 3652301.9526462397,
+    "errors": []
+  }
+]

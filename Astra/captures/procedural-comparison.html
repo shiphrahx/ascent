@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ascent · Procedural graphics comparison</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#151a20;color:#eef0ed;font:15px system-ui,sans-serif;padding:28px}main{max-width:1440px;margin:auto}h1{font-size:25px;font-weight:550;margin:0 0 12px}p{color:#adb7bf;line-height:1.5}nav{display:flex;gap:12px;align-items:center;margin:20px 0}select{font:inherit;background:#252e38;color:inherit;border:1px solid #4d5965;padding:8px 12px;border-radius:6px}.frame{position:relative;aspect-ratio:8/5;overflow:hidden;border-radius:8px;background:#252e38}.frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.frame #after{clip-path:inset(0 0 0 50%)}.line{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#f4ddaf;pointer-events:none}.caption{position:absolute;top:16px;background:#17202bc9;padding:7px 12px;border-radius:5px;font-size:13px}.left{left:16px}.right{right:16px}input{width:100%;accent-color:#d9b875;margin:16px 0}a{color:#e2c390}footer{font-size:13px;color:#97a4af;line-height:1.6}
+</style>
+<main><h1>Ascent · Procedural graphics comparison</h1>
+<p>Matched camera positions and times of day. Move the divider to compare the previous build with the procedural pass.</p>
+<nav><label for="view">View</label><select id="view"><option value="valley">Valley</option><option value="village">Citadel and village</option><option value="rock">Rock formations</option><option value="clouds">Sky and distant terrain</option></select><a href="../Ascent.html">Open the game</a></nav>
+<div class="frame"><img id="before" src="procedural-before-valley.png" alt="Previous valley rendering"><img id="after" src="procedural-valley.png" alt="Valley with the procedural changes"><div class="line" id="line"></div><span class="caption left">Previous build</span><span class="caption right">Procedural pass</span></div>
+<label for="divider">Comparison divider</label><input id="divider" type="range" min="0" max="100" value="50">
+<footer>Generated rock and soil surfaces, erosion, masonry, buildings, tree crowns and clouds. The hero balloon is hidden in these asset review views. These captures show the current result; they do not establish full photorealism.</footer>
+</main>
+<script>
+const view=document.querySelector('#view'),divider=document.querySelector('#divider'),before=document.querySelector('#before'),after=document.querySelector('#after'),line=document.querySelector('#line');
+view.onchange=()=>{before.src=`procedural-before-${view.value}.png`;after.src=`procedural-${view.value}.png`;before.alt=`Previous ${view.options[view.selectedIndex].text} rendering`;after.alt=`Procedural ${view.options[view.selectedIndex].text} rendering`;};
+divider.oninput=()=>{after.style.clipPath=`inset(0 0 0 ${divider.value}%)`;line.style.left=divider.value+'%';};
+</script></html>

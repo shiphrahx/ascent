@@ -1,0 +1,34 @@
+[
+  {
+    "file": "captures/pre-procedural.html",
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "pixelRatio": 1.469861839480328,
+    "quality": 1,
+    "hourRange": [
+      6.55,
+      6.55
+    ],
+    "fps": 44.7522376118806,
+    "meanFrameMs": 22.34525139664804,
+    "p95FrameMs": 33.70000000000073,
+    "meanDrawCalls": 1147.7597765363128,
+    "meanTriangles": 3314127.38547486,
+    "errors": []
+  },
+  {
+    "file": "Ascent.html",
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "pixelRatio": 1.469861839480328,
+    "quality": 1,
+    "hourRange": [
+      6.55,
+      6.55
+    ],
+    "fps": 41.792159884196,
+    "meanFrameMs": 23.927932960893866,
+    "p95FrameMs": 33.89999999999782,
+    "meanDrawCalls": 1262.0167597765362,
+    "meanTriangles": 4975661.055865922,
+    "errors": []
+  }
+]

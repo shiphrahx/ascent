@@ -1,0 +1,69 @@
+{
+  "checks": {
+    "deviceScaleFactor2": true,
+    "rotation": true,
+    "zoom": true,
+    "cameraSafe": true,
+    "resized": true,
+    "cameraIcon": true,
+    "noVisibleText": true,
+    "noExternalRequests": true
+  },
+  "initial": {
+    "state": {
+      "hour": 6.6,
+      "elapsed": 17.710200000008953,
+      "mode": 0,
+      "storm": 0,
+      "hero": [
+        36.420186879557136,
+        129.58320135018698,
+        588.1820883547698
+      ],
+      "camera": [
+        1.7710620449118795,
+        163.70265973031684,
+        679.7787043058208
+      ],
+      "thermal": 0.3572841770017901,
+      "verticalSpeed": -0.44087943942767804,
+      "manual": true,
+      "targetAltitude": 80,
+      "landing": 0,
+      "drawCalls": 1695,
+      "triangles": 6353982,
+      "fps": 44.838192609279524,
+      "quality": 1
+    },
+    "rotation": 0,
+    "distance": 103.70457726467323,
+    "pixelRatio": 1.469861839480328
+  },
+  "final": {
+    "hour": 6.6,
+    "elapsed": 24.720000000008895,
+    "mode": 1,
+    "storm": 0,
+    "hero": [
+      45.891151222961085,
+      118.93501339830208,
+      556.9310673870094
+    ],
+    "camera": [
+      45.92482891549558,
+      120.88074129346066,
+      556.1905886425291
+    ],
+    "thermal": 0.10822520351139399,
+    "verticalSpeed": -2.4,
+    "manual": true,
+    "targetAltitude": 80,
+    "landing": 0,
+    "drawCalls": 993,
+    "triangles": 2899854,
+    "fps": 44.7438667853057,
+    "quality": 1
+  },
+  "errors": [],
+  "warnings": []
+}

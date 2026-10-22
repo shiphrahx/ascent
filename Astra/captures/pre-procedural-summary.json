@@ -1,0 +1,316 @@
+{
+  "createdAt": "2026-10-21T12:38:55.860Z",
+  "build": {
+    "path": "Ascent.html",
+    "bytes": 12965981,
+    "sha256": "c501e397caee4581b916d4ac2d14b8f8f272683da619f369467e39ede2ff86ea",
+    "offline": true
+  },
+  "objectiveStatus": "Rendering stability and efficiency improved; full AAA photorealism and consistently high frame rates are not yet achieved.",
+  "implemented": [
+    "Embedded tuff and soil albedo textures with world-space mapping, mipmaps, anisotropic filtering and filtered relief.",
+    "Eroded rock variants, clustered formations, debris, higher-detail ridges and distant ranges.",
+    "Adaptive river-aligned terrain; water and shore ice follow the actual ground surface.",
+    "Three cascaded shadow maps across 1900 metres, stable shadow snapping, sky-derived environment lighting and cave ambient occlusion.",
+    "4096 by 2048 HDR cloud sky, 96 integration steps, small tiled cache updates and separate lower-resolution environment lighting.",
+    "Spatial geometry culling, shader precompilation and frame-based refresh limits for far shadows and reflections.",
+    "Preserved four-sample MSAA, output-space edge filtering and static wind-deformed tree instances.",
+    "Temporal stabilization after volumetric fog, preserving four-sample MSAA without projection jitter. Depth reprojection, nearest-surface motion, cubic history reconstruction, color clipping, reactive actor masks and conservative motion rejection protect fine details.",
+    "Opaque final output prevents temporal depth and reactivity metadata from changing browser-composited colors. History is copied with a GPU draw rather than a synchronous texture-copy API.",
+    "Effective distant-shadow caster filtering: Three WebGLShadowMap tests view-camera layers, so each far cascade now uses the intended coarse caster layer. The normal view mask is restored afterward."
+  ],
+  "validation": {
+    "controls": {
+      "checks": {
+        "noVisibleText": true,
+        "noExternalRequests": true,
+        "fleet": 34,
+        "burnerRaises": true,
+        "inertialLift": true,
+        "ventCools": true,
+        "basketCamera": true,
+        "lookResponds": true,
+        "cinematicCamera": true,
+        "chaseCamera": true,
+        "fastForward": true,
+        "audioNoErrors": true,
+        "autopilotResumes": true,
+        "landingAndRestart": true,
+        "terrainClearance": true,
+        "softLanding": true,
+        "standalone": true
+      },
+      "errors": [],
+      "warnings": [],
+      "source": "captures/verification.json"
+    },
+    "rendering": {
+      "checks": {
+        "finiteHDR": true,
+        "hardwareAntialiasing": true,
+        "nativeResolutionFloor": true,
+        "resolvedDepthDimensions": true,
+        "liveWeather": true,
+        "liveTime": true,
+        "stableTreeInstances": true,
+        "noContextLoss": true,
+        "temporalHistory": true,
+        "reactiveActors": true,
+        "embeddedMaterialTextures": true,
+        "terrainMatchesCollision": true,
+        "valleyShadowCoverage": true,
+        "farShadowDetailCulling": true,
+        "opaquePresentation": true,
+        "reactiveColorPreserved": true,
+        "boundedWorkOnSlowFrames": true,
+        "resize": true,
+        "capture": true,
+        "offline": true,
+        "noShaderErrors": true
+      },
+      "errors": [],
+      "warnings": [],
+      "source": "captures/graphics-report.json"
+    },
+    "highDpi": {
+      "checks": {
+        "deviceScaleFactor2": true,
+        "rotation": true,
+        "zoom": true,
+        "cameraSafe": true,
+        "resized": true,
+        "cameraIcon": true,
+        "noVisibleText": true,
+        "noExternalRequests": true
+      },
+      "errors": [],
+      "warnings": [],
+      "source": "captures/retina-report.json"
+    },
+    "temporal": {
+      "checks": {
+        "reducedFlicker": true,
+        "accurateCoverage": true,
+        "noFlickerRegressions": true,
+        "preservesFineBranches": true,
+        "noActorTrails": true,
+        "cameraCutRejectsHistory": true,
+        "resizeRejectsHistory": true,
+        "lightingRejectsHistory": true,
+        "toggleRejectsHistory": true,
+        "projectionRejectsHistory": true,
+        "noErrors": true
+      },
+      "errors": [],
+      "warnings": [],
+      "source": "captures/temporal-report.json"
+    }
+  },
+  "performance": {
+    "standard": [
+      {
+        "file": "Ascent.html",
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "pixelRatio": 1,
+        "quality": 0.7,
+        "hourRange": [
+          6.55,
+          6.55
+        ],
+        "fps": 28.091210119113015,
+        "meanFrameMs": 35.59832402234636,
+        "p95FrameMs": 50.10000000000218,
+        "meanDrawCalls": 1159.268156424581,
+        "meanTriangles": 3404652.87150838,
+        "errors": []
+      }
+    ],
+    "highDpi": [
+      {
+        "file": "Ascent.html",
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "pixelRatio": 1.4021588293471068,
+        "quality": 0.7,
+        "hourRange": [
+          6.55,
+          6.55
+        ],
+        "fps": 22.402162622179393,
+        "meanFrameMs": 44.63854748603352,
+        "p95FrameMs": 66.79999999999927,
+        "meanDrawCalls": 1159.8659217877096,
+        "meanTriangles": 3409947.195530726,
+        "errors": []
+      }
+    ],
+    "highDpiLive": [
+      {
+        "file": "Ascent.html",
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "pixelRatio": 1.469861839480328,
+        "quality": 1,
+        "hourRange": [
+          6.689404999999588,
+          7.0780649999996115
+        ],
+        "fps": 46.0853156009705,
+        "meanFrameMs": 21.69888579387186,
+        "p95FrameMs": 33.5,
+        "meanDrawCalls": 1605.5153203342618,
+        "meanTriangles": 3652301.9526462397,
+        "errors": []
+      }
+    ],
+    "method": "1440 by 900 CSS viewport, sequential Chromium launches. Standard and high-DPI valley benchmarks use an eight-second warmup and 179 frame intervals. Live launch flight keeps the day/night simulation active, with a twelve-second warmup and 359 frame intervals. High-DPI resolution is capped near 2.8 million pixels and may adapt; it is not full native DPR 2.",
+    "caveat": "Frame rates varied substantially between runs, including runs of the previous build. These observations do not establish a stable 60 FPS guarantee or a reliable overall speedup. Final runs ranged from about 22 FPS in the high-DPI valley test to 46 FPS in the high-DPI live launch test.",
+    "temporalProfile": {
+      "source": "captures/temporal-performance.json",
+      "note": "Before the final shadow-filter correction, the GPU draw used for history copying reduced measured temporal-pass CPU time from about 29.5 ms to 0.063 ms in a live DPR-1 profile; temporal GPU time was about 1.08 ms. Scene rendering remained the largest measured cost."
+    }
+  },
+  "assetProvenance": "assets/materials/provenance.json",
+  "remaining": [
+    "Replace repeated smooth rock silhouettes and simplified settlement/landmark geometry with higher-fidelity authored or scanned assets based on photographic references.",
+    "Replace primitive people and wildlife with anatomically credible meshes, materials and animation.",
+    "Use matched albedo, normal, roughness and displacement maps with known real-world scale; current generated albedo and shader relief are approximations, not measured scans.",
+    "Continue lighting and cloud comparison against photographs after asset replacement. Passing technical checks does not establish photorealism.",
+    "Measure sustained frame times on the intended device under consistent conditions, including launch, valley flight, first-person views and storms. High-DPI performance remains variable."
+  ],
+  "assetAccess": "External asset downloads were denied by the workspace network policy. A local asset-library path was requested earlier; no path has been supplied.",
+  "temporalEvidence": {
+    "method": "320 by 240 branch silhouettes compared against a 4-times supersampled, four-sample-MSAA reference. Six motion cases and three reactive-actor speeds. Fast movement falls back to the current four-sample-MSAA image.",
+    "cases": {
+      "slow": {
+        "msaa": {
+          "rmse": 0.03335838218043885,
+          "flicker": 0.052294594332556434,
+          "contrastRetention": 0.9982864001260061
+        },
+        "temporal": {
+          "rmse": 0.02592758280439224,
+          "flicker": 0.03618238364590192,
+          "contrastRetention": 0.9999628681254117
+        }
+      },
+      "medium": {
+        "msaa": {
+          "rmse": 0.03350113484528687,
+          "flicker": 0.05078337181762929,
+          "contrastRetention": 0.9987728670906547
+        },
+        "temporal": {
+          "rmse": 0.03035908958141898,
+          "flicker": 0.04435600827254295,
+          "contrastRetention": 1.0054861395796724
+        }
+      },
+      "fast": {
+        "msaa": {
+          "rmse": 0.029569827805325702,
+          "flicker": 0.0413809606742698,
+          "contrastRetention": 1.0013434729005797
+        },
+        "temporal": {
+          "rmse": 0.029569827805325702,
+          "flicker": 0.0413809606742698,
+          "contrastRetention": 1.0013434729005797
+        }
+      },
+      "rotation": {
+        "msaa": {
+          "rmse": 0.033544091431827856,
+          "flicker": 0.04500694537655624,
+          "contrastRetention": 0.9999881500943846
+        },
+        "temporal": {
+          "rmse": 0.03265045191685057,
+          "flicker": 0.03555290842434453,
+          "contrastRetention": 1.0128565823796174
+        }
+      },
+      "stationary": {
+        "msaa": {
+          "rmse": 0.034538913267637555,
+          "flicker": 1.1099786090181547e-9,
+          "contrastRetention": 1.0327766039070523
+        },
+        "temporal": {
+          "rmse": 0.03442517482901795,
+          "flicker": 1.066441620172642e-9,
+          "contrastRetention": 1.0345907971424835
+        }
+      },
+      "wind": {
+        "msaa": {
+          "rmse": 0.03318187278244502,
+          "flicker": 0.04321541058538797,
+          "contrastRetention": 0.9994406165139255
+        },
+        "temporal": {
+          "rmse": 0.027363463510793815,
+          "flicker": 0.03059551557267974,
+          "contrastRetention": 0.9885098993418373
+        }
+      }
+    },
+    "actors": [
+      {
+        "speed": 0.0014,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 3719
+      },
+      {
+        "speed": 0.0056,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 17646
+      },
+      {
+        "speed": 0.045,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 146065
+      }
+    ],
+    "flickerReductionPercent": {
+      "slow": 30.81047074233392,
+      "medium": 12.656433228120356,
+      "rotation": 21.005728944973544,
+      "wind": 29.202302701192618
+    }
+  },
+  "shadowEvidence": {
+    "small": [
+      381,
+      0,
+      0
+    ],
+    "large": [
+      111,
+      197,
+      189
+    ],
+    "viewLayersRestored": true
+  },
+  "presentationEvidence": {
+    "transparent": 0,
+    "rmse": 0,
+    "maxError": 0
+  },
+  "completionAudit": {
+    "checkedAt": "2026-10-21T12:41:41.766Z",
+    "buildMatchesValidation": true,
+    "photorealismAchieved": false,
+    "consistentFrameRateVerified": false,
+    "blocker": "Higher-fidelity source assets are unavailable: the workspace has no authored/scanned model files or matched PBR map sets, external asset downloads are denied, and no local asset-library path has been supplied.",
+    "evidence": [
+      "Current build SHA-256 matches the validated artifact.",
+      "Latest rendered captures still show repeated procedural formations and simplified buildings and people.",
+      "Workspace asset search found no GLB, glTF, FBX, OBJ, Blender, HDR, EXR, normal, roughness or displacement assets outside dependencies and diagnostic captures.",
+      "Available tool discovery found no 3D model or material-library integration.",
+      "The same asset-access condition has persisted across at least three consecutive goal turns."
+    ],
+    "nextRequiredInput": "A readable local folder of licensed authored or scanned environment/character models and matching PBR materials, or an authorized asset-access mechanism."
+  }
+}

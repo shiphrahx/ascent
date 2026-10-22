@@ -1,0 +1,23 @@
+{
+  "name": "ascent-codex",
+  "version": "1.0.0",
+  "description": "An offline, text-free 3D hot-air balloon journey through late-winter Cappadocia.",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node verify.mjs",
+    "test:retina": "node retina.mjs",
+    "test:graphics": "node graphics.mjs",
+    "test:temporal": "node temporal.mjs",
+    "capture": "node capture.mjs",
+    "preview": "node preview.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.64.1",
+    "three": "^0.180.0"
+  }
+}
