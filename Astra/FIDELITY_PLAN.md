@@ -153,3 +153,18 @@ File: `src/lighting.js`
 - Both runs had zero observer callbacks without an application render and no page errors. This rules out skipped application renders in this test; it does not establish whether a screen recorder duplicates frames. Headless Chromium presentation cadence can differ from the desktop. Raw rAF timing is not a GPU timer.
 - This task changes the harness only; `Ascent.html` is byte-identical to Phase 0.1. Matched review uses `fidelity-0-after-*` versus `fidelity-0-2-after-*`.
 - Validation: gameplay, graphics and temporal suites passed. Personally inspected all four matched before/after views; the benchmark-only change preserves the appearance.
+
+### Phase 0.3 ? scene flicker baseline
+
+- `node flicker.mjs --tier=medium --tag=phase-0` renders 301 frames spanning exactly 5 s at 60 steps/s. The camera translates 6 m at hour 8.5, following 30 warm-up frames. Sun, weather, wind and animation time are frozen; hero/fleet and particles are hidden. The harness supplies a deterministic clock to shadow/reflection caches. It never changes production timing.
+- Score: RMS of `L[t] - (L[t-1] + L[t+1])/2`, in linear Rec.709 luminance after converting the final sRGB framebuffer. This removes a local linear temporal trend. It is a comparative instability proxy, **not** ground-truth flicker: disocclusions, curved motion and changing fine geometry still contribute. Lower is better for the same camera/content. Full-resolution whole-frame sampling and a fixed top-right cliff crop (1000,300,360,240) are scored separately. GPU readback makes capture timings unsuitable for performance measurement.
+
+| Tier on Radeon 890M, 1440?900 DPR 1 | Whole-frame RMS | Cliff RMS | Scored frames |
+|---|---:|---:|---:|
+| high | 0.00155842 | 0.00082695 | 299 |
+| medium | 0.00154563 | 0.00082698 | 299 |
+| lite | 0.00176483 | 0.00083020 | 299 |
+
+- Metric unit tests verify constant frames, a smooth linear luminance trend, alternating flicker, RMS aggregation and crop orientation. All three tier captures completed without page errors. Start/end PNGs and every scored frame are saved with the reports. These are tier comparisons on the same integrated GPU, not performance certification for discrete or software adapters.
+- Production build remains byte-identical to Phase 0.1. Matched review uses `fidelity-0-2-after-*` versus `fidelity-0-3-after-*`.
+- Validation: gameplay, graphics and temporal suites passed. Personally inspected all four matched review pairs and the flicker start frame; no appearance regression.

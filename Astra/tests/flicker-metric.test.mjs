@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {createFlickerScorer} from './flicker-metric.mjs';
+const frame=(top,bottom=top)=>new Uint8Array([bottom,bottom,bottom,255,top,top,top,255]);
+const crop={x:0,y:0,width:1,height:1};
+let metric=createFlickerScorer(1,2,crop);
+for(let i=0;i<6;i++)metric.push(frame(128));
+assert(metric.result().wholeRms<1e-7,'A constant image has no flicker');
+metric=createFlickerScorer(1,2,crop);
+// sRGB values 0..10 use the linear part of the transfer function.
+for(let i=0;i<6;i++)metric.push(frame(i*2));
+assert(metric.result().wholeRms<1e-8,'A linear luminance trend is removed');
+metric=createFlickerScorer(1,2,crop);
+for(let i=0;i<6;i++)metric.push(frame(i%2?255:0,0));
+assert.equal(metric.result().scoredFrames,4);
+assert(Math.abs(metric.result().cliffRms-1)<1e-6,'The top-down crop isolates the alternating pixel');
+assert(Math.abs(metric.result().wholeRms-Math.SQRT1_2)<1e-6,'Whole-frame RMS includes the static pixel');
+console.log('Flicker metric: constant, smooth trend, alternating flicker and crop orientation passed.');
