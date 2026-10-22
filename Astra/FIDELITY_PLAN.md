@@ -309,3 +309,16 @@ File: `src/lighting.js`
 
 - This pair improves average throughput with unchanged tail percentiles; long stalls still prevent a sustained-60 claim. No application renders were skipped. Flicker at the new metered exposure 1.1082 is whole RMS 0.00158795 (2.8% higher), cliff RMS 0.00090983 (8.1% lower). Cloud-driven lighting and exposure change the scene contrast, so this is a new content baseline rather than an isolated temporal-filter measurement.
 - Validation: all three atmosphere tier checks, gameplay, graphics and temporal suites pass with no errors or warnings. Personally inspected all four matched pairs: distant ridges separate more clearly, sheltered rock is cooler, and cloud shapes remain consistent. The hard river ribbon, snow distribution and sparse vegetation are next.
+
+### Phase 6.1 - river and wet banks
+
+- The terrain channel now varies from about 9.6 to 23 m wide, with longitudinal depth variation up to 1.7 m, low bars and gently rising margins. The river follows the exact rendered/collision terrain intersections; all tiers measure shoreline errors below 0.003 m. Eight strips across the channel carry actual bed depth, with 6,129 fixed vertices and no runtime mesh changes.
+- Water uses depth/angle-dependent absorption, silty olive-brown bed/body colour and Fresnel reflections. World-space waves have derivative filtering; rough reflections use 5/3/1 samples on high/medium/lite. Coverage softens over the first 0.16 m of depth. Wet margins darken and lower their roughness. Irregular shore frost is integrated into the water shader, replacing the two separate hard-edged ice strips. Reflection sizes and refresh limits are unchanged.
+
+| Paired native medium flight | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 5 | 71.13 | 8.40 | 41.70 | 50.00 | 233/2134 |
+| Depth-aware river/banks | 70.05 | 8.40 | 41.70 | 50.10 | 249/2102 |
+
+- Average throughput is 1.5% lower in this pair, with effectively unchanged tail times. Mean draws fall from 877.6 to 872.3 while rendered triangles rise by about 6,600. The richer reflection kernel is tiered; the remaining strict frame budget stays open. No application renders were skipped.
+- Flicker at exposure 1.1309: whole RMS 0.00139122, cliff RMS 0.00091825. River/shore content changes lower the whole-frame score by about 12.4%; the cliff score is within 1% of Phase 5. Validation: all three river tier checks, gameplay, graphics and temporal suites pass without errors or warnings. Personally inspected the near-bank view and all four matched pairs. Water now changes from silt colour to reflected sky with depth and angle; vegetation and snow still need their own detail passes.

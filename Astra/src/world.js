@@ -2,7 +2,7 @@ import {THREE,rand,rng,TAU,noise,pathX,riverX,riverBanks,terrainGeometry,ground,
 import {addWinterGrass,addWinterTrees} from './vegetation.js';
 import {createSettlement} from './settlement.js';
 import {carveOpenings} from './carving.js';
-import {Reflector} from 'three/addons/objects/Reflector.js';
+import {createRiver} from './river.js';
 import {TessellateModifier} from 'three/addons/modifiers/TessellateModifier.js';
 import {erodedRock,erodedRidge,ridgeSurface,landNoise,volcanicMassif,configureGeology} from './geology.js';
 import {configureTerrain} from './core.js';
@@ -114,35 +114,7 @@ export function createWorld(scene,renderer,camera){
  const bz=-650,bx=riverX(bz),bridge=new THREE.Group();bridge.position.set(bx,3.6,bz);scene.add(bridge);const wall=new THREE.Shape();wall.moveTo(-20,0);wall.lineTo(-20,8);wall.quadraticCurveTo(0,16,20,8);wall.lineTo(20,0);wall.lineTo(10,0);wall.absarc(0,0,10,0,Math.PI,false);wall.lineTo(-20,0);const bg=new THREE.ExtrudeGeometry(wall,{depth:5,bevelEnabled:false,curveSegments:32});mesh(bg,houseMat,bridge,[0,0,-2.5]);for(let i=0;i<25;i++){const a=(i+.5)/25*Math.PI;const m=box(bridge,cream,[Math.cos(a)*10.4,Math.sin(a)*10.4,0],[1.1,.9,5.4]);m.rotation.z=a-Math.PI/2;}for(let i=0;i<40;i++){const x=-20+i,h=8+4*(1-x*x/400);for(let k of[-1,1])box(bridge,cream,[x,h+.7,k*2.4],[1,1.1,.55]);}
  // Two meadow clearings and compact, grounded ground-support equipment.
  const fieldMat=mat('#918b6b');for(const z of[1100,-1190]){const x=pathX(z)-(z<0?80:0);const fg=new THREE.PlaneGeometry(140,110,20,20);fg.rotateX(-Math.PI/2);const fp=fg.attributes.position;for(let i=0;i<fp.count;i++)fp.setY(i,ground(fp.getX(i)+x,fp.getZ(i)+z)+.035);fg.computeVertexNormals();fg.dispose();const eq=new THREE.Group();for(let i=0;i<8;i++){const xx=x+50,zz=z+i*3,yy=ground(xx,zz);box(eq,wood,[xx,yy+.7,zz],[1.3,1.4,1.8]);}scene.add(combine(eq));}
- // Flowing water with a true mirrored scene render, distorted in the fragment shader.
- const wp=[],wi=[],wu=[];for(let j=0;j<=680;j++){const z=-1700+j*5,[left,right]=riverBanks(z);wp.push(left,3.55,z,right,3.55,z);wu.push(0,j/15,1,j/15);if(j<680){let q=j*2;wi.push(q,q+2,q+1,q+1,q+2,q+3);}}const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));wg.setAttribute('uv',new THREE.Float32BufferAttribute(wu,2));wg.setIndex(wi);wg.computeVertexNormals();
- // Reflector's plane normal is local +Z; author the river in XY, then rotate it into XZ.
- wg.rotateX(Math.PI/2);const water=new Reflector(wg,{color:0x8caab0,textureWidth:renderer.ascentQuality.reflectionSize,textureHeight:renderer.ascentQuality.reflectionSize,multisample:2,clipBias:.004});water.rotation.x=-Math.PI/2;water.material.uniforms.uTime=uniforms.time;water.material.fragmentShader=water.material.fragmentShader.replace('void main() {','uniform float uTime;\nvoid main() {').replace('vec4 base = texture2DProj( tDiffuse, vUv );','vec4 rip=vUv; rip.xy+=vec2(sin(vUv.y*160.0+uTime*1.7),cos(vUv.x*130.0+uTime))*.00065*vUv.w; vec4 base=texture2DProj(tDiffuse,rip);');scene.add(water);
- // Reflect only features that survive the river's pixel footprint. Keep their
- // geometry unchanged, and refresh at up to 30 Hz with immediate camera-cut updates.
- const reflect=water.onBeforeRender.bind(water),lastEye=new THREE.Vector3(Infinity,0,0),lastRotation=new THREE.Quaternion();let reflectionTime=-Infinity,lastDay=-1,reflectionFrames=2;
- water.camera.layers.set(1);
- water.onBeforeRender=(r,s,c)=>{
-  reflectionFrames++;
-  const now=performance.now()/1000,moved=lastEye.distanceToSquared(c.position)>16||lastRotation.angleTo(c.quaternion)>.08;
-  if((now-reflectionTime<1/renderer.ascentQuality.reflectionHz||reflectionFrames<renderer.ascentQuality.reflectionFrames)&&!moved&&Math.abs(uniforms.day.value-lastDay)<.02)return;
-  reflect(r,s,c);reflectionTime=now;reflectionFrames=0;lastEye.copy(c.position);lastRotation.copy(c.quaternion);lastDay=uniforms.day.value;
- };
- // Fresnel reflectance and a darker riverbed replace the mirror-like overlay.
- water.material.vertexShader=water.material.vertexShader.replace('varying vec4 vUv;','varying vec4 vUv;varying vec3 vWaterWorld;').replace('vUv = textureMatrix', 'vWaterWorld=(modelMatrix*vec4(position,1.)).xyz;vUv = textureMatrix');
- water.material.fragmentShader=water.material.fragmentShader.replace('varying vec4 vUv;','varying vec4 vUv;varying vec3 vWaterWorld;').replace('gl_FragColor = vec4( blendOverlay( base.rgb, color ), 1.0 );', 'vec3 eye=normalize(cameraPosition-vWaterWorld);float fresnel=.025+.975*pow(1.-max(eye.y,0.),5.);vec3 riverbed=vec3(.045,.07,.063);gl_FragColor=vec4(mix(riverbed,base.rgb,clamp(.22+fresnel*.7,0.,1.)),1.);');
- // Thin irregular shore ice follows the waterline instead of floating discs.
- const iceMat=mat('#a8bbc2',{roughness:.4,metalness:0,transparent:true,opacity:.52,depthWrite:false}),ice=new THREE.Group();
- for(const side of[0,1]){
-  const positions=[],indices=[];
-  for(let j=0;j<=680;j++){
-   const z=-1700+j*5,b=riverBanks(z)[side],width=.12+Math.pow(landNoise(z*.031,side*31),3)*1.6;
-   positions.push(b,3.575,z,b+(side?-1:1)*width,3.575,z);
-   if(j<680){const q=j*2;indices.push(q,q+2,q+1,q+1,q+2,q+3);}
-  }
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();
-  const shore=mesh(g,iceMat,ice);shore.material.side=THREE.DoubleSide;shore.castShadow=false;
- }scene.add(ice);
+ const water=createRiver(scene,renderer);
  // These landmarks never animate: merge their hundreds of pieces by material.
  // The perforated citadel retains its custom shadow material when batching.
  scene.attach(castleRock);

@@ -1,0 +1,16 @@
+{
+  "tier": "high",
+  "minWidth": 9.63134765625,
+  "maxWidth": 23.00537109375,
+  "maxDepth": 1.699866121122615,
+  "maxShoreError": 0.002227217555129002,
+  "vertices": 6129,
+  "reflectionSamples": 5,
+  "depthError": 0.000004355838060909889,
+  "finite": true,
+  "invalid": 0,
+  "softShore": true,
+  "cameraClearance": 12.583758311997139,
+  "reflectionSize": 1024,
+  "errors": []
+}

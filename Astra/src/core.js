@@ -16,9 +16,12 @@ function rawGround(x,z){
  h+=Math.abs(Math.sin(x*.016+z*.008))*8*smooth(Math.abs(d),130,380);
  h-=valleyErosion(x,z,d);
  h=terraceHeight(h,x,z,.82*smooth(Math.abs(d),65,170));
- const bank=Math.abs(x-riverX(z)),width=8.5+Math.sin(z*.018)*1.3;
- if(bank<width)return 2.1+1.45*Math.pow(bank/width,3);
- return lerp(3.55+(bank-width)*.11,Math.max(h,4),smooth(bank,width,width+35));
+ const bank=Math.abs(x-riverX(z)),width=7.7+Math.sin(z*.029)*2.1+Math.sin(z*.007+1.3)*1.4;
+ const depth=1.15+.55*(.5+.5*Math.sin(z*.013));
+ if(bank<width)return 3.55-depth*(1-Math.pow(bank/width,2.4));
+ // Low bars and gently rising wet margins precede the valley slopes.
+ const bar=(.5+.5*Math.sin(z*.037+x*.14))*.22*smooth(bank,width,width+4);
+ return lerp(3.55+(bank-width)*.065+bar,Math.max(h,4),smooth(bank,width+3,width+42));
 }
 // A river-aligned adaptive grid spends vertices on the banks, where a regular
 // 14 m grid missed the entire channel. The flight/camera solver samples the
@@ -174,14 +177,14 @@ export function stoneMaterial(color='#c8a78d',type=0,soilDetail=true){
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.82,.85,.88),cover*.96);
    diffuseColor.rgb*=1.-(1.-uSnow)*.045;
    ${type===4?`float river=95.*sin(vWorld.z*.004)+55.*sin(vWorld.z*.008+1.)-62.+30.*sin(vWorld.z*.009);
-   float wetBank=(1.-smoothstep(8.,28.,abs(vWorld.x-river)))*(1.-smoothstep(3.5,8.,vWorld.y));
-   diffuseColor.rgb*=1.-wetBank*.32;`:''}
+   float wetBank=(1.-smoothstep(10.,25.,abs(vWorld.x-river)))*(1.-smoothstep(3.6,5.,vWorld.y));
+   diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.52,.48,.4),wetBank);`:''}
    `);
   s.fragmentShader=s.fragmentShader.replace('#include <normal_fragment_maps>',`
    float bumpFade=1.-smoothstep(.3,1.5,length(fwidth(vWorld)));
    normal=perturbNormalArb(-vViewPosition,normal,vec2(dFdx(stoneHeight),dFdy(stoneHeight))*bumpFade*(1.-cover*.85),faceDirection);`);
   s.fragmentShader=s.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
-   roughnessFactor=mix(surface.r,.88,cover);`);
+   roughnessFactor=mix(surface.r,.88,cover);${type===4?'roughnessFactor=mix(roughnessFactor,.48,wetBank*(1.-cover));':''}`);
   s.fragmentShader=s.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
    reflectedLight.indirectDiffuse*=vSurfaceAO*surface.b;
    reflectedLight.indirectSpecular*=mix(1.,vSurfaceAO*surface.b,.7);`);
