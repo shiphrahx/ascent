@@ -1,0 +1,72 @@
+{
+  "tier": "high",
+  "count": 175,
+  "clusters": 41,
+  "caps": 53,
+  "minimumBurial": 0.1692830198596127,
+  "variants": 12,
+  "carvings": [
+    {
+      "count": 2,
+      "width": 512,
+      "cutPixels": 1367,
+      "shadowCut": true,
+      "position": [
+        268.34748888561427,
+        38.193985732633415,
+        268.0669448441122
+      ],
+      "entrance": 57.1891631215708
+    },
+    {
+      "count": 2,
+      "width": 512,
+      "cutPixels": 568,
+      "shadowCut": true,
+      "position": [
+        -111.9689645221039,
+        35.20882328881403,
+        351.54065580999986
+      ],
+      "entrance": 55.30209322701921
+    },
+    {
+      "count": 2,
+      "width": 512,
+      "cutPixels": 509,
+      "shadowCut": true,
+      "position": [
+        201.27991038445143,
+        44.103160488859366,
+        548.1203018122055
+      ],
+      "entrance": 65.72149588462808
+    },
+    {
+      "count": 2,
+      "width": 512,
+      "cutPixels": 767,
+      "shadowCut": true,
+      "position": [
+        -152.29851429572284,
+        43.212662239796344,
+        603.8294730371135
+      ],
+      "entrance": 72.98030017658995
+    },
+    {
+      "count": 2,
+      "width": 512,
+      "cutPixels": 1833,
+      "shadowCut": true,
+      "position": [
+        201.72804802446032,
+        42.47044171995456,
+        665.4416211539788
+      ],
+      "entrance": 48.881010320902455
+    }
+  ],
+  "contextLost": false,
+  "errors": []
+}

@@ -1,0 +1,48 @@
+{
+  "tier": "medium",
+  "count": 112,
+  "clusters": 30,
+  "caps": 29,
+  "minimumBurial": 2.382316008787896,
+  "variants": 11,
+  "carvings": [
+    {
+      "count": 2,
+      "width": 512,
+      "cutPixels": 564,
+      "shadowCut": true,
+      "position": [
+        -111.9689645221039,
+        34.97941564894233,
+        351.54065580999986
+      ],
+      "entrance": 55.326702951448695
+    },
+    {
+      "count": 2,
+      "width": 512,
+      "cutPixels": 513,
+      "shadowCut": true,
+      "position": [
+        201.27991038445143,
+        44.29412230083019,
+        548.1203018122055
+      ],
+      "entrance": 64.47046145386868
+    },
+    {
+      "count": 2,
+      "width": 512,
+      "cutPixels": 764,
+      "shadowCut": true,
+      "position": [
+        -152.29851429572284,
+        42.47025151944338,
+        603.8294730371135
+      ],
+      "entrance": 72.65689670580076
+    }
+  ],
+  "contextLost": false,
+  "errors": []
+}

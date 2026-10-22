@@ -206,3 +206,12 @@ File: `src/lighting.js`
 
 - Medium scene flicker: whole RMS 0.00156021, cliff RMS 0.00091276. The identical-camera LOD origin-change tests score zero image difference in all tiers.
 - Validation: gameplay, graphics and temporal suites passed, alongside all three far-terrain checks. Personally inspected all four matched views: regional ridge silhouettes are preserved, the terrain join is closed, and the near landscape remains intact. The paired run removes about 138 average draws; long-tail stalls and the recording-resolution target remain for Phase 8.
+
+### Phase 1.3 - clustered fairy chimneys
+
+- Seeded clusters now follow the first cliff feet. Overlapping talus bases support related multi-headed columns, pointed cones and resistant dark basalt caps. Stronger V-shaped rills and chipped bedding joints break the silhouettes; mineral vertex bands vary their colour. Placement is fixed for a session and unrelated clusters do not reroll when terrain excludes a member.
+- High has 175 formations across 41 clusters, medium 112 across 30, and lite 66 across 23. Their cap counts are 53, 29 and 18. Most are spatially instanced. Five/three/two selected cones respectively use projected skin cuts with actual chamber reveals and back walls; matching shadow materials preserve the holes. Smaller 512 x 768 masks keep this detail bounded.
+- The final paired native medium flight measured 65.90 to 73.00 fps, p95 25.0 to 24.9 ms, p99 33.4 to 33.3 ms, and frames over 25 ms 75/1977 to 68/2190. Mean draws fell 983 to 887 and triangles 2.959M to 2.596M. Session-wide baseline variation remains substantial, so sustained 60 fps is still unproven.
+- Medium scene flicker: whole RMS 0.00150975, cliff RMS 0.00097668. Content changed; this remains a new baseline, not an isolated filter comparison.
+- Footings sample the whole sloping footprint while preserving summit heights; entrances follow local terrain. Browser checks test every actual base vertex against collision terrain. Minimum burial is 2.38 m on medium/lite and 0.17 m on high. The close-up harness waits for the launch fade before pausing.
+- Validation: deterministic placement tests, all three formation browser checks, gameplay, graphics and temporal suites passed. Personally inspected all matched views and a close carved-cone view. The grouping and silhouettes improve, while the flat lighting, repeated surface appearance and snow coverage still need the following phases.

@@ -7,7 +7,8 @@ import {TessellateModifier} from 'three/addons/modifiers/TessellateModifier.js';
 import {erodedRock,erodedRidge,ridgeSurface,landNoise,volcanicMassif,configureGeology} from './geology.js';
 import {configureTerrain} from './core.js';
 import {createFarTerrain} from './far-terrain.js';
-const cream=stoneMaterial('#dfcab2'),rose=stoneMaterial('#d0a39a',1),basalt=stoneMaterial('#988471',2),dark=mat('#211d21'),wood=mat('#695d50'),metal=mat('#555d61',{metalness:.7,roughness:.4});
+import {formationLayout} from './formations.js';
+const cream=stoneMaterial('#dfcab2'),rose=stoneMaterial('#d0a39a',1),basalt=stoneMaterial('#5b5149',2),dark=mat('#211d21'),wood=mat('#695d50'),metal=mat('#555d61',{metalness:.7,roughness:.4});
 const windowMat=mat('#ffd2a0',{emissive:'#ff9b42',emissiveIntensity:0,roughness:.6});
 export function surfaceHeight(x,z){let y=ground(x,z);if(z<-1500||z>1500)return y;for(let i=0;i<6;i++)y=Math.max(y,ridgeSurface(x,z,i));return y;}
 export const obstacles=[],smokeSources=[],lampPoints=[],horses=[],birds=[];
@@ -25,21 +26,28 @@ export function createWorld(scene,renderer,camera){
  const farTerrain=createFarTerrain(scene,renderer);
  for(let i=0;i<6;i++)landscapeCells(erodedRidge(i),i%3===0?rose:cream,scene).name=`Eroded ridge ${i}`;
  const volcano=mesh(volcanicMassif(),stoneMaterial('#e6dfd6',3),scene,[-6000,100,-17000],[1.8,1.8,1.8]);volcano.castShadow=false;
- const variants=Array.from({length:12},(_,i)=>chimneyGeometry(i+10));const capVariants=Array.from({length:6},(_,i)=>chimneyGeometry(i+70,true));const batches=Array.from({length:12},()=>[]),caps=Array.from({length:6},()=>[]);const dummy=new THREE.Object3D(),detailed=[];
- // Erosion remnants cluster at the feet of the cliffs. Most share a broad
- // talus base; only a small minority carry a resistant darker capstone.
+ const variants=Array.from({length:12},(_,i)=>chimneyGeometry(i+10));const capVariants=Array.from({length:6},(_,i)=>chimneyGeometry(i+70,true));const batches=Array.from({length:12},()=>[]),caps=Array.from({length:6},()=>[]);const dummy=new THREE.Object3D();
+ // Related columns share overlapping talus bases along the first cliff feet.
+ // A cluster's own seed keeps placement stable when another rock is rejected.
  const clearings=[{x:pathX(350)+123,z:350,r:65},{x:pathX(500)-155,z:500,r:45},{x:pathX(-70)+158,z:-70,r:145},{x:riverX(-650),z:-650,r:36}];
- for(let i=0;i<470;i++){
-  const z=rand()*2800-1350,side=rand()<.5?-1:1,x=pathX(z)+side*(90+rand()*470);
-  if(Math.abs(x-riverX(z))<32||(z<150&&z>-150&&side>0)||(z>900&&Math.abs(x-pathX(z))<150))continue;
-  if(landNoise(x*.009,z*.009)<.4)continue;
-  const base=ground(x,z),height=24+Math.pow(rand(),.8)*46,rad=11+rand()*18,v=i%12;
-  if(clearings.some(c=>Math.hypot(x-c.x,z-c.z)<c.r+rad))continue;
-  if(surfaceHeight(x,z)>base+height*.65)continue;
-  dummy.position.set(x,base-2,z);dummy.scale.set(rad,height,rad*(.75+rand()*.45));dummy.rotation.y=rand()*TAU;dummy.updateMatrix();const rockMatrix=dummy.matrix.clone();batches[v].push(rockMatrix);
-  obstacles.push({x,z,y:base-2,h:height,r:rad*1.3});
-  if((v+10)%6===1&&i%3===0){dummy.position.y+=height*.91;dummy.scale.set(rad*.65,height*.12,rad*.6);dummy.updateMatrix();caps[i%6].push(dummy.matrix.clone());}
-  if(i%21===0&&Math.abs(x-pathX(z))<210)detailed.push({x,z,h:height,r:rad,y:base-2,v,matrix:rockMatrix});
+ const formations=formationLayout({ground,surfaceHeight,pathX,riverX,clearings,tier:renderer.ascentQuality.name,rng});
+ const carved=formations.filter(f=>f.member===0&&f.z> -300&&f.z<900).sort((a,b)=>Math.abs(a.z-450)-Math.abs(b.z-450)).slice(0,renderer.ascentQuality.name==='high'?5:renderer.ascentQuality.name==='lite'?2:3);
+ const formationCarvings=[];
+ for(const f of formations){
+  const {x,y,z,h,r,v,yaw,depth}=f;
+  dummy.position.set(x,y,z);dummy.scale.set(r,h,r*depth);dummy.rotation.set(0,yaw,0);dummy.updateMatrix();
+  const stone=v%4===0?rose:cream;
+  if(carved.includes(f)){
+   const group=new THREE.Group();group.position.set(x,y,z);scene.add(group);
+   const rock=mesh(variants[v],stone,group,[0,0,0],[r,h,r*depth]);rock.rotation.y=yaw;rock.name='Carved fairy chimney';
+   let entrance=5;
+   for(const u of [.25,.5,.75,1.])for(const side of [-1,0,1])entrance=Math.max(entrance,surfaceHeight(x+side,z+r*depth*u)-y+1.2);
+   const openings=[{x:0,y:entrance,w:1.7,h:2.8},{x:r*.12,y:entrance+5,w:1.1,h:1.8}];
+   const carving=carveOpenings(rock,group,openings,stone,fitCarving,512);
+   formationCarvings.push({rock,mask:carving.mask,count:carving.count,position:[x,y,z],entrance:y+entrance});
+  }else batches[v].push(dummy.matrix.clone());
+  obstacles.push({x,z,y,h:h*(f.cap?1.04:1),r:r*1.3});
+  if(f.cap){dummy.position.y+=h*.89;dummy.scale.set(r*.75,h*.15,r*depth*.75);dummy.updateMatrix();caps[v%6].push(dummy.matrix.clone());}
  }
  batches.forEach((arr,i)=>scene.add(instanceCells(variants[i],i%4===0?rose:cream,arr)));caps.forEach((arr,i)=>scene.add(instanceCells(capVariants[i],basalt,arr)));
  // Smaller fallen fragments establish the scale of the larger formations.
@@ -51,7 +59,6 @@ export function createWorld(scene,renderer,camera){
   dummy.position.set(x,y+scale*.18,z);dummy.scale.set(scale,scale,scale*(.65+rubbleRandom()*.7));dummy.rotation.set(0,rubbleRandom()*TAU,(rubbleRandom()-.5)*.4);dummy.updateMatrix();rubbleMatrices.push(dummy.matrix.clone());
  }
  const rubble=instanceCells(rubbleGeo,cream,rubbleMatrices,240);rubble.traverse(o=>{if(o.isMesh)o.userData.smallDebris=true;});scene.add(rubble);
- const caves=new THREE.Group();for(const c of detailed){const carvingRock=new THREE.Mesh(variants[c.v],cream);carvingRock.applyMatrix4(c.matrix);for(let i=0;i<3;i++){const h=3+i*4,rr=c.r*(.08+1.03*Math.pow(1-h/c.h,1.8)+.1*Math.sin(h/c.h*3.1));const opening=addCave(caves,c.x,c.y+h,c.z+rr,0,i?1:1.7,i?1.4:2.7);fitCarving(opening,carvingRock);}for(let i=0;i<9;i++){const a=i*.065;box(caves,cream,[c.x+c.r*.7-i*.27,c.y+i*.32,c.z+c.r*.55],[.8,.32,1]);}}scene.add(combine(caves));
  // Rock-cut sanctuary, a deep carved portico with six columns.
  const cz=350,cx=pathX(cz)+123,cy=ground(cx,cz);const church=new THREE.Group();church.position.set(cx,cy-1,cz);scene.add(church);
  const cliff=new THREE.Shape();cliff.moveTo(-28,-8);cliff.lineTo(28,-8);cliff.lineTo(27,12);cliff.quadraticCurveTo(24,23,18,27);cliff.lineTo(12,35);cliff.quadraticCurveTo(6,49,-1,48);cliff.lineTo(-9,39);cliff.lineTo(-14,29);cliff.quadraticCurveTo(-25,24,-28,12);cliff.closePath();
@@ -128,7 +135,7 @@ export function createWorld(scene,renderer,camera){
  scene.attach(castleRock);
  for(const landmark of [church,dove,castle,bridge]){const baked=combine(landmark);scene.remove(landmark);scene.add(baked);}
  addWinterGrass(scene);createWildlife(scene);
- return {farTerrain,trees,water,windowMat,settlement,castleCarving,landmarks:{church:[cx,cy,cz],dovecotes:[dx,dy,dz],castle:[vx,vy,vz],bridge:[bx,3.6,bz]},update(t,dt,state){farTerrain.update(camera);windowMat.emissiveIntensity=state.night*2.7;updateWildlife(t,state);}};
+ return {farTerrain,formations,formationGeometry:variants,formationCarvings,trees,water,windowMat,settlement,castleCarving,landmarks:{church:[cx,cy,cz],dovecotes:[dx,dy,dz],castle:[vx,vy,vz],bridge:[bx,3.6,bz]},update(t,dt,state){farTerrain.update(camera);windowMat.emissiveIntensity=state.night*2.7;updateWildlife(t,state);}};
 }
 function createWildlife(scene){const feather=mat('#5c5552');for(let i=0;i<44;i++){const group=new THREE.Group(),eagle=i<2;const wing=new THREE.Shape();wing.moveTo(0,0);wing.quadraticCurveTo(.5,.3,1.5,.13);wing.lineTo(1.85,-.15);wing.lineTo(1.2,-.08);wing.lineTo(.7,-.25);wing.lineTo(0,-.12);const g=new THREE.ShapeGeometry(wing);g.rotateX(-Math.PI/2);const a=mesh(g,mat(eagle?'#423c3d':'#aaa8a3',{side:THREE.DoubleSide}),group);const b=mesh(g,a.material,group);b.scale.x=-1;sphere(group,feather,[0,0,0],[.14,.12,.43],8);group.scale.setScalar(eagle?1.3:.35);scene.add(group);birds.push({group,a,b,eagle,phase:rand()*TAU});}
  const coat=mat('#806657'),mane=mat('#352e2b'),hoof=mat('#403a39');for(let i=0;i<8;i++){const g=new THREE.Group();sphere(g,coat,[0,1.35,0],[1.1,.6,.43]);const n=sphere(g,coat,[.85,1.8,0],[.35,.7,.3]);n.rotation.z=-.4;sphere(g,coat,[1.15,2.3,0],[.46,.24,.23]);for(const z of[-.2,.2])rod(g,[.98,2.4,z],[.95,2.72,z],.08,mane,5,.02);const legs=[];for(const x of[-.7,.65])for(const z of[-.3,.3]){const l=new THREE.Group();l.position.set(x,1.1,z);rod(l,[0,0,0],[0,-.95,0],.11,coat,7,.08);box(l,hoof,[.07,-1.04,0],[.25,.17,.2]);g.add(l);legs.push(l);}tube(g,[[-.9,1.5,0],[-1.4,1.2,0],[-1.5,.7,0]],.09,mane,10);const x=pathX(780)+70+rand()*35,z=760+rand()*55;g.position.set(x,ground(x,z),z);scene.add(g);horses.push({group:g,legs,x,z,phase:rand()*TAU});}}

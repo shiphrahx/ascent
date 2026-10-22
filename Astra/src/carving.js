@@ -2,10 +2,10 @@ import {THREE,archShape,mesh,mat} from './core.js';
 
 // A projected mask cuts the front skin while real chamber geometry supplies
 // the reveals and back wall. The same cut is applied to the shadow material.
-export function carveOpenings(rock,parent,openings,stone,fitCarving){
+export function carveOpenings(rock,parent,openings,stone,fitCarving,maskWidth=1024){
  rock.updateWorldMatrix(true,false);
  const bounds=new THREE.Box3().setFromObject(rock),width=bounds.max.x-bounds.min.x,height=bounds.max.y-bounds.min.y;
- const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=1536;
+ const canvas=document.createElement('canvas');canvas.width=maskWidth;canvas.height=maskWidth*1.5;
  const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='black';
  const origin=parent.getWorldPosition(new THREE.Vector3());
  for(const o of openings){

@@ -74,8 +74,8 @@ export function erodedRock(seed=1,cap=false){
  const random=rng(seed),phase=random()*TAU,kind=seed%6,landmark=seed>=50&&!cap;
  const segments=cap?(highDetail?48:32):highDetail||landmark?64:48,rings=cap?(highDetail?16:12):landmark?48:highDetail?36:28,ps=[],uv=[],indices=[],ao=[];
  const leanX=(random()-.5)*.22,leanZ=(random()-.5)*.19;
- const gullies=Array.from({length:7},()=>({a:random()*TAU,width:.07+random()*.15,depth:.08+random()*.13,drift:(random()-.5)*.65,split:.25+random()*.4}));
- const joints=Array.from({length:3},()=>({h:.2+random()*.65,depth:.008+random()*.02,tilt:(random()-.5)*.045}));
+ const gullies=Array.from({length:9},()=>({a:random()*TAU,width:.055+random()*.13,depth:.10+random()*.15,drift:(random()-.5)*.5,split:.25+random()*.4}));
+ const joints=Array.from({length:4},()=>({h:.18+random()*.65,depth:.015+random()*.025,tilt:(random()-.5)*.035}));
  for(let j=0;j<=rings;j++){
   const t=j/rings;
   for(let i=0;i<=segments;i++){
@@ -83,15 +83,16 @@ export function erodedRock(seed=1,cap=false){
    let radius,cavity=0;
    if(cap){
     const edge=1+.19*Math.sin(a*3+phase)+.09*Math.sin(a*5-phase);
-    radius=.66*Math.pow(Math.max(0,Math.sin(t*Math.PI)),.32)*edge;
+    // A resistant, bevelled slab: flatter top and sharper overhanging rim.
+    radius=.82*smooth(t,0,.12)*(1-.18*smooth(t,.48,.82))*(1-smooth(t,.88,1))*edge;
     radius*=.88+.18*landNoise(ca*3+seed,sa*3+t*2);
    }
    else{
     const talus=.28*Math.exp(-t*7);
-    if(kind===0)radius=talus+.68*Math.pow(1-t,.72);
+    if(kind===0)radius=talus+.68*Math.pow(1-t,1.15);
     else if(kind===1)radius=talus+.32*(1-t*.28)+.06*Math.sin(t*4);
     else if(kind===2)radius=talus+.64*Math.pow(1-t,.38);
-    else if(kind===3)radius=talus+.61*Math.pow(1-t,1.05);
+    else if(kind===3)radius=talus+.61*Math.pow(1-t,1.28);
     else if(kind===4)radius=talus+.68*Math.pow(1-t,.6);
     else radius=talus+.66*(1-t*.5);
     if(kind===1||kind===5)radius*=1-smooth(t,.94,1);
@@ -101,13 +102,13 @@ export function erodedRock(seed=1,cap=false){
      const drift=gully.a+gully.drift*t+Math.sin(t*5+phase)*.045;
      const delta=Math.atan2(Math.sin(a-drift),Math.cos(a-drift));
      const width=gully.width*(1.7-t*.9);
-     const main=Math.exp(-Math.pow(delta/width,2));
+     const main=Math.max(0,1-Math.abs(delta/width));
      const tributary=Math.exp(-Math.pow((delta-.28*smooth(gully.split-t,0,.3))/(width*.5),2))*(1-smooth(t,gully.split,gully.split+.15));
      const erosion=gully.depth*(main+tributary*.35)*Math.pow(Math.sin(Math.PI*t),.65);
      radius-=erosion;cavity+=erosion;
     }
     // Unequal bedding planes have small undercuts and chipped ledges, not rings.
-    for(const joint of joints){const d=t-joint.h-(ca+sa)*joint.tilt;radius-=joint.depth*Math.exp(-d*d/.00032);}
+    for(const joint of joints){const d=t-joint.h-(ca+sa)*joint.tilt;radius-=joint.depth*Math.max(0,1-Math.abs(d)/.035);}
     radius+=(landNoise(ca*6+seed,t*12+sa*5)-.5)*.024*Math.sin(Math.PI*t);
     if(kind===4)radius*=.7+.3*Math.abs(Math.cos(a-phase));
     radius=Math.max(.003,radius);
@@ -121,7 +122,7 @@ export function erodedRock(seed=1,cap=false){
  // Weld shading at the duplicated azimuth seam while retaining useful UVs.
  const normals=g.attributes.normal,n=new THREE.Vector3();
  for(let j=0;j<=rings;j++){const first=j*(segments+1),last=first+segments;n.fromBufferAttribute(normals,first).add(new THREE.Vector3().fromBufferAttribute(normals,last)).normalize();normals.setXYZ(first,n.x,n.y,n.z);normals.setXYZ(last,n.x,n.y,n.z);}
- return colors(g,(x,y,z)=>{const sediment=landNoise(y*7+seed,x*2+z*2),base=.87+.13*sediment;return new THREE.Color(base,base*(.96+sediment*.035),base*(.9+sediment*.07));});
+ return colors(g,(x,y,z)=>{const bed=y*7+landNoise(x*2+seed,z*2)*.18,band=Math.floor(bed),blend=smooth(bed-band,.1,.9),warm=lerp(hash(band,seed),hash(band+1,seed),blend),base=.81+.18*warm;return new THREE.Color(base,base*(.88+warm*.11),base*(.78+warm*.20));});
 }
 
 export function volcanicMassif(){
