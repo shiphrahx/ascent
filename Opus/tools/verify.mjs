@@ -6,7 +6,7 @@ const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: 'new', args: ['--use-angle=d3d11', '--force_high_performance_gpu', '--enable-gpu', '--ignore-gpu-blocklist'], defaultViewport: { width: 1440, height: 900, deviceScaleFactor: 2 } });
 const page = await browser.newPage();
 const issues = [], requests = [];
-page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') issues.push(`[${m.type()}] ${m.text().slice(0, 200)}`); });
+page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning' || m.type() === 'warn') issues.push(`[${m.type()}] ${m.text().slice(0, 200)}`); });
 page.on('pageerror', e => issues.push(`[pageerror] ${e.message}`));
 page.on('request', r => requests.push(r.url().slice(0, 60)));
 await page.goto(pathToFileURL(path.resolve('cappadocia.html')).href);

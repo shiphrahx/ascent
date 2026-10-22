@@ -1,10 +1,11 @@
 // Quarter-res raymarched participating media: thin air with shafts from the shadow maps, snowstorm
 // haze and a volumetric cloud layer. Depth-aware upsample, then blended over the HDR scene as
-// scene * T + inscatter.
+// scene * T + inscatter. On high the cloud layer has its own pass (fx/clouds.js), blended first.
 import * as THREE from 'three';
 import { U } from '../core/shared.js';
 import { fsMaterial, renderFS, makeRT } from '../core/fsq.js';
 import { DECL, NOISE, TERRAIN, SHADOW, LIGHT } from '../glsl/common.js';
+import { Clouds } from './clouds.js';
 
 const MARCH = /* glsl */`
 uniform vec3 uCamPos;
@@ -95,8 +96,11 @@ void main(){
     if (T < 0.01) break;
   }
 
-  // --- cloud layer ---
+  // --- cloud layer (high draws it in fx/clouds.js) ---
+#ifndef NO_CLOUDS
   if (uCloud > 0.02) {
+    // what distant cloud dissolves into: the same sky all along the ray
+    vec3 skyc = skyLut(normalize(vec3(dir.x, max(dir.y, 0.02), dir.z)));
     float base = uCloudBase, top = uCloudTop;
     float t0, t1;
     if (abs(dir.y) < 1e-4) { t0 = 0.; t1 = 0.; }
@@ -132,7 +136,6 @@ void main(){
           float Ts = exp(-sigma * stp);
           // distant cloud dissolves into the sky
           float air = exp(-t / 55000.);
-          vec3 skyc = skyLut(normalize(vec3(dir.x, max(dir.y, 0.02), dir.z)));
           vec3 add = T * (S - S * Ts) / sigma;
           scat += mix(skyc * (1. - Ts) * T, add, air);
           T *= Ts;
@@ -142,6 +145,7 @@ void main(){
       }
     }
   }
+#endif
   gl_FragColor = vec4(scat, T);
 }
 `;
@@ -198,12 +202,13 @@ void main(){ gl_FragColor = texture(tVol, vUv); }
 `;
 
 export class Volumetrics {
-  constructor(renderer) {
+  constructor(renderer, tier = 'high') {
     this.renderer = renderer;
+    this.clouds = tier === 'high' ? new Clouds(renderer) : null;
     this.march = fsMaterial(MARCH, Object.assign({}, U, {
       tDepth: { value: null }, uInvProj: { value: new THREE.Matrix4() }, uInvView: { value: new THREE.Matrix4() },
       uHalfRes: { value: new THREE.Vector2() }, uFrame: { value: 0 }, uCamPos: { value: new THREE.Vector3() },
-    }));
+    }), { defines: this.clouds ? { NO_CLOUDS: 1 } : {} });
     this.up = fsMaterial(UPSAMPLE, {
       tVol: { value: null }, tDepth: { value: null }, uHalfRes: { value: new THREE.Vector2() }, uFullRes: { value: new THREE.Vector2() },
       uProj: { value: new THREE.Matrix4() },
@@ -218,6 +223,7 @@ export class Volumetrics {
   }
   setSize(W, H) {
     if (this.half) { this.half.dispose(); this.full.dispose(); this.half2.dispose(); }
+    if (this.clouds) this.clouds.setSize(W, H);
     // quarter resolution: clouds and air are soft, and the depth-aware upsample plus TAA rebuild the edges
     const D = this.div = 4;
     this.half = makeRT(Math.ceil(W / D), Math.ceil(H / D), { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
@@ -227,6 +233,8 @@ export class Volumetrics {
   }
   render(mainRT, camera) {
     const r = this.renderer;
+    // clouds sit behind the near air: scene * Tc * Ta + cloud * Ta + air, so they go on first
+    if (this.clouds) this.composite(this.clouds.render(mainRT, camera), mainRT, camera);
     const m = this.march.uniforms;
     m.tDepth.value = mainRT.depthTexture;
     m.uInvProj.value.copy(camera.projectionMatrixInverse);
@@ -239,9 +247,13 @@ export class Volumetrics {
     bl.tDepth.value = mainRT.depthTexture; bl.uHalfRes.value.set(this.half.width, this.half.height); bl.uProj.value.copy(camera.projectionMatrix);
     bl.tVol.value = this.half.texture; bl.uDir.value.set(1, 0); renderFS(r, this.blur, this.half2);
     bl.tVol.value = this.half2.texture; bl.uDir.value.set(0, 1); renderFS(r, this.blur, this.half);
-    const u = this.up.uniforms;
-    u.tVol.value = this.half.texture; u.tDepth.value = mainRT.depthTexture;
-    u.uHalfRes.value.set(this.half.width, this.half.height); u.uFullRes.value.set(this.W, this.H);
+    this.composite(this.half, mainRT, camera);
+  }
+  // depth-aware upsample of a low-res (inscatter, transmittance) target, then over the scene
+  composite(src, mainRT, camera) {
+    const r = this.renderer, u = this.up.uniforms;
+    u.tVol.value = src.texture; u.tDepth.value = mainRT.depthTexture;
+    u.uHalfRes.value.set(src.width, src.height); u.uFullRes.value.set(this.W, this.H);
     u.uProj.value.copy(camera.projectionMatrix);
     renderFS(r, this.up, this.full);
     this.blend.uniforms.tVol.value = this.full.texture;

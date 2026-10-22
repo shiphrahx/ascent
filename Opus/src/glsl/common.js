@@ -29,7 +29,7 @@ uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
 uniform float uCheap;
-uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp, uPOM, uHazeLit;
+uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp, uTerrFine, uPOM, uHazeLit;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
 

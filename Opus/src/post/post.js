@@ -120,8 +120,10 @@ vec3 dof(vec3 c, vec2 uv){
     float a = float(i) * 2.39996 + uTime * 7.1, r = sqrt((float(i) + 0.5) / 8.) * coc;
     vec2 q = uv + vec2(cos(a), sin(a)) * r / uRes;
     // nearer things don't bleed into what's behind them in focus
-    float zq = -linZ(texture(tDepth, q).r), w = zq < z - 1. && abs(1. / uFocus - 1. / max(zq, 0.1)) * 60. * uDof < 0.5 ? 0. : 1.;
-    acc += texture(tScene, q).rgb * w; ws += w;
+    // explicit LOD: an implicit-gradient lookup in this loop (past the early return) makes the D3D
+    // compiler warn
+    float zq = -linZ(textureLod(tDepth, q, 0.).r), w = zq < z - 1. && abs(1. / uFocus - 1. / max(zq, 0.1)) * 60. * uDof < 0.5 ? 0. : 1.;
+    acc += textureLod(tScene, q, 0.).rgb * w; ws += w;
   }
   return acc / ws;
 }

@@ -9,6 +9,7 @@ import { TerrainData } from './world/terrainGen.js';
 import { Terrain } from './world/terrain.js';
 import { TerrainShadow } from './world/terrainShadow.js';
 import { TerrainAO } from './world/terrainAO.js';
+import { TerrainFine } from './world/terrainFine.js';
 import { Bounce } from './world/bounce.js';
 import { Shadows } from './world/shadows.js';
 import { Wind } from './world/wind.js';
@@ -111,6 +112,7 @@ async function boot() {
   new Crew(hero);
   const birds = new Birds(scene, data, facades, hero);
   const tshadow = new TerrainShadow(renderer, tier);
+  if (tier === 'high' && !dbg.nofine) new TerrainFine(renderer);
   G.terrAO = new TerrainAO(renderer, tier);
   const bounce = G.bounce = new Bounce(renderer, tier);
   const shadows = G.shadows = new Shadows(renderer, tier);
@@ -134,7 +136,7 @@ async function boot() {
     { obj: hero.basket, lo: new THREE.Vector3(-1.5, -0.3, -1.0), hi: new THREE.Vector3(1.5, 3.4, 1.0) },
   ];
   const probe = new Probe(renderer);
-  const vol = new Volumetrics(renderer);
+  const vol = new Volumetrics(renderer, dbg.oldclouds ? 'medium' : tier);
   pipe.onResize = (W, H) => { vol.setSize(W, H); river.setSize(W, H); };
   const volHook = rt => vol.render(rt, camera);
   pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
