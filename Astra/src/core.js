@@ -3,6 +3,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {tuffAlbedo,soilAlbedo,tuffSurface,soilSurface,masonryAlbedo,masonrySurface} from './material-assets.js';
 import {terraceHeight,valleyErosion} from './landforms.js';
 import {materialStrataGLSL} from './material-strata.js';
+import {snowCoverageGLSL} from './snow.js';
 export {THREE,mergeGeometries};
 export const TAU=Math.PI*2,clamp=THREE.MathUtils.clamp,lerp=THREE.MathUtils.lerp,smooth=THREE.MathUtils.smoothstep;
 export function rng(seed=4){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -145,6 +146,7 @@ export function stoneMaterial(color='#c8a78d',type=0,soilDetail=true){
    float rh(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
    float rn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(rh(i),rh(i+vec2(1,0)),f.x),mix(rh(i+vec2(0,1)),rh(i+vec2(1,1)),f.x),f.y);}
    ${materialStrataGLSL}
+   ${snowCoverageGLSL}
    `+s.fragmentShader;
   // World-space mapping removes stretched UVs on steep rock faces. Texture
   // mipmaps and derivative filtering suppress subpixel strata and frost sparkle.
@@ -171,10 +173,9 @@ export function stoneMaterial(color='#c8a78d',type=0,soilDetail=true){
    ${masonry?'':`diffuseColor.rgb*=mineralTint(vWorld);`}
    ${masonry||type===2?'':`diffuseColor.rgb*=mix(vec3(1.),strataTint(vWorld),${terrain?'1.-soilBlend*.85':'.8'});`}
    float drift=rn(vWorld.xz*.025)*.5+rn(vWorld.xz*.08+5.)*.32+rn(vWorld.xz*.27)*.18;
-   float edge=max(.055,fwidth(drift)*1.5);
-   float shelter=rn(vWorld.xz*.012+11.);
-   float cover=smoothstep(.65,.94,normalize(vWN).y)*smoothstep(1.-uSnow*.65-edge,1.-uSnow*.65+edge,drift+shelter*.08);
-   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.82,.85,.88),cover*.96);
+   float snowSky=1.;
+   float cover=snowCoverage(normalize(vWN),snowSky,uSnow,drift,fwidth(drift));
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.76,.81,.85)*(.96+.04*surface.g),cover*.96);
    diffuseColor.rgb*=1.-(1.-uSnow)*.045;
    ${type===4?`float river=95.*sin(vWorld.z*.004)+55.*sin(vWorld.z*.008+1.)-62.+30.*sin(vWorld.z*.009);
    float wetBank=(1.-smoothstep(10.,25.,abs(vWorld.x-river)))*(1.-smoothstep(3.6,5.,vWorld.y));
@@ -190,7 +191,7 @@ export function stoneMaterial(color='#c8a78d',type=0,soilDetail=true){
    reflectedLight.indirectSpecular*=mix(1.,vSurfaceAO*surface.b,.7);`);
   if(type===3)s.fragmentShader=s.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\nfloat fogFactor=1.-exp(-fogDensity*fogDensity*vFogDepth*vFogDepth*(.025+uStorm*.975));gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,fogFactor);\n#endif');
  };
- m.customProgramCacheKey=()=>`tuff-material-${type}-${soilDetail}`;
+ m.customProgramCacheKey=()=>`tuff-material-${type}-${soilDetail}-snow-aspect`;
  return m;
 }
 export function colors(geo,f){const p=geo.attributes.position,a=[];for(let i=0;i<p.count;i++){const c=f(p.getX(i),p.getY(i),p.getZ(i),i);a.push(c.r,c.g,c.b);}geo.setAttribute('color',new THREE.Float32BufferAttribute(a,3));return geo;}

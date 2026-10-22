@@ -322,3 +322,17 @@ File: `src/lighting.js`
 
 - Average throughput is 1.5% lower in this pair, with effectively unchanged tail times. Mean draws fall from 877.6 to 872.3 while rendered triangles rise by about 6,600. The richer reflection kernel is tiered; the remaining strict frame budget stays open. No application renders were skipped.
 - Flicker at exposure 1.1309: whole RMS 0.00139122, cliff RMS 0.00091825. River/shore content changes lower the whole-frame score by about 12.4%; the cliff score is within 1% of Phase 5. Validation: all three river tier checks, gameplay, graphics and temporal suites pass without errors or warnings. Personally inspected the near-bank view and all four matched pairs. Water now changes from silt colour to reflected sky with depth and angle; vegetation and snow still need their own detail passes.
+
+### Phase 6.2 - snow retention and filtered edges
+
+- Shader snow now combines slope, northern aspect (+Z, away from the midday sun), procedural drift and terrain sky visibility. Sheltered hollows retain more snow; exposed southern slopes lose it. Vertical faces reject deposits. Wider derivative-filtered transitions reveal underlying rock instead of ending in hard white patches, with rough, slightly varied snow albedo and no sparkle noise.
+- Snow reuses the existing terrain-lighting visibility. High evaluates that field once earlier in the fragment shader and shares it with indirect lighting; medium/lite reuse their baked attributes. There are no new texture lookups or geometry draws, and one old shelter-noise evaluation is removed.
+- A GPU fixture executes the production coverage function: equal-slope north/south samples cover 0.62/0.00, exposed/sheltered horizontal samples 0.32/1.00, vertical and melted samples 0.00. A large pixel footprint averages coverage rather than producing a sharp binary deposit. All three quality tiers render successfully.
+
+| Paired native medium flight | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 6.1 | 83.26 | 8.40 | 33.40 | 41.70 | 221/2498 |
+| Aspect/shelter snow | 81.77 | 8.40 | 33.40 | 41.90 | 227/2453 |
+
+- Throughput differs by 1.8%, with effectively unchanged tails and no skipped application renders. These faster session averages do not remove the sustained frame-budget requirement. Flicker at exposure 1.1529: whole RMS 0.00136650, cliff RMS 0.00089529, about 1.8%/2.5% below Phase 6.1.
+- Validation: production-shader coverage fixture, all-tier quality checks, gameplay, graphics and temporal suites pass with no errors or warnings. Personally inspected all four matched pairs: deposits are softer and less uniform, with more exposed rock on sunny slopes. The remaining scene details are vegetation and fleet designs.

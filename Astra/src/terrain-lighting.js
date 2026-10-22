@@ -96,8 +96,12 @@ export function applyTerrainLighting(shader,perFragment=true){
   vec3 terrainPosition=(modelMatrix*terrainWorld).xyz,terrainNormal=normalize(inverseTransformDirection(transformedNormal,viewMatrix));
   ${perFragment?'vTerrainWorld=terrainPosition;vTerrainNormal=terrainNormal;':'vTerrainLight=uTerrainLightEnabled>.5?vec4(uTerrainMeanBounce*aTerrainLight.y*(.18+.65*(1.-max(0.,terrainNormal.y))),aTerrainLight.x):vec4(0.,0.,0.,1.);'}`);
  shader.fragmentShader=varying+(perFragment?uniforms+evaluate:'')+shader.fragmentShader;
+  // Reuse the same sky visibility for snow retention and indirect lighting.
+  // Moving the evaluation earlier avoids an extra texture query on high.
+  shader.fragmentShader=shader.fragmentShader.replace('void main() {',`void main() {
+   ${perFragment?'vec4 terrainLight=uTerrainLightEnabled>.5?terrainLightAt(vTerrainWorld,vTerrainNormal):vec4(0.,0.,0.,1.);':'vec4 terrainLight=vTerrainLight;'}`);
+  shader.fragmentShader=shader.fragmentShader.replace('float snowSky=1.;','float snowSky=terrainLight.a;');
  shader.fragmentShader=shader.fragmentShader.replace('#include <aomap_fragment>',`
-  ${perFragment?'vec4 terrainLight=uTerrainLightEnabled>.5?terrainLightAt(vTerrainWorld,vTerrainNormal):vec4(0.,0.,0.,1.);':'vec4 terrainLight=vTerrainLight;'}
   reflectedLight.indirectDiffuse*=terrainLight.a;
   reflectedLight.indirectSpecular*=mix(1.,terrainLight.a,clamp(roughnessFactor+.15,0.,1.));
   reflectedLight.indirectDiffuse+=material.diffuseColor*terrainLight.rgb;
