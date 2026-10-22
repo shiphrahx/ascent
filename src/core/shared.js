@@ -93,4 +93,6 @@ export const G = {
   camera: null,
   sky: null,
   pass: 'main', // 'main' | 'shadow' | 'reflect'
+  // the pacing log (tools/pacing.mjs) notes which occasional passes ran in each frame
+  tag: () => {},
 };

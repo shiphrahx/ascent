@@ -61,3 +61,21 @@ File: `src/main.js` (adaptive resolution)
 - `medium` holds 60 fps at its current scale or better.
 - No visual loss compared with the latest shots (river reflection checked side by side).
 - Results recorded at the bottom of this file. Then continue with `FIDELITY_PLAN_2.md`.
+
+---
+
+## Results
+
+### Baseline (before any fix), `tools/pacing.mjs`, 2525×1295 at 1×, 120 Hz display
+
+| | leg | interval median / p95 / p99 | over 20 ms | odd/even | GPU median / p99 | scale |
+|---|---|---|---|---|---|---|
+| high, RTX 5070 Ti | straight | 8.5 / 34.5 / 38.2 | 434 of 2253 | 2.8 | 13.3 / 18.7 | 0.85 → 0.77, 3 changes |
+| | side to side | 8.3 / 17.3 / 25.8 | 91 of 3272 | 0.1 | | 0.77 |
+| medium, 890M | straight | 8.5 / 62.7 / 65.7 | 368 of 1416 | 5.8 | 19.8 / 25.6 | 0.67 (floor) |
+| | side to side | 8.3 / 41.8 / 52.4 | 586 of 2070 | 1.1 | 13.2 / 21.5 | 0.67 → 0.76, 4 changes |
+
+What it shows:
+- The display runs at 120 Hz and both GPUs now take 13–20 ms a frame, so frames land on a mix of one and two refreshes, and the CPU blocks for 35–65 ms every few frames waiting on queued GPU work. That's the judder. Before the fidelity pass the frame fitted in 8.3 ms and ran a steady 120.
+- The river reflection adds 1.7–3 ms GPU on alternate frames (and on medium, the far cascade skips on the opposite frames). Medium's terrain shadow rebuild (every 3rd frame) adds 1.5 ms, the bounce rebuild (every 4th) 2.2 ms.
+- The resolution governor changed scale 3–4 times in 30 s of steady flight.

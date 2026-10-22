@@ -100,6 +100,7 @@ export class Shadows {
       // stepped along at half rate, and the sun's sweep did too. Below high the far one, for distant
       // balloons only, can skip.
       if (!this.high && this.frame > 4 && i === last && (this.frame & 1)) continue;
+      if (!this.high && i === last) G.tag('farCascade');
       const cam = c.cam, half = c.half, back = c.back, center = c.center;
       // The light's view sits on a line through a fixed anchor, so its texel grid is fixed in the
       // world and only the window over it moves; the centre is snapped to whole texels in that grid.

@@ -4,7 +4,7 @@
 // sun that reaches it, plus the sky it sees), in the same units as the ambient cube; its mip chain
 // is the blur. Rebuilt as the sun moves; it's cheap.
 import * as THREE from 'three';
-import { U, WORLD } from '../core/shared.js';
+import { U, G, WORLD } from '../core/shared.js';
 import { fsMaterial, renderFS } from '../core/fsq.js';
 import { DECL, NOISE, TERRAIN, SHADOW, ROCK } from '../glsl/common.js';
 
@@ -56,6 +56,7 @@ export class Bounce {
   }
   update() {
     if (!U.uBounceOn.value || this.n++ % this.every) return;
+    G.tag('bounce');
     // three rebuilds the mips after drawing into a target that asks for them
     renderFS(this.renderer, this.mat, this.rt);
   }

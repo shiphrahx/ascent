@@ -247,6 +247,13 @@ async function boot() {
   window.__dbg = { G, U, sky, shimmer: (n, crop, sky) => { shimmer.start(n, crop, 30, sky); if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, shimmerMap: () => shimmer.heatmap(), loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
     extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), aeLog: aeLog === null ? null : +aeLog.toFixed(2), aeCorr: +aeCorr.toFixed(2), aeB: +Math.log2(Math.max(aeB, 1e-5)).toFixed(2), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
+  // Frame pacing log for tools/pacing.mjs: every frame's interval, CPU and GPU time, render scale, and
+  // which occasional passes ran in it (G.tag). Off unless a test starts it.
+  const pace = { rec: null, tags: [], gpu: new Map() };
+  G.tag = t => { if (pace.rec) pace.tags.push(t); };
+  ftimer.onSample = (f, ms) => { if (pace.rec) pace.gpu.set(f, ms); };
+  window.__dbg.paceStart = () => { pace.rec = []; pace.gpu.clear(); pace.tags = []; };
+  window.__dbg.paceStop = () => { const r = pace.rec; pace.rec = null; for (const e of r) e.gpu = pace.gpu.get(e.f) ?? null; return r; };
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
   function frame() {
     const cpu0 = performance.now();
@@ -372,7 +379,7 @@ async function boot() {
     // lite mode spreads the slow-changing passes over several frames
     ftimer.begin();
     prof.begin('sky');
-    if (!lite || fN % 8 === 0 || fN < 3) { dome.update(sky, camera); probe.update(st.snow); }
+    if (!lite || fN % 8 === 0 || fN < 3) { dome.update(sky, camera); probe.update(st.snow); if (lite) G.tag('dome'); }
     dome.mesh.position.copy(camera.position);
     {
       // auto exposure from sky irradiance and the key light; nights stay darker than days
@@ -425,7 +432,7 @@ async function boot() {
     // lite mode refreshes the shadow maps every third frame
     terrain.setShadowCenter(shadows.cascades[1].center, shadows.cascades[1].half, U.uKeyDir.value);
     prof.begin('shadows');
-    if (!sHold && ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3)) shadows.render(scene);
+    if (!sHold && ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3)) { shadows.render(scene); if (G.tier === 'lite') G.tag('shadows'); }
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
@@ -439,6 +446,7 @@ async function boot() {
     ftimer.end();
     shimmer.grab(pipe.resolved.texture, pipe.main.depthTexture, camera, exposure);
     perf.cpu = (perf.cpu || 0) + (performance.now() - cpu0 - (perf.cpu || 0)) * 0.05;
+    if (pace.rec) { pace.rec.push({ f: ftimer.frame, dt: rawDt * 1000, cpu: performance.now() - cpu0, scale: pipe.scale, tags: pace.tags.join(' ') }); pace.tags = []; }
     window.__dbg.frames++;
     requestAnimationFrame(frame);
   }

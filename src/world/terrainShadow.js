@@ -6,7 +6,7 @@
 // after n passes every texel has seen every heightmap texel along 2^n of them. The old single march
 // grew its step by 10% a step, skipped thin ridges and jittered as the sun moved.
 import * as THREE from 'three';
-import { U, WORLD } from '../core/shared.js';
+import { U, G, WORLD } from '../core/shared.js';
 import { fsMaterial, renderFS, makeRT } from '../core/fsq.js';
 import { DECL, NOISE, TERRAIN } from '../glsl/common.js';
 
@@ -118,6 +118,7 @@ export class TerrainShadow {
     if (!force && L.distanceToSquared(this.last) < 1e-8) return;
     this.last.copy(L);
     this.age = 0;
+    G.tag('terrShadow');
     U.uTerrBlend.value = this.every > 1 && !force ? 0 : 1;
     this.build(this.outer);
     this.build(this.core);

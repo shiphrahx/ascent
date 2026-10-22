@@ -1,7 +1,7 @@
 // River: a ribbon of water with planar reflections (rendered from a mirrored camera),
 // ripples that run with the flow, the shallow bed showing through, and thin ice at the edges.
 import * as THREE from 'three';
-import { U, WORLD } from '../core/shared.js';
+import { U, G, WORLD } from '../core/shared.js';
 import { COMMON, VCOMMON, WIND } from '../glsl/common.js';
 import { makeRT } from '../core/fsq.js';
 import { RIVER } from './layout.js';
@@ -154,6 +154,7 @@ export class River {
     // the reflection only needs refreshing every other frame
     if ((this.frame++ & 1) && this.rendered) return;
     this.rendered = true;
+    G.tag('reflection');
     const y = WORLD.riverY;
     const cam = camera, rc = this.rcam;
     this._v.copy(cam.position); this._v.y = 2 * y - this._v.y;
