@@ -1,0 +1,14 @@
+{
+  "tier": "high",
+  "stats": {
+    "size": 256,
+    "directions": 16,
+    "bytes": 8388608,
+    "bakeMs": 2237.0999999940395
+  },
+  "invalid": 0,
+  "stableTexture": true,
+  "changedChannels": 21265,
+  "rms": 0.004355067171066952,
+  "errors": []
+}

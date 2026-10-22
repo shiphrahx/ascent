@@ -1,6 +1,7 @@
 import {CSM} from 'three/addons/csm/CSM.js';
 import {THREE} from './core.js';
 import {applyTerrainLighting,bakeStaticTerrainLighting} from './terrain-lighting.js';
+import {applyTerrainShadows} from './terrain-shadows.js';
 
 export function createSunShadows(scene,camera,renderer){
  const terrainPerFragment=renderer.ascentQuality.name==='high';
@@ -29,8 +30,8 @@ export function createSunShadows(scene,camera,renderer){
    const surface=material.onBeforeCompile,cacheKey=material.customProgramCacheKey.bind(material);
    const surfaceKey=cacheKey();
    csm.setupMaterial(material);const shadows=material.onBeforeCompile;
-   material.onBeforeCompile=function(shader,renderer){surface.call(this,shader,renderer);applyTerrainLighting(shader,terrainPerFragment);shadows.call(this,shader,renderer);};
-   material.customProgramCacheKey=()=>surfaceKey+'-terrain-light-'+terrainPerFragment+'-csm3';
+   material.onBeforeCompile=function(shader,renderer){surface.call(this,shader,renderer);applyTerrainLighting(shader,terrainPerFragment);if(terrainPerFragment||material.userData.surfaceOcclusion)applyTerrainShadows(shader,terrainPerFragment?'vTerrainWorld':'vWorld');shadows.call(this,shader,renderer);};
+   material.customProgramCacheKey=()=>surfaceKey+'-terrain-light-'+terrainPerFragment+'-horizon-v1-csm3';
   }
  });
  // WebGLShadowMap filters casters using the view camera's layers, not the

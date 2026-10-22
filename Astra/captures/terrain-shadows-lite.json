@@ -1,0 +1,14 @@
+{
+  "tier": "lite",
+  "stats": {
+    "size": 128,
+    "directions": 8,
+    "bytes": 1048576,
+    "bakeMs": 202.5
+  },
+  "invalid": 0,
+  "stableTexture": true,
+  "changedChannels": 3246,
+  "rms": 0.001393322412450985,
+  "errors": []
+}

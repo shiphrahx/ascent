@@ -261,3 +261,18 @@ File: `src/lighting.js`
 - Average pacing is about 2.7% lower in this pair, with unchanged p95 and a worse tail; session variability prevents attributing that entire difference to the feature. The expensive local lighting path is high-only. Sustained 60 fps remains an open Phase 8 requirement. The rejected texture-evaluation runs are not used as the final baseline.
 - Medium scene flicker at locked exposure 0.7824: whole RMS 0.00155102, cliff RMS 0.00100691, essentially unchanged from Phase 3.1. No random sampling or camera-triggered geometry changes were added.
 - Validation: flat/tilted-plane and canyon horizon units, all three tier browser checks, gameplay, graphics and temporal suites passed. Personally inspected all four matched pairs and the lighting toggle view: sheltered rock darkens and receives subtle warm fill; no missing surfaces or new noisy grain. Distant cast shadows and shadow filtering remain the next tasks.
+
+### Phase 3.3 - distant terrain cast shadows
+
+- A static 32.768 km square horizon field extends terrain cast shadows beyond the 1.9 km cascades. Each texel stores horizon slope, terrain height and inverse occluder distance. Azimuth occupies the depth axis of a 3D texture; one hardware-trilinear lookup interpolates space and sun direction continuously. Elevated receivers can see over the recorded occluder. No textures are regenerated as time advances.
+- The shadow fades in over view depths 1.6-1.9 km, overlaps the cascades, and fades at the field boundary. It attenuates directional illumination only; local lamps, emission and ambient illumination remain separate. A derivative-aware penumbra filters the horizon threshold. The height-field approximation excludes independent chimney/building occluders and the separate distant volcano mesh.
+- High uses 256 x 256 x 16 half-float RGBA texels (8 MiB); medium/lite use 128 x 128 x 8 (1 MiB). A 64-square lite prototype lost too much relief and was rejected. Measured baking took about 2.24 seconds on high and 0.20-0.28 seconds on lower tiers. All tiers verify finite data, visible shadow contribution and unchanged texture versions while the sun moves.
+- High applies the effect to all standard surfaces. Medium/lite restrict it to terrain, stone and masonry and reuse their existing world-position interpolator. Other materials retain cascaded shadows. This replaces an all-material prototype that increased integrated-GPU cost.
+
+| Final paired native flight, medium | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 3.2 build | 67.30 | 16.60 | 25.00 | 40.04 | 70/2019 |
+| Distant terrain shadows | 64.97 | 16.60 | 25.00 | 33.45 | 91/1949 |
+
+- Average pacing is 3.5% lower in this pair, p95 is unchanged and p99 improves. The run has no skipped application renders, but does not prove sustained 60 fps. The larger high field and all-material path remain behind the tier switch.
+- Medium scene flicker at locked exposure 0.7820: whole RMS 0.00155055, cliff RMS 0.00100619, effectively unchanged. Validation: analytical flat/ridge/elevated-receiver checks, all tier GPU checks, gameplay, graphics and temporal suites passed. Personally inspected all four matched pairs and the distant low-sun shadow toggle: nearby lighting is preserved; distant shadowing is subtle under the current haze. Cascade filtering and atmosphere are next.
