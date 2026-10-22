@@ -5568,6 +5568,8 @@ void main(){
 
   // --- cloud layer ---
   if (uCloud > 0.02) {
+    // what distant cloud dissolves into: the same sky all along the ray
+    vec3 skyc = skyLut(normalize(vec3(dir.x, max(dir.y, 0.02), dir.z)));
     float base = uCloudBase, top = uCloudTop;
     float t0, t1;
     if (abs(dir.y) < 1e-4) { t0 = 0.; t1 = 0.; }
@@ -5603,7 +5605,6 @@ void main(){
           float Ts = exp(-sigma * stp);
           // distant cloud dissolves into the sky
           float air = exp(-t / 55000.);
-          vec3 skyc = skyLut(normalize(vec3(dir.x, max(dir.y, 0.02), dir.z)));
           vec3 add = T * (S - S * Ts) / sigma;
           scat += mix(skyc * (1. - Ts) * T, add, air);
           T *= Ts;
