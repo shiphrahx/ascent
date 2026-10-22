@@ -139,27 +139,27 @@ File: `src/lighting.js`
 - Matched review captures: `captures/fidelity-0-before-*` and `captures/fidelity-0-after-*` at the four existing procedural review cameras/hours.
 - Validation: GPU classification checks and browser checks for all three tiers passed; `npm test`, `npm run test:graphics`, and `npm run test:temporal` passed. Personally inspected all four before/after views: medium preserves the baseline appearance. The rock camera exposes pre-existing stretched triangles, which will be investigated with landform geometry in Phase 1.
 
-### Phase 0.2 ? frame pacing baseline
+### Phase 0.2 - frame pacing baseline
 
 - Added a 30 s scripted 960 m flight with alternating camera turns at hour 8.5. Every animation-frame interval, completed application render count, camera, draw calls, triangles, and dynamic quality value is saved. Eight seconds of warm-up precede measurement. Percentiles use linear interpolation.
 - Commands: `node benchmark.mjs --flight --tier=medium --tag=phase-0` and the same with `--recording`. Other tiers use `--tier=high|lite`; duration and artifact label use `--seconds=30 --tag=...`.
 
 | Radeon 890M / medium | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms | Samples | Mean draws | Mean triangles |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1440?900 DPR 1 | 63.73 | 16.60 | 25.44 | 33.59 | 153 | 1913 | 1065 | 3318724 |
-| 2848?1590 DPR 1 | 33.07 | 33.20 | 41.70 | 41.80 | 720 | 992 | 1205 | 3920289 |
+| 1440 x 900 DPR 1 | 63.73 | 16.60 | 25.44 | 33.59 | 153 | 1913 | 1065 | 3318724 |
+| 2848 x 1590 DPR 1 | 33.07 | 33.20 | 41.70 | 41.80 | 720 | 992 | 1205 | 3920289 |
 
 - Native resolution averages above 60 fps but does **not hold** the frame budget: 8.0% of frames exceed 25 ms. Recording resolution is GPU-limited at about 33 fps, with 72.6% exceeding 25 ms. Dynamic quality reaches 0.4 there, but the native-resolution floor prevents it from reducing the 4.53M-pixel framebuffer. This needs resolution-aware tier controls and draw/triangle reduction in Phase 8.
 - Both runs had zero observer callbacks without an application render and no page errors. This rules out skipped application renders in this test; it does not establish whether a screen recorder duplicates frames. Headless Chromium presentation cadence can differ from the desktop. Raw rAF timing is not a GPU timer.
 - This task changes the harness only; `Ascent.html` is byte-identical to Phase 0.1. Matched review uses `fidelity-0-after-*` versus `fidelity-0-2-after-*`.
 - Validation: gameplay, graphics and temporal suites passed. Personally inspected all four matched before/after views; the benchmark-only change preserves the appearance.
 
-### Phase 0.3 ? scene flicker baseline
+### Phase 0.3 - scene flicker baseline
 
 - `node flicker.mjs --tier=medium --tag=phase-0` renders 301 frames spanning exactly 5 s at 60 steps/s. The camera translates 6 m at hour 8.5, following 30 warm-up frames. Sun, weather, wind and animation time are frozen; hero/fleet and particles are hidden. The harness supplies a deterministic clock to shadow/reflection caches. It never changes production timing.
 - Score: RMS of `L[t] - (L[t-1] + L[t+1])/2`, in linear Rec.709 luminance after converting the final sRGB framebuffer. This removes a local linear temporal trend. It is a comparative instability proxy, **not** ground-truth flicker: disocclusions, curved motion and changing fine geometry still contribute. Lower is better for the same camera/content. Full-resolution whole-frame sampling and a fixed top-right cliff crop (1000,300,360,240) are scored separately. GPU readback makes capture timings unsuitable for performance measurement.
 
-| Tier on Radeon 890M, 1440?900 DPR 1 | Whole-frame RMS | Cliff RMS | Scored frames |
+| Tier on Radeon 890M, 1440 x 900 DPR 1 | Whole-frame RMS | Cliff RMS | Scored frames |
 |---|---:|---:|---:|
 | high | 0.00155842 | 0.00082695 | 299 |
 | medium | 0.00154563 | 0.00082698 | 299 |
@@ -168,3 +168,19 @@ File: `src/lighting.js`
 - Metric unit tests verify constant frames, a smooth linear luminance trend, alternating flicker, RMS aggregation and crop orientation. All three tier captures completed without page errors. Start/end PNGs and every scored frame are saved with the reports. These are tier comparisons on the same integrated GPU, not performance certification for discrete or software adapters.
 - Production build remains byte-identical to Phase 0.1. Matched review uses `fidelity-0-2-after-*` versus `fidelity-0-3-after-*`.
 - Validation: gameplay, graphics and temporal suites passed. Personally inspected all four matched review pairs and the flicker start frame; no appearance regression.
+
+### Phase 1.1 - layered terrain
+
+- Shared deterministic strata fields create 4-12 m beds with short cliff transitions and longer ledges; drainage cuts V-shaped, branching channels toward the valley. Ridge cross-sections now have talus aprons, escarpments and broad caps.
+- High uses a 4 m grid within 800 m of the river corridor. Medium/lite preserve the original grid (8 m along the river; 1-8 m across its banks, then 20 m farther out). Their denser prototype regressed flight performance, so that cost is restricted to high. All grids are fixed for a session and collision samples the same triangles. High ridge grids are 2.4-3.2 m across and 4 m along. Medium/lite retain 3.5-4.7 m across, with 5 m rows on the closest pair and 7.5 m on the outer four; this removes distant geometry to pay for the new visible cliff faces. The 2-4 m target is therefore high-only until the integrated-GPU budget allows it.
+- Investigation corrected the earlier stretched-geometry diagnosis: the old rock review camera was **2.48 m inside a ridge**, bypassing the production camera collision solver. Its near-plane intersections produced the giant diagonal faces. The review eye is now at y=145, and every pose asserts terrain clearance. Village review coordinates are also fixed in world space so changed terrain height cannot move the comparison camera. Both old and new builds are recaptured with these corrected identical poses.
+- Medium/lite repeated rock remnants use 48 sides and 28 vertical rings; high keeps 64/36. Citadel geometry retains 64/48 in every tier. This reduces repeated distant geometry while preserving the largest close landmark.
+
+| Paired 30 s native flight, medium | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms | Mean triangles |
+|---|---:|---:|---:|---:|---:|---:|
+| Phase 0 build | 43.27 | 16.80 | 49.90 | 58.40 | 470/1298 | 3422428 |
+| Layered terrain | 48.43 | 16.70 | 41.80 | 58.20 | 432/1453 | 2977107 |
+
+- The final paired run improves average pacing and reduces rendered triangles by about 13%. The unchanged baseline varied from 43 to 77 fps across this session, so these results do not certify a sustained 60 fps; the strict budget remains open. Reports retain all samples, settings and camera positions. Earlier prototypes were rejected for increasing cost.
+- Final medium flicker baseline for the changed geometry: whole-frame RMS 0.00155580, cliff RMS 0.00091137. The cliff score rises with the new geometric edges; it is not comparable as an isolated shadow-filter regression because the content changed. Phase 4 will compare against this landform baseline.
+- Validation: landform field tests, all three tier browser checks, gameplay, graphics, and temporal suites passed. The matched corrected-camera review was inspected: the ridge silhouettes now show escarpments and plateaus, and the old near-plane artifacts are absent. Far landscape, chimney design, materials and lighting still need their later phases.

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {tuffAlbedo,soilAlbedo,tuffSurface,soilSurface,masonryAlbedo,masonrySurface} from './material-assets.js';
+import {terraceHeight,valleyErosion} from './landforms.js';
 export {THREE,mergeGeometries};
 export const TAU=Math.PI*2,clamp=THREE.MathUtils.clamp,lerp=THREE.MathUtils.lerp,smooth=THREE.MathUtils.smoothstep;
 export function rng(seed=4){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -12,6 +13,8 @@ function rawGround(x,z){
  const d=x-pathX(z);let h=86+noise(x,z)*9-70*Math.exp(-d*d/34000);
  h-=25*Math.exp(-Math.pow((x+250+120*Math.sin(z*.004))/85,2));
  h+=Math.abs(Math.sin(x*.016+z*.008))*8*smooth(Math.abs(d),130,380);
+ h-=valleyErosion(x,z,d);
+ h=terraceHeight(h,x,z,.82*smooth(Math.abs(d),65,170));
  const bank=Math.abs(x-riverX(z)),width=8.5+Math.sin(z*.018)*1.3;
  if(bank<width)return 2.1+1.45*Math.pow(bank/width,3);
  return lerp(3.55+(bank-width)*.11,Math.max(h,4),smooth(bank,width,width+35));
@@ -19,20 +22,29 @@ function rawGround(x,z){
 // A river-aligned adaptive grid spends vertices on the banks, where a regular
 // 14 m grid missed the entire channel. The flight/camera solver samples the
 // exact same triangles as the visible mesh, without evaluating terrain noise.
-const bankOffsets=[];
-for(let d=0;d<=12;d++)bankOffsets.push(d);
-for(let d=14;d<=40;d+=2)bankOffsets.push(d);
-for(let d=48;d<=160;d+=8)bankOffsets.push(d);
-for(let d=180;d<=2600;d+=20)bankOffsets.push(d);
-const terrainOffsets=[...bankOffsets.slice(1).reverse().map(d=>-d),...bankOffsets];
-const terrainRows=500,terrainStep=8,terrainColumns=terrainOffsets.length;
-const terrainHeights=new Float32Array((terrainRows+1)*terrainColumns);
-const terrainCenters=new Float64Array(terrainRows+1);
-for(let j=0;j<=terrainRows;j++){
- const z=j*terrainStep-2000,center=riverX(z);terrainCenters[j]=center;
- for(let k=0;k<terrainColumns;k++)terrainHeights[j*terrainColumns+k]=rawGround(center+terrainOffsets[k],z);
+let terrainOffsets,terrainRows,terrainStep,terrainColumns,terrainHeights,terrainCenters;
+export function configureTerrain(tier){
+ if(terrainHeights)return; // Fixed for the session: no moving geometry or LOD swaps.
+ const high=tier.name==='high',bankOffsets=[];
+ terrainStep=high?4:8;terrainRows=4000/terrainStep;
+ for(let d=0;d<=12;d++)bankOffsets.push(d);
+ for(let d=14;d<=40;d+=2)bankOffsets.push(d);
+ if(high){
+  for(let d=44;d<=800;d+=4)bankOffsets.push(d);
+  for(let d=864;d<2600;d+=64)bankOffsets.push(d);bankOffsets.push(2600);
+ }else{
+  for(let d=48;d<=160;d+=8)bankOffsets.push(d);
+  for(let d=180;d<=2600;d+=20)bankOffsets.push(d);
+ }
+ terrainOffsets=[...bankOffsets.slice(1).reverse().map(d=>-d),...bankOffsets];terrainColumns=terrainOffsets.length;
+ terrainHeights=new Float32Array((terrainRows+1)*terrainColumns);terrainCenters=new Float64Array(terrainRows+1);
+ for(let j=0;j<=terrainRows;j++){
+  const z=j*terrainStep-2000,center=riverX(z);terrainCenters[j]=center;
+  for(let k=0;k<terrainColumns;k++)terrainHeights[j*terrainColumns+k]=rawGround(center+terrainOffsets[k],z);
+ }
 }
 export function ground(x,z){
+ if(!terrainHeights)configureTerrain({name:'medium'});
  const pz=(z+2000)/terrainStep,j=Math.floor(pz),fz=pz-j;
  if(j<0||j>=terrainRows)return rawGround(x,z);
  const u=x-lerp(terrainCenters[j],terrainCenters[j+1],fz);
@@ -43,6 +55,7 @@ export function ground(x,z){
  return fx+fz<=1?a+fx*(b-a)+fz*(c-a):d+(1-fx)*(c-d)+(1-fz)*(b-d);
 }
 export function terrainGeometry(){
+ if(!terrainHeights)configureTerrain({name:'medium'});
  const positions=[],uv=[],indices=[];
  for(let j=0;j<=terrainRows;j++)for(let k=0;k<terrainColumns;k++){
   const z=j*terrainStep-2000,x=terrainCenters[j]+terrainOffsets[k],q=j*terrainColumns+k;

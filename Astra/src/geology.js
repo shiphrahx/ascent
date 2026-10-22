@@ -1,16 +1,20 @@
 import {THREE,ground,pathX,colors,lerp,smooth,rng,TAU} from './core.js';
+import {landNoise,landHash as hash,terraceHeight} from './landforms.js';
+export {landNoise} from './landforms.js';
 
 // Continuous noise keeps erosion features coherent across adjacent rock faces.
-function hash(x,z){let h=Math.imul(x,374761393)+Math.imul(z,668265263);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295;}
-export function landNoise(x,z){const ix=Math.floor(x),iz=Math.floor(z);let u=x-ix,v=z-iz;u=u*u*(3-2*u);v=v*v*(3-2*v);return lerp(lerp(hash(ix,iz),hash(ix+1,iz),u),lerp(hash(ix,iz+1),hash(ix+1,iz+1),u),v);}
 function strata(x,z){return landNoise(x,z)*.58+landNoise(x*2.03+13,z*2.03+7)*.28+landNoise(x*4.11-9,z*4.11+19)*.14;}
-const length=3000,rows=600,columns=44;
+const length=3000;
+let highDetail=false;
+export function configureGeology(tier){highDetail=tier.name==='high';}
 const ridgeCache=[];
 function ridgeParameters(z,index){const side=index%2?1:-1,layer=index>>1;return {center:pathX(z)+side*(250+layer*185+38*(landNoise(z*.006,index*17)-.5)),width:155+layer*25,side,layer};}
-function ridgeHeight(z,t,index){
+function ridgeHeight(z,t,index,base){
  if(t<=0||t>=1||z< -1500||z>1500)return 0;
  const layer=index>>1,axis=.46+(landNoise(z*.009,index*17)-.5)*.19;
- const across=t<axis?t/axis:(1-t)/(1-axis),shoulder=Math.pow(Math.sin(across*Math.PI*.5),.88);
+ const across=t<axis?t/axis:(1-t)/(1-axis);
+ // A shallow talus apron ends at a steep escarpment and a broad mesa cap.
+ const shoulder=.18*smooth(across,0,.34)+.82*smooth(across,.35,.64);
  const side=t<axis?0:1,runoff=1-across;
  // Drainage cuts widen downhill and wander into tributaries. Larger saddles
  // interrupt the cliff instead of making one unbroken, corrugated curtain.
@@ -19,28 +23,31 @@ function ridgeHeight(z,t,index){
  for(let k=cell-1;k<=cell+1;k++){
   const center=k+.2+hash(k,index*7+side)*.6,width=.055+runoff*.21;
   const d=(along-center)/width;
-  cut+=Math.exp(-d*d)*( .12+runoff*.55)*(.6+hash(k,21+index)*.5);
+  cut+=Math.max(0,1-Math.abs(d))*(.10+runoff*.66)*(.6+hash(k,21+index)*.5);
   const branch=(along-center-.22*Math.sin(runoff*4+hash(k,8)*3))/(width*.45);
-  cut+=Math.exp(-branch*branch)*.11*Math.sin(Math.PI*runoff);
+  cut+=Math.max(0,1-Math.abs(branch))*.14*Math.sin(Math.PI*runoff);
  }
  const crest=(46+layer*32)*(.66+landNoise(z*.012,index*31)*.55);
  const saddle=.58+.42*smooth(landNoise(z*.004,index*19+2),.18,.7);
- const ledge=(landNoise(z*.04,index+t*4)-.5)*2.2*Math.sin(across*Math.PI);
- return Math.max(0,shoulder*crest*saddle*(1-Math.min(.76,cut))+ledge)*smooth(1500-Math.abs(z),0,140);
+ const height=shoulder*crest*saddle*(1-Math.min(.82,cut)),x=ridgeParameters(z,index).center+(t-.5)*(155+layer*25);
+ const layered=terraceHeight(base+height,x,z,.9)-base;
+ return Math.max(0,lerp(height,layered,smooth(across,0,.2)))*smooth(1500-Math.abs(z),0,140);
 }
 function ridgeData(index){
  if(ridgeCache[index])return ridgeCache[index];
+ // Keep detail on the closest cliffs; distant outer terraces need fewer rows.
+ const rows=highDetail?750:index<2?600:400,columns=highDetail?64:44;
  const centers=new Float64Array(rows+1),heights=new Float32Array((rows+1)*(columns+1)),width=155+(index>>1)*25;
  for(let j=0;j<=rows;j++){
   const z=j/rows*length-1500,p=ridgeParameters(z,index);centers[j]=p.center;
-  for(let k=0;k<=columns;k++){const t=k/columns,x=p.center+(t-.5)*width;heights[j*(columns+1)+k]=ground(x,z)+ridgeHeight(z,t,index)-.45;}
+  for(let k=0;k<=columns;k++){const t=k/columns,x=p.center+(t-.5)*width,base=ground(x,z);heights[j*(columns+1)+k]=base+ridgeHeight(z,t,index,base)-.45;}
  }
- return ridgeCache[index]={centers,heights,width};
+ return ridgeCache[index]={centers,heights,width,rows,columns};
 }
 export function ridgeSurface(x,z,index){
  if(Math.abs(z)>1500)return ground(x,z);
  // Sample the same triangular grid used by the mesh, including its drifting axis.
- const data=ridgeData(index),step=length/rows,j=Math.min(rows-1,Math.floor((z+1500)/step)),fz=(z+1500)/step-j;
+ const data=ridgeData(index),{rows,columns}=data,step=length/rows,j=Math.min(rows-1,Math.floor((z+1500)/step)),fz=(z+1500)/step-j;
  const t=(x-lerp(data.centers[j],data.centers[j+1],fz))/data.width+.5;
  if(t<=0||t>=1)return ground(x,z);
  const k=Math.min(columns-1,Math.floor(t*columns)),fx=t*columns-k;
@@ -48,7 +55,7 @@ export function ridgeSurface(x,z,index){
  return fx+fz<=1?a+fx*(b-a)+fz*(c-a):d+(1-fx)*(c-d)+(1-fz)*(b-d);
 }
 export function erodedRidge(index){
- const positions=[],uv=[],indices=[],data=ridgeData(index);
+ const positions=[],uv=[],indices=[],data=ridgeData(index),{rows,columns}=data;
  for(let j=0;j<=rows;j++){
   const z=-1500+j/rows*length;
   for(let k=0;k<=columns;k++){
@@ -64,7 +71,8 @@ export function erodedRidge(index){
 export function erodedRock(seed=1,cap=false){
  // Spend the denser vertical grid on the close citadel. Thin capstones and
  // repeated valley remnants need fewer rings to retain the same silhouette.
- const random=rng(seed),phase=random()*TAU,kind=seed%6,segments=cap?48:64,rings=cap?16:seed>=50?48:36,ps=[],uv=[],indices=[],ao=[];
+ const random=rng(seed),phase=random()*TAU,kind=seed%6,landmark=seed>=50&&!cap;
+ const segments=cap?(highDetail?48:32):highDetail||landmark?64:48,rings=cap?(highDetail?16:12):landmark?48:highDetail?36:28,ps=[],uv=[],indices=[],ao=[];
  const leanX=(random()-.5)*.22,leanZ=(random()-.5)*.19;
  const gullies=Array.from({length:7},()=>({a:random()*TAU,width:.07+random()*.15,depth:.08+random()*.13,drift:(random()-.5)*.65,split:.25+random()*.4}));
  const joints=Array.from({length:3},()=>({h:.2+random()*.65,depth:.008+random()*.02,tilt:(random()-.5)*.045}));

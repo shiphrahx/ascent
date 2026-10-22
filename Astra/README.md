@@ -10,7 +10,7 @@ Open [`Ascent.html`](Ascent.html) in a browser. It includes its runtime assets a
 
 Controls: Space/W for the burner, V/S to vent, A/D to rotate, C to change camera, drag to look or orbit, wheel to zoom, T to accelerate time, M for sound, and F for fullscreen.
 
-Quality is selected from the reported GPU: discrete graphics use `high`, integrated or unknown adapters use `medium`, and software renderers use `lite`. Override detection by opening `Ascent.html?quality=high`, `?quality=medium`, or `?quality=lite`; reload to apply a different tier. The selected tier and GPU are available in `window.__ascent.tier` for diagnostics. Medium preserves the original rendering budget; lite reduces shadow, reflection, cloud-cache and MSAA costs. High permits a larger pixel budget and reflection map. Tiers retain stable geometry and a native CSS-pixel resolution floor.
+Quality is selected from the reported GPU: discrete graphics use `high`, integrated or unknown adapters use `medium`, and software renderers use `lite`. Override detection by opening `Ascent.html?quality=high`, `?quality=medium`, or `?quality=lite`; reload to apply a different tier. The selected tier and GPU are available in `window.__ascent.tier` for diagnostics. Medium preserves the original rendering budget; lite reduces shadow, reflection, cloud-cache and MSAA costs. High permits a larger pixel budget, reflection map, and 4 m terrain grid near the valley. Tiers retain stable geometry and a native CSS-pixel resolution floor.
 
 ## Build
 
@@ -42,7 +42,7 @@ npm run test:temporal
 npm run preview
 ```
 
-Screenshots, validation reports, performance measurements, and historical comparison builds are in `captures/`. Open `captures/procedural-comparison.html` locally to compare the procedural graphics pass with its previous build. The current findings and remaining realism gaps are recorded in `captures/realism-summary.json`.
+Screenshots, validation reports, performance measurements, and historical comparison builds are in `captures/`. The phase-by-phase results and remaining realism work are recorded in [FIDELITY_PLAN.md](FIDELITY_PLAN.md). Open `captures/fidelity-1-1-comparison.html` for matched landform views. Run `node benchmark.mjs --flight --tier=medium` for a 30-second frame-pacing trace; add `--recording` for 2848×1590. Run `node flicker.mjs --tier=medium` for the fixed-step scene flicker metric. Use `--tag=name` to retain successive reports. Run GPU harnesses sequentially.
 
 ## Repository scope
 

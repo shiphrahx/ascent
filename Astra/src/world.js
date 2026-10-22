@@ -4,7 +4,8 @@ import {createSettlement} from './settlement.js';
 import {carveOpenings} from './carving.js';
 import {Reflector} from 'three/addons/objects/Reflector.js';
 import {TessellateModifier} from 'three/addons/modifiers/TessellateModifier.js';
-import {erodedRock,erodedRidge,ridgeSurface,landNoise,volcanicMassif,distantRange} from './geology.js';
+import {erodedRock,erodedRidge,ridgeSurface,landNoise,volcanicMassif,distantRange,configureGeology} from './geology.js';
+import {configureTerrain} from './core.js';
 const cream=stoneMaterial('#dfcab2'),rose=stoneMaterial('#d0a39a',1),basalt=stoneMaterial('#988471',2),dark=mat('#211d21'),wood=mat('#695d50'),metal=mat('#555d61',{metalness:.7,roughness:.4});
 const windowMat=mat('#ffd2a0',{emissive:'#ff9b42',emissiveIntensity:0,roughness:.6});
 export function surfaceHeight(x,z){let y=ground(x,z);if(z<-1500||z>1500)return y;for(let i=0;i<6;i++)y=Math.max(y,ridgeSurface(x,z,i));return y;}
@@ -17,6 +18,8 @@ function fitCarving(group,rock){
  group.traverse(o=>{if(!o.isMesh)return;const g=o.geometry.clone(),a=g.attributes.position,inverse=o.matrixWorld.clone().invert();for(let i=0;i<a.count;i++){p.fromBufferAttribute(a,i).applyMatrix4(o.matrixWorld);p.z=surface(p.x,p.y)+(p.z-base)+.10;p.applyMatrix4(inverse);a.setXYZ(i,p.x,p.y,p.z);}g.computeVertexNormals();o.geometry=g;});
 }
 export function createWorld(scene,renderer){
+ configureTerrain(renderer.ascentQuality);
+ configureGeology(renderer.ascentQuality);
  const terrain=terrainGeometry();colors(terrain,(x,y,z)=>{const n=noise(x*3,z*3)*.025,shade=.95+n;return new THREE.Color(shade,shade*.97,shade*.92);});landscapeCells(terrain,stoneMaterial('#fff8ed',4),scene,600).name='Valley terrain';
  const far=new THREE.PlaneGeometry(24000,24000,100,100);far.rotateX(-Math.PI/2);for(let i=0;i<far.attributes.position.count;i++){const x=far.attributes.position.getX(i),z=far.attributes.position.getZ(i);far.attributes.position.setY(i,ground(x,z)-12-220*(1-smooth(Math.max(Math.abs(x)/2600,Math.abs(z)/2000),.8,1.1)));}far.computeVertexNormals();colors(far,()=>new THREE.Color(.7,.69,.7));const farGround=mesh(far,cream,scene);farGround.castShadow=false;
  for(let i=0;i<6;i++)landscapeCells(erodedRidge(i),i%3===0?rose:cream,scene).name=`Eroded ridge ${i}`;

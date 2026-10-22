@@ -19,6 +19,7 @@
     "reflection": 768,
     "sky": 4096,
     "trees": 240,
+    "terrainTriangles": 326000,
     "contextLost": false,
     "errors": []
   },
@@ -42,6 +43,7 @@
     "reflection": 384,
     "sky": 2048,
     "trees": 240,
+    "terrainTriangles": 326000,
     "contextLost": false,
     "errors": []
   },
@@ -65,6 +67,7 @@
     "reflection": 1024,
     "sky": 4096,
     "trees": 240,
+    "terrainTriangles": 980000,
     "contextLost": false,
     "errors": []
   }
