@@ -142,6 +142,7 @@ async function boot() {
   if (tier === 'lite' || dbg.nocontact) pipe.ao.contactOn = false;
   // the 890M can't spare the half millisecond: medium and lite go without
   if (tier !== 'high' || dbg.noblur) pipe.taa.motionBlur = false;
+  if (dbg.taaalpha) pipe.taa.mat.uniforms.uAlphaMin.value = +dbg.taaalpha;
   // and the haze's three looks for shaded air, which barely show from the balloon's height
   if (tier !== 'high') U.uHazeLit.value = 0;
   if (tier === 'lite') { river.reflect = false; veg.grass.visible = false; veg.noGrass = true; }

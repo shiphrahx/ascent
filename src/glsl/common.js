@@ -16,7 +16,7 @@ uniform sampler2D uShadow0, uShadow1, uShadow2;
 uniform mat4 uShadowM0, uShadowM1, uShadowM2, uShadowM3;
 uniform vec4 uShadowK, uShadowWT;
 uniform vec2 uShadowSplit;
-uniform float uShadowHQ;
+uniform float uShadowHQ, uShadowBand;
 uniform vec3 uShadowEye;
 uniform sampler2D uTerrShadow, uTerrShadowOuter;
 uniform float uTerrBlend;
@@ -304,8 +304,9 @@ float sampleCascade(sampler2D map, mat4 m, vec3 P, vec3 N, float ndl, float texW
     float rw = floorW;
     int n = 8;
     bool lit = false;
-    if (uShadowHQ > 0.5) {
-      n = 16;
+    if (uShadowHQ > 0.5) n = 16;
+    // test hook: uShadowHQ between 0.5 and 0.9 keeps the 16 taps but skips the blocker search
+    if (uShadowHQ > 0.9) {
       float sw = max(floorW, searchW), bias = K * (texW + sw * tanT * 0.25);
       float sum = 0., cnt = 0.;
       for (int i = 0; i < 8; i++) {
@@ -333,7 +334,7 @@ float sampleCascade(sampler2D map, mat4 m, vec3 P, vec3 N, float ndl, float texW
 // turning the camera never moves a point from one slice to another
 float sliceShadow(vec3 P, vec3 N, float ndl, float d, float rot){
   float s1 = -1., s2 = -1.;
-  float k = uShadowSplit.y > 0. ? smoothstep(uShadowSplit.x * 0.85, uShadowSplit.x, d) : 0.;
+  float k = uShadowSplit.y > 0. ? smoothstep(uShadowSplit.x * (1. - uShadowBand) - 1e-3, uShadowSplit.x, d) : 0.;
   float fl = d * 0.002;
   if (k < 1.) s1 = sampleCascade(uShadow1, uShadowM1, P, N, ndl, uShadowWT.y, uShadowK.y, max(fl, uShadowWT.y), 2., rot, vec2(1, 0));
   if (k > 0. && d < uShadowSplit.y) s2 = sampleCascade(uShadow2, uShadowM2, P, N, ndl, uShadowWT.z, uShadowK.z, max(fl, uShadowWT.z), 2., rot, vec2(1, 0));
@@ -350,7 +351,7 @@ float cascadeShadow(vec3 P, vec3 N){
   // fade from the basket cascade into the slices over its outer edge, so their coarser shadows don't pop in
   vec3 c0 = (uShadowM0 * vec4(P, 1.)).xyz * 0.5 + 0.5;
   vec2 e0 = min(c0.xy, 1. - c0.xy);
-  float k = s0 >= 0. ? smoothstep(0.0, 0.12, min(e0.x, e0.y)) : 0.;
+  float k = s0 >= 0. ? smoothstep(0.0, 0.8 * uShadowBand + 1e-3, min(e0.x, e0.y)) : 0.;
   float s = s0;
   if (k < 1.) {
     float s1 = sliceShadow(P, N, ndl, d, rot);

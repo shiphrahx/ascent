@@ -31,7 +31,7 @@ precision highp float;
 varying vec2 vUv;
 uniform sampler2D tCur, tHist;
 uniform vec2 uCurRes, uOutRes, uJitter;
-uniform float uReset, uExposure;
+uniform float uReset, uExposure, uAlphaMin;
 ${REPROJ}
 
 float lum(vec3 c){ return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
@@ -95,7 +95,7 @@ void main(){
   // shadow noise still averages out while flying.
   vec2 vel = (vUv - puv) * uOutRes;
   float alpha = 0.04 + 0.1 * wmax + clamp(length(vel) * 0.004, 0., 0.04) + 0.12 * clamp(ma - 1., 0., 1.);
-  vec3 o = mix(fromYC(hist), cur, alpha);
+  vec3 o = mix(fromYC(hist), cur, max(alpha, uAlphaMin));
   gl_FragColor = vec4(itm(o), 1.);
 }
 `;
@@ -144,6 +144,8 @@ export class TAA {
       tCur: { value: null }, tHist: { value: null }, tDepth: { value: null },
       uCurRes: { value: new THREE.Vector2() }, uOutRes: { value: new THREE.Vector2() }, uJitter: { value: new THREE.Vector2() },
       uInvVP: { value: new THREE.Matrix4() }, uPrevVP: { value: new THREE.Matrix4() }, uReset: { value: 1 }, uExposure: { value: 1 },
+      // test hook: a floor on how much of this frame goes in (#taaalpha=0.5 all but drops the history)
+      uAlphaMin: { value: 0 },
       uMoverInv: { value: [new THREE.Matrix4(), new THREE.Matrix4()] }, uMoverPrev: { value: [new THREE.Matrix4(), new THREE.Matrix4()] },
       uMoverLo: { value: [new THREE.Vector3(1, 1, 1), new THREE.Vector3(1, 1, 1)] }, uMoverHi: { value: [new THREE.Vector3(-1, -1, -1), new THREE.Vector3(-1, -1, -1)] },
     });

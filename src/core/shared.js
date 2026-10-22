@@ -47,6 +47,8 @@ export const U = {
   uShadowSplit: { value: new THREE.Vector2(250, 900) },
   uShadowEye: { value: new THREE.Vector3() },
   uShadowHQ: { value: 1 },
+  // width of the hand-over between cascades, as a fraction of the nearer one (test hook u=uShadowBand:0)
+  uShadowBand: { value: 0.15 },
   uTerrShadow: { value: null },
   uTerrShadowOuter: { value: null },
   uTerrBlend: { value: 1 },
