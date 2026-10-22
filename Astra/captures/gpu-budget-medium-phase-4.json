@@ -1,0 +1,2930 @@
+[
+  {
+    "file": "Ascent.html",
+    "tier": "medium",
+    "supported": true,
+    "disjoint": false,
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "samples": [
+      {
+        "cpuMs": 32.099999994039536,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 20.72888
+      },
+      {
+        "cpuMs": 15,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.66467
+      },
+      {
+        "cpuMs": 11.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.30536
+      },
+      {
+        "cpuMs": 12.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.53594
+      },
+      {
+        "cpuMs": 7.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.672
+      },
+      {
+        "cpuMs": 12,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.60633
+      },
+      {
+        "cpuMs": 10.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.13412
+      },
+      {
+        "cpuMs": 10,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.34184
+      },
+      {
+        "cpuMs": 13.300000011920929,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 20.63779
+      },
+      {
+        "cpuMs": 32,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.64119
+      },
+      {
+        "cpuMs": 15.199999988079071,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.30092
+      },
+      {
+        "cpuMs": 9.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 12.6816
+      },
+      {
+        "cpuMs": 7.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.19245
+      },
+      {
+        "cpuMs": 13,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.14376
+      },
+      {
+        "cpuMs": 25.69999998807907,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 12.32043
+      },
+      {
+        "cpuMs": 20.099999994039536,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 19.40944
+      },
+      {
+        "cpuMs": 11.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.6092
+      },
+      {
+        "cpuMs": 9.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 14.6814
+      },
+      {
+        "cpuMs": 10.099999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.81068
+      },
+      {
+        "cpuMs": 7.5999999940395355,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.93216
+      },
+      {
+        "cpuMs": 6.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.1988
+      },
+      {
+        "cpuMs": 8.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.47728
+      },
+      {
+        "cpuMs": 11.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.80121
+      },
+      {
+        "cpuMs": 7.200000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.70249
+      },
+      {
+        "cpuMs": 42.099999994039536,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 15.25564
+      },
+      {
+        "cpuMs": 11.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 14.88367
+      },
+      {
+        "cpuMs": 8.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.24353
+      },
+      {
+        "cpuMs": 17.799999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 19.77904
+      },
+      {
+        "cpuMs": 12.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 13.75528
+      },
+      {
+        "cpuMs": 34.30000001192093,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 21.66282
+      },
+      {
+        "cpuMs": 16.099999994039536,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.41551
+      },
+      {
+        "cpuMs": 18.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 23.3253
+      },
+      {
+        "cpuMs": 11.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.35896
+      },
+      {
+        "cpuMs": 17.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.9549
+      },
+      {
+        "cpuMs": 10.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.59088
+      },
+      {
+        "cpuMs": 10.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.54936
+      },
+      {
+        "cpuMs": 16.100000023841858,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.701
+      },
+      {
+        "cpuMs": 17,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 11.74816
+      },
+      {
+        "cpuMs": 15.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 17.13332
+      },
+      {
+        "cpuMs": 12.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 16.24692
+      },
+      {
+        "cpuMs": 11.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.4797
+      },
+      {
+        "cpuMs": 20.100000023841858,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.57717
+      },
+      {
+        "cpuMs": 21.100000023841858,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 14.71075
+      },
+      {
+        "cpuMs": 22.200000017881393,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 21.36104
+      },
+      {
+        "cpuMs": 12.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.0904
+      },
+      {
+        "cpuMs": 11.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.62767
+      },
+      {
+        "cpuMs": 20.200000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 17.60046
+      },
+      {
+        "cpuMs": 12,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.42274
+      },
+      {
+        "cpuMs": 18.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 18.58287
+      },
+      {
+        "cpuMs": 11.800000011920929,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.01322
+      },
+      {
+        "cpuMs": 18.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 18.50886
+      },
+      {
+        "cpuMs": 9.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.99944
+      },
+      {
+        "cpuMs": 9.200000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.43247
+      },
+      {
+        "cpuMs": 16.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.48319
+      },
+      {
+        "cpuMs": 14.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.05436
+      },
+      {
+        "cpuMs": 22.80000001192093,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 23.0994
+      },
+      {
+        "cpuMs": 17.599999994039536,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 13.6702
+      },
+      {
+        "cpuMs": 18.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 17.45013
+      },
+      {
+        "cpuMs": 10.399999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.90532
+      },
+      {
+        "cpuMs": 13.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 13.15411
+      },
+      {
+        "cpuMs": 18.299999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.38843
+      },
+      {
+        "cpuMs": 12.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 12.66854
+      },
+      {
+        "cpuMs": 22.30000001192093,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 20.68257
+      },
+      {
+        "cpuMs": 10.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.53487
+      },
+      {
+        "cpuMs": 10.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 17.10668
+      },
+      {
+        "cpuMs": 18.19999998807907,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.31619
+      },
+      {
+        "cpuMs": 11.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.66904
+      },
+      {
+        "cpuMs": 10.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.62232
+      },
+      {
+        "cpuMs": 24.099999994039536,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 21.04463
+      },
+      {
+        "cpuMs": 20.69999998807907,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 19.39325
+      },
+      {
+        "cpuMs": 14.199999988079071,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.93111
+      },
+      {
+        "cpuMs": 10,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.58592
+      },
+      {
+        "cpuMs": 11.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.17908
+      },
+      {
+        "cpuMs": 16.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.9108
+      },
+      {
+        "cpuMs": 11.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.54628
+      },
+      {
+        "cpuMs": 9.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.73746
+      },
+      {
+        "cpuMs": 25.400000005960464,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 18.43133
+      },
+      {
+        "cpuMs": 10.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.82452
+      },
+      {
+        "cpuMs": 8.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.91272
+      },
+      {
+        "cpuMs": 13.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.27938
+      },
+      {
+        "cpuMs": 10.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.5934
+      },
+      {
+        "cpuMs": 9,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.28788
+      },
+      {
+        "cpuMs": 12.800000011920929,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.19553
+      },
+      {
+        "cpuMs": 25.5,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 13.73156
+      },
+      {
+        "cpuMs": 20,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 17.87658
+      },
+      {
+        "cpuMs": 9.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.8898
+      },
+      {
+        "cpuMs": 8.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 12.21133
+      },
+      {
+        "cpuMs": 15.200000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.32218
+      },
+      {
+        "cpuMs": 10.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.58488
+      },
+      {
+        "cpuMs": 12.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.93492
+      },
+      {
+        "cpuMs": 15,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.99733
+      },
+      {
+        "cpuMs": 18.400000005960464,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 19.65177
+      },
+      {
+        "cpuMs": 13.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.50801
+      },
+      {
+        "cpuMs": 9.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.84024
+      },
+      {
+        "cpuMs": 8.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.16094
+      },
+      {
+        "cpuMs": 17.399999976158142,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.38224
+      },
+      {
+        "cpuMs": 11.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.63488
+      },
+      {
+        "cpuMs": 9,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.78662
+      },
+      {
+        "cpuMs": 33.19999998807907,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 19.0696
+      },
+      {
+        "cpuMs": 17.200000017881393,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 13.50596
+      },
+      {
+        "cpuMs": 13.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.02429
+      },
+      {
+        "cpuMs": 9.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.56768
+      },
+      {
+        "cpuMs": 7,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.1802
+      },
+      {
+        "cpuMs": 6.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.30476
+      },
+      {
+        "cpuMs": 13.200000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.80698
+      },
+      {
+        "cpuMs": 11.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.08066
+      },
+      {
+        "cpuMs": 11.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.04712
+      },
+      {
+        "cpuMs": 34,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 26.07666
+      },
+      {
+        "cpuMs": 10.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.82912
+      },
+      {
+        "cpuMs": 9.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.173
+      },
+      {
+        "cpuMs": 16.19999998807907,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.61589
+      },
+      {
+        "cpuMs": 14.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.15416
+      },
+      {
+        "cpuMs": 26.599999994039536,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 20.51391
+      },
+      {
+        "cpuMs": 17.200000017881393,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 14.72985
+      },
+      {
+        "cpuMs": 18.099999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.10871
+      },
+      {
+        "cpuMs": 11.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.62661
+      },
+      {
+        "cpuMs": 17.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.8821
+      },
+      {
+        "cpuMs": 11.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.99608
+      },
+      {
+        "cpuMs": 9.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.68182
+      },
+      {
+        "cpuMs": 17.19999998807907,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.01411
+      },
+      {
+        "cpuMs": 12.899999976158142,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 13.55656
+      },
+      {
+        "cpuMs": 14.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.90774
+      },
+      {
+        "cpuMs": 11,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.50836
+      },
+      {
+        "cpuMs": 7.899999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.85208
+      },
+      {
+        "cpuMs": 12.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.75061
+      },
+      {
+        "cpuMs": 10.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.9102
+      },
+      {
+        "cpuMs": 28,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 19.07528
+      },
+      {
+        "cpuMs": 16.900000005960464,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.09009
+      },
+      {
+        "cpuMs": 8.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.34473
+      },
+      {
+        "cpuMs": 13.299999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 21.24211
+      },
+      {
+        "cpuMs": 7.399999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.30212
+      },
+      {
+        "cpuMs": 9.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.2902
+      },
+      {
+        "cpuMs": 15,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.47376
+      },
+      {
+        "cpuMs": 9.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.66292
+      },
+      {
+        "cpuMs": 10,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.09404
+      },
+      {
+        "cpuMs": 32.29999998211861,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 16.13416
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.00556
+      },
+      {
+        "cpuMs": 9.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.50244
+      },
+      {
+        "cpuMs": 15.799999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.65443
+      },
+      {
+        "cpuMs": 12.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.23264
+      },
+      {
+        "cpuMs": 8.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.32152
+      },
+      {
+        "cpuMs": 26.099999994039536,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 20.24062
+      },
+      {
+        "cpuMs": 15.900000005960464,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.99976
+      },
+      {
+        "cpuMs": 15.800000011920929,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.42211
+      },
+      {
+        "cpuMs": 9.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.36704
+      },
+      {
+        "cpuMs": 7.899999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.83928
+      },
+      {
+        "cpuMs": 10.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.81335
+      },
+      {
+        "cpuMs": 10.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.92228
+      },
+      {
+        "cpuMs": 8.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.20038
+      },
+      {
+        "cpuMs": 6,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.4108
+      },
+      {
+        "cpuMs": 11.699999988079071,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.10287
+      },
+      {
+        "cpuMs": 37.599999994039536,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 9.83321
+      },
+      {
+        "cpuMs": 16.399999976158142,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.75376
+      },
+      {
+        "cpuMs": 10.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.8432
+      },
+      {
+        "cpuMs": 8.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.47444
+      },
+      {
+        "cpuMs": 18.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.32254
+      },
+      {
+        "cpuMs": 15.5,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 14.93658
+      },
+      {
+        "cpuMs": 23.200000017881393,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 21.09933
+      },
+      {
+        "cpuMs": 13.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.58493
+      },
+      {
+        "cpuMs": 19.399999976158142,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 18.65624
+      },
+      {
+        "cpuMs": 14.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 13.09684
+      },
+      {
+        "cpuMs": 18.799999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 17.2384
+      },
+      {
+        "cpuMs": 11.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 16.79784
+      },
+      {
+        "cpuMs": 28.700000017881393,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 20.9331
+      },
+      {
+        "cpuMs": 12.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.05444
+      },
+      {
+        "cpuMs": 19.30000001192093,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.69864
+      },
+      {
+        "cpuMs": 14.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 12.85792
+      },
+      {
+        "cpuMs": 21.099999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 18.84498
+      },
+      {
+        "cpuMs": 18.299999982118607,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 15.55553
+      },
+      {
+        "cpuMs": 22.900000005960464,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 23.92363
+      },
+      {
+        "cpuMs": 13.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.80396
+      },
+      {
+        "cpuMs": 21.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 18.85818
+      },
+      {
+        "cpuMs": 13.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 16.27595
+      },
+      {
+        "cpuMs": 20.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.77048
+      },
+      {
+        "cpuMs": 13.200000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.05305
+      },
+      {
+        "cpuMs": 22.69999998807907,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 22.59297
+      },
+      {
+        "cpuMs": 13.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.1924
+      },
+      {
+        "cpuMs": 18.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 19.73168
+      },
+      {
+        "cpuMs": 13,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.34626
+      },
+      {
+        "cpuMs": 17.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.98507
+      },
+      {
+        "cpuMs": 14.400000005960464,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 13.81439
+      },
+      {
+        "cpuMs": 17.599999994039536,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 18.24452
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.898
+      },
+      {
+        "cpuMs": 9,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.824
+      },
+      {
+        "cpuMs": 14.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.91201
+      },
+      {
+        "cpuMs": 9.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.98004
+      },
+      {
+        "cpuMs": 9.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.50644
+      },
+      {
+        "cpuMs": 14.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.58334
+      },
+      {
+        "cpuMs": 10.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.78808
+      },
+      {
+        "cpuMs": 28.69999998807907,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 19.47775
+      },
+      {
+        "cpuMs": 11.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.85376
+      },
+      {
+        "cpuMs": 10,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.8707
+      },
+      {
+        "cpuMs": 13.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.53045
+      },
+      {
+        "cpuMs": 10.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.00139
+      },
+      {
+        "cpuMs": 7.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.43087
+      },
+      {
+        "cpuMs": 13.799999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.28802
+      },
+      {
+        "cpuMs": 18.69999998807907,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 17.60276
+      },
+      {
+        "cpuMs": 23.5,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 17.06808
+      },
+      {
+        "cpuMs": 11.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.606
+      },
+      {
+        "cpuMs": 7.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.99828
+      },
+      {
+        "cpuMs": 12,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.20414
+      },
+      {
+        "cpuMs": 8.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.76852
+      },
+      {
+        "cpuMs": 8.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.4428
+      },
+      {
+        "cpuMs": 25.80000001192093,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 16.81888
+      },
+      {
+        "cpuMs": 8.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 16.85973
+      },
+      {
+        "cpuMs": 7.9000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.27924
+      },
+      {
+        "cpuMs": 13.399999976158142,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.20395
+      },
+      {
+        "cpuMs": 8.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.20052
+      },
+      {
+        "cpuMs": 8,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.41952
+      },
+      {
+        "cpuMs": 12.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.98064
+      },
+      {
+        "cpuMs": 8.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.38468
+      },
+      {
+        "cpuMs": 39.099999994039536,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 15.96505
+      },
+      {
+        "cpuMs": 16.099999994039536,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 14.70498
+      },
+      {
+        "cpuMs": 8.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.35316
+      },
+      {
+        "cpuMs": 12.199999988079071,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.55355
+      },
+      {
+        "cpuMs": 8.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.44696
+      },
+      {
+        "cpuMs": 8,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.67952
+      },
+      {
+        "cpuMs": 25.19999998807907,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 17.08659
+      },
+      {
+        "cpuMs": 9.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.54804
+      },
+      {
+        "cpuMs": 7.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.60088
+      },
+      {
+        "cpuMs": 14.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.23588
+      },
+      {
+        "cpuMs": 9.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.9182
+      },
+      {
+        "cpuMs": 9.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.48915
+      },
+      {
+        "cpuMs": 12.699999988079071,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.90273
+      },
+      {
+        "cpuMs": 10.600000023841858,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.72464
+      },
+      {
+        "cpuMs": 28.69999998807907,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 16.27113
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.07812
+      },
+      {
+        "cpuMs": 8.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.25836
+      },
+      {
+        "cpuMs": 24.299999982118607,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 19.49509
+      },
+      {
+        "cpuMs": 9.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.09126
+      },
+      {
+        "cpuMs": 6.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 14.3574
+      },
+      {
+        "cpuMs": 7.899999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.6082
+      },
+      {
+        "cpuMs": 33.19999998807907,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 14.89802
+      },
+      {
+        "cpuMs": 9,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.35536
+      },
+      {
+        "cpuMs": 8.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.07904
+      },
+      {
+        "cpuMs": 6,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.56016
+      },
+      {
+        "cpuMs": 11.799999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.68887
+      },
+      {
+        "cpuMs": 7.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.17048
+      },
+      {
+        "cpuMs": 8.899999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.8776
+      },
+      {
+        "cpuMs": 16.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.79973
+      }
+    ],
+    "summary": {
+      "gpuMs": {
+        "mean": 13.344531041666672,
+        "median": 12.666605,
+        "p95": 20.684885499999996,
+        "p99": 23.237198999999997
+      },
+      "cpuMs": {
+        "mean": 14.405416665226221,
+        "median": 12.549999997019768,
+        "p95": 28.69999998807907,
+        "p99": 36.31300000101323
+      }
+    },
+    "errors": []
+  },
+  {
+    "file": "captures/fidelity-phase-3-3.html",
+    "tier": "medium",
+    "supported": true,
+    "disjoint": false,
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "samples": [
+      {
+        "cpuMs": 12.399999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.13836
+      },
+      {
+        "cpuMs": 17.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.70402
+      },
+      {
+        "cpuMs": 13.599999994039536,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 10.63924
+      },
+      {
+        "cpuMs": 19.30000001192093,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.03483
+      },
+      {
+        "cpuMs": 13.100000023841858,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 15.37656
+      },
+      {
+        "cpuMs": 16.69999998807907,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 16.32839
+      },
+      {
+        "cpuMs": 11.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.04308
+      },
+      {
+        "cpuMs": 7,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.96944
+      },
+      {
+        "cpuMs": 17.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.04395
+      },
+      {
+        "cpuMs": 11.900000005960464,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 10.058
+      },
+      {
+        "cpuMs": 8.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.07902
+      },
+      {
+        "cpuMs": 9.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.07458
+      },
+      {
+        "cpuMs": 8.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.57996
+      },
+      {
+        "cpuMs": 10.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.88056
+      },
+      {
+        "cpuMs": 19.100000023841858,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.35338
+      },
+      {
+        "cpuMs": 10.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.18272
+      },
+      {
+        "cpuMs": 11.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.59511
+      },
+      {
+        "cpuMs": 16.400000005960464,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 14.72178
+      },
+      {
+        "cpuMs": 11.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.99336
+      },
+      {
+        "cpuMs": 8.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.65462
+      },
+      {
+        "cpuMs": 14.800000011920929,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.91376
+      },
+      {
+        "cpuMs": 9,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 11.32344
+      },
+      {
+        "cpuMs": 12.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.22002
+      },
+      {
+        "cpuMs": 15.399999976158142,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.04408
+      },
+      {
+        "cpuMs": 8.300000011920929,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 10.09796
+      },
+      {
+        "cpuMs": 10.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.0922
+      },
+      {
+        "cpuMs": 19.099999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.9078
+      },
+      {
+        "cpuMs": 12.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.86784
+      },
+      {
+        "cpuMs": 8.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.30372
+      },
+      {
+        "cpuMs": 11.100000023841858,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.24755
+      },
+      {
+        "cpuMs": 8.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 15.12308
+      },
+      {
+        "cpuMs": 7.0999999940395355,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.41692
+      },
+      {
+        "cpuMs": 6.4000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.50522
+      },
+      {
+        "cpuMs": 15.800000011920929,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 13.95632
+      },
+      {
+        "cpuMs": 9.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.08725
+      },
+      {
+        "cpuMs": 8.200000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.1164
+      },
+      {
+        "cpuMs": 15.800000011920929,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.41782
+      },
+      {
+        "cpuMs": 9.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.97216
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 12.01268
+      },
+      {
+        "cpuMs": 15.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.84291
+      },
+      {
+        "cpuMs": 7.699999988079071,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.36761
+      },
+      {
+        "cpuMs": 6.9000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.76692
+      },
+      {
+        "cpuMs": 13.099999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.74911
+      },
+      {
+        "cpuMs": 8.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.19412
+      },
+      {
+        "cpuMs": 7.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.80806
+      },
+      {
+        "cpuMs": 12.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.85434
+      },
+      {
+        "cpuMs": 8.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.4156
+      },
+      {
+        "cpuMs": 7.0999999940395355,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.71127
+      },
+      {
+        "cpuMs": 13.900000005960464,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 13.75537
+      },
+      {
+        "cpuMs": 8.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.18692
+      },
+      {
+        "cpuMs": 8,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.46128
+      },
+      {
+        "cpuMs": 16.600000023841858,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.03545
+      },
+      {
+        "cpuMs": 11.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.09709
+      },
+      {
+        "cpuMs": 8,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.61161
+      },
+      {
+        "cpuMs": 17.400000005960464,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 17.29592
+      },
+      {
+        "cpuMs": 7.5999999940395355,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.14141
+      },
+      {
+        "cpuMs": 7.0999999940395355,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.80599
+      },
+      {
+        "cpuMs": 16.799999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.25608
+      },
+      {
+        "cpuMs": 12.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.01309
+      },
+      {
+        "cpuMs": 18.19999998807907,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.90997
+      },
+      {
+        "cpuMs": 9.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.7124
+      },
+      {
+        "cpuMs": 10,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.78893
+      },
+      {
+        "cpuMs": 18.799999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 17.15073
+      },
+      {
+        "cpuMs": 12.900000005960464,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 9.0156
+      },
+      {
+        "cpuMs": 18.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.89974
+      },
+      {
+        "cpuMs": 10.399999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.118
+      },
+      {
+        "cpuMs": 9.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.1414
+      },
+      {
+        "cpuMs": 16.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.69624
+      },
+      {
+        "cpuMs": 12.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.4944
+      },
+      {
+        "cpuMs": 16.5,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 15.34484
+      },
+      {
+        "cpuMs": 14.5,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.22123
+      },
+      {
+        "cpuMs": 18.19999998807907,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.43181
+      },
+      {
+        "cpuMs": 11.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.14253
+      },
+      {
+        "cpuMs": 9.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.94344
+      },
+      {
+        "cpuMs": 19.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.37109
+      },
+      {
+        "cpuMs": 13.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.86018
+      },
+      {
+        "cpuMs": 21.80000001192093,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.07799
+      },
+      {
+        "cpuMs": 14.700000017881393,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 11.55867
+      },
+      {
+        "cpuMs": 20.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 18.7234
+      },
+      {
+        "cpuMs": 12.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 13.6107
+      },
+      {
+        "cpuMs": 19.899999976158142,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.98921
+      },
+      {
+        "cpuMs": 11.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 15.74378
+      },
+      {
+        "cpuMs": 21.700000017881393,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 22.40895
+      },
+      {
+        "cpuMs": 18.099999994039536,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 12.59924
+      },
+      {
+        "cpuMs": 21.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 19.08812
+      },
+      {
+        "cpuMs": 14.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 12.40785
+      },
+      {
+        "cpuMs": 21.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 19.69192
+      },
+      {
+        "cpuMs": 13.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 14.60292
+      },
+      {
+        "cpuMs": 22.19999998807907,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 19.99929
+      },
+      {
+        "cpuMs": 13.400000005960464,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 18.1303
+      },
+      {
+        "cpuMs": 16.69999998807907,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.75233
+      },
+      {
+        "cpuMs": 11.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.82434
+      },
+      {
+        "cpuMs": 18.299999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.17898
+      },
+      {
+        "cpuMs": 11.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 12.38184
+      },
+      {
+        "cpuMs": 18.200000017881393,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 18.42368
+      },
+      {
+        "cpuMs": 10.199999988079071,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 11.54352
+      },
+      {
+        "cpuMs": 10,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.53304
+      },
+      {
+        "cpuMs": 16.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.35876
+      },
+      {
+        "cpuMs": 9.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.85124
+      },
+      {
+        "cpuMs": 10.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.46951
+      },
+      {
+        "cpuMs": 18.299999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.44128
+      },
+      {
+        "cpuMs": 12,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.98264
+      },
+      {
+        "cpuMs": 16.69999998807907,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.72675
+      },
+      {
+        "cpuMs": 14.599999994039536,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 14.74586
+      },
+      {
+        "cpuMs": 15.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.05701
+      },
+      {
+        "cpuMs": 11,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.90196
+      },
+      {
+        "cpuMs": 9,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.59412
+      },
+      {
+        "cpuMs": 17.200000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.36464
+      },
+      {
+        "cpuMs": 10.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.68387
+      },
+      {
+        "cpuMs": 11.100000023841858,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 10.88451
+      },
+      {
+        "cpuMs": 17.30000001192093,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 16.92524
+      },
+      {
+        "cpuMs": 11.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.12144
+      },
+      {
+        "cpuMs": 8.600000023841858,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.20431
+      },
+      {
+        "cpuMs": 15.099999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.0514
+      },
+      {
+        "cpuMs": 10.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.93784
+      },
+      {
+        "cpuMs": 8.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.59612
+      },
+      {
+        "cpuMs": 13.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.85801
+      },
+      {
+        "cpuMs": 12.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.53408
+      },
+      {
+        "cpuMs": 7.699999988079071,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 11.76882
+      },
+      {
+        "cpuMs": 11.199999988079071,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.26422
+      },
+      {
+        "cpuMs": 10.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.54808
+      },
+      {
+        "cpuMs": 10.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.76056
+      },
+      {
+        "cpuMs": 12.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.47411
+      },
+      {
+        "cpuMs": 8.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.94112
+      },
+      {
+        "cpuMs": 9.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.11965
+      },
+      {
+        "cpuMs": 11.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.67071
+      },
+      {
+        "cpuMs": 10.699999988079071,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 9.64036
+      },
+      {
+        "cpuMs": 9.800000011920929,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 10.22244
+      },
+      {
+        "cpuMs": 11.799999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.23737
+      },
+      {
+        "cpuMs": 11.899999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.6234
+      },
+      {
+        "cpuMs": 8.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.135
+      },
+      {
+        "cpuMs": 13.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.909
+      },
+      {
+        "cpuMs": 9.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.84032
+      },
+      {
+        "cpuMs": 12.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.9348
+      },
+      {
+        "cpuMs": 13.699999988079071,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.81711
+      },
+      {
+        "cpuMs": 10.5,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 14.61448
+      },
+      {
+        "cpuMs": 7.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.27916
+      },
+      {
+        "cpuMs": 15.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.78623
+      },
+      {
+        "cpuMs": 11.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.93263
+      },
+      {
+        "cpuMs": 10,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.83064
+      },
+      {
+        "cpuMs": 14.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.00095
+      },
+      {
+        "cpuMs": 9.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.42196
+      },
+      {
+        "cpuMs": 7.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.36258
+      },
+      {
+        "cpuMs": 14.900000005960464,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 13.14928
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 11.21908
+      },
+      {
+        "cpuMs": 7.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.70964
+      },
+      {
+        "cpuMs": 13.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.59987
+      },
+      {
+        "cpuMs": 8.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.75756
+      },
+      {
+        "cpuMs": 10.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.68723
+      },
+      {
+        "cpuMs": 17,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.22406
+      },
+      {
+        "cpuMs": 8.599999994039536,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 11.84855
+      },
+      {
+        "cpuMs": 7.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.83219
+      },
+      {
+        "cpuMs": 13.300000011920929,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.01299
+      },
+      {
+        "cpuMs": 9.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.72356
+      },
+      {
+        "cpuMs": 8.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.71064
+      },
+      {
+        "cpuMs": 14.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.02337
+      },
+      {
+        "cpuMs": 10.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.6938
+      },
+      {
+        "cpuMs": 11.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.38183
+      },
+      {
+        "cpuMs": 14,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 14.79067
+      },
+      {
+        "cpuMs": 9.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.01228
+      },
+      {
+        "cpuMs": 7.200000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.25384
+      },
+      {
+        "cpuMs": 14.699999988079071,
+        "draws": 1223,
+        "triangles": 4852595,
+        "gpuMs": 15.96033
+      },
+      {
+        "cpuMs": 9.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.79804
+      },
+      {
+        "cpuMs": 6.9000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.17732
+      },
+      {
+        "cpuMs": 14.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.57308
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 10.99952
+      },
+      {
+        "cpuMs": 7.300000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.76025
+      },
+      {
+        "cpuMs": 13.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.71565
+      },
+      {
+        "cpuMs": 8.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.44636
+      },
+      {
+        "cpuMs": 7.4000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.14328
+      },
+      {
+        "cpuMs": 14,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.99244
+      },
+      {
+        "cpuMs": 8.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.63048
+      },
+      {
+        "cpuMs": 8.399999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.09396
+      },
+      {
+        "cpuMs": 15.399999976158142,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 15.85532
+      },
+      {
+        "cpuMs": 12.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 14.74416
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.07912
+      },
+      {
+        "cpuMs": 14.200000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.66754
+      },
+      {
+        "cpuMs": 8.099999994039536,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 11.51107
+      },
+      {
+        "cpuMs": 8.899999976158142,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.34067
+      },
+      {
+        "cpuMs": 14.400000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.15749
+      },
+      {
+        "cpuMs": 10.399999976158142,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 10.71384
+      },
+      {
+        "cpuMs": 8.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.733
+      },
+      {
+        "cpuMs": 14.099999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.95532
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 8.9802
+      },
+      {
+        "cpuMs": 9,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.6774
+      },
+      {
+        "cpuMs": 12.599999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 16.26547
+      },
+      {
+        "cpuMs": 10,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.26072
+      },
+      {
+        "cpuMs": 8.400000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.2104
+      },
+      {
+        "cpuMs": 13.900000005960464,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 15.74264
+      },
+      {
+        "cpuMs": 8.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.47392
+      },
+      {
+        "cpuMs": 10.200000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.48892
+      },
+      {
+        "cpuMs": 11.200000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.68351
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.98588
+      },
+      {
+        "cpuMs": 8.5,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 10.36266
+      },
+      {
+        "cpuMs": 14.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.17231
+      },
+      {
+        "cpuMs": 8.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.87112
+      },
+      {
+        "cpuMs": 8.600000023841858,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 10.92872
+      },
+      {
+        "cpuMs": 13.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.96973
+      },
+      {
+        "cpuMs": 9.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.81636
+      },
+      {
+        "cpuMs": 7.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.45984
+      },
+      {
+        "cpuMs": 13.200000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.09497
+      },
+      {
+        "cpuMs": 8.800000011920929,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.83344
+      },
+      {
+        "cpuMs": 6.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.11397
+      },
+      {
+        "cpuMs": 11.700000017881393,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.8744
+      },
+      {
+        "cpuMs": 8.900000005960464,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 14.50828
+      },
+      {
+        "cpuMs": 8.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.07888
+      },
+      {
+        "cpuMs": 12.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.45601
+      },
+      {
+        "cpuMs": 6.4000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 15.05945
+      },
+      {
+        "cpuMs": 7.9000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.56527
+      },
+      {
+        "cpuMs": 13,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 12.67102
+      },
+      {
+        "cpuMs": 8,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 11.442
+      },
+      {
+        "cpuMs": 7.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.68826
+      },
+      {
+        "cpuMs": 14.900000005960464,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 14.02838
+      },
+      {
+        "cpuMs": 7.4000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.10324
+      },
+      {
+        "cpuMs": 6.5999999940395355,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.1253
+      },
+      {
+        "cpuMs": 12.299999982118607,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.51927
+      },
+      {
+        "cpuMs": 8.199999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.91819
+      },
+      {
+        "cpuMs": 8.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.18984
+      },
+      {
+        "cpuMs": 13.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.59691
+      },
+      {
+        "cpuMs": 7.600000023841858,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.7942
+      },
+      {
+        "cpuMs": 8.599999994039536,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 11.74095
+      },
+      {
+        "cpuMs": 14,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.00674
+      },
+      {
+        "cpuMs": 8.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.18044
+      },
+      {
+        "cpuMs": 7.699999988079071,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.92998
+      },
+      {
+        "cpuMs": 13,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.32562
+      },
+      {
+        "cpuMs": 7.9000000059604645,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 12.42386
+      },
+      {
+        "cpuMs": 9.5,
+        "draws": 941,
+        "triangles": 3378129,
+        "gpuMs": 11.81691
+      },
+      {
+        "cpuMs": 15.5,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 13.15589
+      },
+      {
+        "cpuMs": 11,
+        "draws": 846,
+        "triangles": 2877665,
+        "gpuMs": 10.64702
+      },
+      {
+        "cpuMs": 8.099999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 11.38233
+      },
+      {
+        "cpuMs": 15.099999994039536,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.04526
+      },
+      {
+        "cpuMs": 10.599999994039536,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.16675
+      },
+      {
+        "cpuMs": 11.900000005960464,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 9.92818
+      },
+      {
+        "cpuMs": 13.900000005960464,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 15.03251
+      },
+      {
+        "cpuMs": 7.700000017881393,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.63724
+      },
+      {
+        "cpuMs": 8.5,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.14119
+      },
+      {
+        "cpuMs": 12.899999976158142,
+        "draws": 1128,
+        "triangles": 4352131,
+        "gpuMs": 15.76654
+      },
+      {
+        "cpuMs": 8.299999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.79804
+      },
+      {
+        "cpuMs": 7.799999982118607,
+        "draws": 685,
+        "triangles": 1916775,
+        "gpuMs": 10.2298
+      },
+      {
+        "cpuMs": 12.300000011920929,
+        "draws": 967,
+        "triangles": 3391241,
+        "gpuMs": 14.80217
+      }
+    ],
+    "summary": {
+      "gpuMs": {
+        "mean": 12.205139166666658,
+        "median": 11.31358,
+        "p95": 16.6719865,
+        "p99": 19.45643799999999
+      },
+      "cpuMs": {
+        "mean": 11.767083332687616,
+        "median": 11.099999994039536,
+        "p95": 18.70500001609325,
+        "p99": 21.661000008583066
+      }
+    },
+    "errors": []
+  }
+]

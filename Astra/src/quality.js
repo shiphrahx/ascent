@@ -1,9 +1,9 @@
 // Hardware names are a conservative hint, never a benchmark. Unknown or masked
 // adapters use medium; a URL override makes every tier reproducible in reviews.
 export const QUALITY_TIERS=Object.freeze({
- high:Object.freeze({name:'high',pixelBudget:8300000,maxDpr:2,samples:4,shadowSize:2048,reflectionSize:1024,reflectionHz:30,reflectionFrames:2,skyWidth:4096,cloudSteps:96}),
- medium:Object.freeze({name:'medium',pixelBudget:2800000,maxDpr:2,samples:4,shadowSize:2048,reflectionSize:768,reflectionHz:30,reflectionFrames:2,skyWidth:4096,cloudSteps:96}),
- lite:Object.freeze({name:'lite',pixelBudget:1300000,maxDpr:1,samples:2,shadowSize:1024,reflectionSize:384,reflectionHz:15,reflectionFrames:4,skyWidth:2048,cloudSteps:48})
+ high:Object.freeze({name:'high',pixelBudget:8300000,maxDpr:2,samples:4,shadowSize:2048,shadowNearSize:4096,reflectionSize:1024,reflectionHz:30,reflectionFrames:2,skyWidth:4096,cloudSteps:96}),
+ medium:Object.freeze({name:'medium',pixelBudget:2800000,maxDpr:2,samples:4,shadowSize:1024,shadowNearSize:2048,reflectionSize:768,reflectionHz:30,reflectionFrames:2,skyWidth:4096,cloudSteps:96}),
+ lite:Object.freeze({name:'lite',pixelBudget:1300000,maxDpr:1,samples:2,shadowSize:512,shadowNearSize:1024,reflectionSize:384,reflectionHz:15,reflectionFrames:4,skyWidth:2048,cloudSteps:48})
 });
 
 export function classifyGpu(name=''){

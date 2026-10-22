@@ -122,7 +122,8 @@ try{
    return counts;
   }finally{r.render=render;lights.forEach((light,i)=>light.shadow.updateMatrices=matrices[i]);a.pause(false);}
  });
- checks.boundedWorkOnSlowFrames=slowFrames.shadows[0]>=20&&slowFrames.shadows[1]<=8&&slowFrames.shadows[2]<=5&&slowFrames.reflections>0&&slowFrames.reflections<=13;
+ const highShadows=await page.evaluate(()=>__ascent.tier.name==='high');
+ checks.boundedWorkOnSlowFrames=slowFrames.shadows[0]>=20&&(highShadows?slowFrames.shadows.every(n=>n===slowFrames.shadows[0]):slowFrames.shadows[1]<=8&&slowFrames.shadows[2]<=5)&&slowFrames.reflections>0&&slowFrames.reflections<=13;
  await page.setViewportSize({width:1100,height:700});await page.waitForTimeout(400);
  checks.resize=await page.evaluate(()=>{const a=__ascent,t=a.atmo.scenePass.target,h=a.atmo.temporal.history,pr=a.renderer.getPixelRatio();return t.width===Math.floor(1100*pr)&&t.height===Math.floor(700*pr)&&h.width===t.width&&h.height===t.height&&Math.abs(a.camera.aspect-1100/700)<.001;});
  checks.capture=await page.evaluate(()=>__ascent.capture().startsWith('data:image/png;base64,'));

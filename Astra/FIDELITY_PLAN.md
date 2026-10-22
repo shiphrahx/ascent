@@ -276,3 +276,22 @@ File: `src/lighting.js`
 
 - Average pacing is 3.5% lower in this pair, p95 is unchanged and p99 improves. The run has no skipped application renders, but does not prove sustained 60 fps. The larger high field and all-material path remain behind the tier switch.
 - Medium scene flicker at locked exposure 0.7820: whole RMS 0.00155055, cliff RMS 0.00100619, effectively unchanged. Validation: analytical flat/ridge/elevated-receiver checks, all tier GPU checks, gameplay, graphics and temporal suites passed. Personally inspected all four matched pairs and the distant low-sun shadow toggle: nearby lighting is preserved; distant shadowing is subtle under the current haze. Cascade filtering and atmosphere are next.
+
+### Phase 4 - filtered and temporally blended cascades
+
+- Replaced the built-in PCFSoft path for sun shadows with native depth-comparison textures and fixed Poisson kernels. Hardware bilinear comparisons filter each tap. Sampling has no frame jitter or screen-space noise. Receiver-plane depth gradients correct the comparison depth across the kernel, suppressing striped self-shadowing on slopes. High near normal bias is 0.045 m; lower near bias remains 0.07 m, with 0.18/0.5 m for the other cascades.
+- High renders every cascade every frame, with 4096/2048/2048 maps and 12 taps. Medium uses 2048/1024/1024 maps with 8 near and 4 middle/far taps. Lite uses 1024/512/512 maps and 4 taps. Lower-tier distant resolution was reduced after the full-size prototype regressed pacing. Near detail remains at its previous resolution on those tiers.
+- Medium/lite retain the bounded staggered refresh schedule and blend previous/current depth maps over 0.10/0.22 seconds. GPU copies preserve the old map and its actual projection matrix; history is bypassed on cuts and major light/projection changes. Previous coordinates are evaluated only where history is needed, reusing terrain positions. A prototype carrying two extra coordinates per vertex was rejected for overhead.
+- All tier checks verify update counts, actual history interpolation and texel alignment. Across 40 frames, high refreshes each cascade 40 times; medium/lite refresh the near map 40 times and the others 1-5 times. Alignment error is below 2e-9 texels. High does not allocate history maps. Shader checks now reject driver warnings too; corrected early-return translation warnings and initialized comparison-sampler bindings before the first history copy.
+
+| Native medium flight, final shader | FPS | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|
+| Phase 3.3, measured first | 66.01 | 25.00 | 41.60 | 76/1981 |
+| Filtered cascades, measured second | 59.27 | 33.51 | 50.10 | 195/1778 |
+| Filtered cascades, reverse-order check | 63.27 | 33.40 | 66.16 | 188/1904 |
+| Phase 3.3, reverse-order check | 63.58 | 25.20 | 58.30 | 150/1908 |
+
+- Reversing order nearly equalizes average FPS, but the new filter still has a worse tail. The reverse baseline ended at dynamic quality 0.9; all runs retain the native 1440 x 900 framebuffer. Both orders are retained to expose variability instead of selecting the favourable pair. No observer callbacks skipped an application render.
+- Added `gpu-budget.mjs` for asynchronous elapsed-GPU queries around the scene/composer render at a fixed camera/hour/exposure (240 frames, no disjoint events). Mean GPU time is 12.21 ms before and 13.34 ms after; p95 is 16.67 versus 20.68 ms. Mean CPU submission time is 11.77 versus 14.41 ms and may include GPU back-pressure; these durations must not be added as independent frame stages. The filter has a measurable cost despite the tier reductions. **Sustained 60 fps remains unmet**, and Phase 8 must recover the remaining rendering/submission budget.
+- Final medium scene flicker at exposure 0.7802: whole RMS 0.00154405, cliff RMS 0.00099041 (about 0.4% and 1.6% below Phase 3.3). These are modest scene-level gains, not proof that all tree/shadow flicker is eliminated.
+- Validation: quality-selection units, all three cascade browser checks, gameplay, graphics and temporal suites passed without shader errors or warnings. Personally inspected all four matched views: filtered shadows preserve the scene and fine structures. The atmosphere still washes distant relief together and is next.
