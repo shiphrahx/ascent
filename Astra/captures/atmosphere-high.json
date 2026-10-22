@@ -1,0 +1,27 @@
+{
+  "tier": "high",
+  "noLegacyFog": true,
+  "stats": {
+    "size": 256,
+    "steps": 12,
+    "interval": 0.25,
+    "updates": 9
+  },
+  "cached": true,
+  "cutReset": true,
+  "clear": {
+    "min": 0.0263214111328125,
+    "max": 1,
+    "mean": 0.7691069629509002,
+    "finite": true
+  },
+  "storm": {
+    "min": 0.0007266998291015625,
+    "max": 1,
+    "mean": 0.17990436183754355,
+    "finite": true
+  },
+  "motionRms": 0.11361597119417445,
+  "imageRms": 0.047848198923882646,
+  "errors": []
+}

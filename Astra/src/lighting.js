@@ -3,6 +3,7 @@ import {THREE} from './core.js';
 import {applyTerrainLighting,bakeStaticTerrainLighting} from './terrain-lighting.js';
 import {applyTerrainShadows} from './terrain-shadows.js';
 import {createShadowFiltering} from './shadow-filter.js';
+import {applyCloudShadows} from './cloud-field.js';
 
 export function createSunShadows(scene,camera,renderer){
  const terrainPerFragment=renderer.ascentQuality.name==='high';
@@ -33,8 +34,8 @@ export function createSunShadows(scene,camera,renderer){
    const surface=material.onBeforeCompile,cacheKey=material.customProgramCacheKey.bind(material);
    const surfaceKey=cacheKey();
    csm.setupMaterial(material);const shadows=material.onBeforeCompile;
-   material.onBeforeCompile=function(shader,renderer){surface.call(this,shader,renderer);applyTerrainLighting(shader,terrainPerFragment);if(terrainPerFragment||material.userData.surfaceOcclusion)applyTerrainShadows(shader,terrainPerFragment?'vTerrainWorld':'vWorld');filtering.apply(shader,terrainPerFragment?'vTerrainWorld':material.userData.surfaceOcclusion?'vWorld':null);shadows.call(this,shader,renderer);};
-   material.customProgramCacheKey=()=>surfaceKey+'-terrain-light-'+terrainPerFragment+'-horizon-v1-filtered-csm3';
+   material.onBeforeCompile=function(shader,renderer){surface.call(this,shader,renderer);applyTerrainLighting(shader,terrainPerFragment);if(terrainPerFragment||material.userData.surfaceOcclusion)applyTerrainShadows(shader,terrainPerFragment?'vTerrainWorld':'vWorld');filtering.apply(shader,terrainPerFragment?'vTerrainWorld':material.userData.surfaceOcclusion?'vWorld':null);if(terrainPerFragment||material.userData.surfaceOcclusion)applyCloudShadows(shader,terrainPerFragment,terrainPerFragment?'vTerrainWorld':'vWorld');shadows.call(this,shader,renderer);};
+   material.customProgramCacheKey=()=>surfaceKey+'-terrain-light-'+terrainPerFragment+'-horizon-v1-filtered-csm3-cloud-v1';
   }
  });
  // WebGLShadowMap filters casters using the view camera's layers, not the
