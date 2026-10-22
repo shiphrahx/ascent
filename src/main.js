@@ -140,6 +140,7 @@ async function boot() {
   pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
   if (tier === 'lite' || dbg.noao) pipe.ao.aoOn = false;
   if (tier === 'lite' || dbg.nocontact) pipe.ao.contactOn = false;
+  if (dbg.noaowide) pipe.ao.wide = false;
   // the 890M can't spare the half millisecond: medium and lite go without
   if (tier !== 'high' || dbg.noblur) pipe.taa.motionBlur = false;
   if (dbg.taaalpha) pipe.taa.mat.uniforms.uAlphaMin.value = +dbg.taaalpha;
