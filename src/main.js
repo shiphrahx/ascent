@@ -113,7 +113,7 @@ async function boot() {
   const tshadow = new TerrainShadow(renderer, tier);
   G.terrAO = new TerrainAO(renderer, tier);
   const bounce = G.bounce = new Bounce(renderer, tier);
-  const shadows = new Shadows(renderer, tier);
+  const shadows = G.shadows = new Shadows(renderer, tier);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   hero.flight.wind = wind;
@@ -463,10 +463,11 @@ async function boot() {
     veg.update(camera);
     village.update(camera);
     landmarks.update(camera, lite);
-    // lite mode refreshes the shadow maps every third frame
+    // lite mode refreshes one shadow map a frame, in turn: all of them every third frame made every
+    // third frame slow, and the shadows stepped under the moving sun
     terrain.setShadowCenter(shadows.cascades[1].center, shadows.cascades[1].half, U.uKeyDir.value);
     prof.begin('shadows');
-    if (!sHold && ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3)) { shadows.render(scene); if (G.tier === 'lite') G.tag('shadows'); }
+    if (!sHold && !dbg.noshadow) shadows.render(scene, G.tier === 'lite' && window.__dbg.frames >= 3 ? window.__dbg.frames % shadows.cascades.length : -1);
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
