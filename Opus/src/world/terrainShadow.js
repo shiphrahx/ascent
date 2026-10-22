@@ -6,7 +6,7 @@
 // after n passes every texel has seen every heightmap texel along 2^n of them. The old single march
 // grew its step by 10% a step, skipped thin ridges and jittered as the sun moved.
 import * as THREE from 'three';
-import { U, WORLD } from '../core/shared.js';
+import { U, G, WORLD } from '../core/shared.js';
 import { fsMaterial, renderFS, makeRT } from '../core/fsq.js';
 import { DECL, NOISE, TERRAIN } from '../glsl/common.js';
 
@@ -60,6 +60,7 @@ export class TerrainShadow {
     this.renderer = renderer;
     this.tier = tier;
     const C = WORLD.core, O = WORLD.outer, lite = tier === 'lite';
+    this.L = { value: new THREE.Vector3(0, 1, 0) };
     const f32 = { format: THREE.RGFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter };
     const f16 = { format: THREE.RGBAFormat, type: THREE.HalfFloatType };
     // core at the heightmap's own 2.5 m on high (5 m below: 2.5 m cost the 890M 1.8 ms), outer at 160 m
@@ -68,7 +69,8 @@ export class TerrainShadow {
       const step = b.sizeX / w;
       // enough doublings to reach 10 km in the core and 40 km outside it
       const n = Math.ceil(Math.log2((out ? 40000 : 10000) / step));
-      const u = Object.assign({}, U, { uBounds: { value: new THREE.Vector4(b.minX, b.minZ, b.sizeX, b.sizeZ) }, uRes: { value: new THREE.Vector2(w, h) } });
+      // the light is held for the length of a rebuild, which on slow tiers spans several frames
+      const u = Object.assign({}, U, { uKeyDir: this.L, uBounds: { value: new THREE.Vector4(b.minX, b.minZ, b.sizeX, b.sizeZ) }, uRes: { value: new THREE.Vector2(w, h) } });
       return {
         w, h, step, n,
         seed: fsMaterial(SEED, Object.assign({}, u, { uT0: { value: t0 } })),
@@ -90,37 +92,46 @@ export class TerrainShadow {
     U.uTerrShadow.value = this.core.out[this.core.cur].texture;
     U.uTerrShadowOuter.value = this.outer.out[this.outer.cur].texture;
   }
-  build(m) {
-    const r = this.renderer;
-    m.cur = 1 - m.cur;
-    renderFS(r, m.seed, m.pp[0]);
-    let src = 0;
+  // one map's rebuild as a list of passes, so it can be spread over frames
+  steps(m) {
+    const r = this.renderer, out = [];
+    out.push(() => { m.cur = 1 - m.cur; renderFS(r, m.seed, m.pp[0]); m.src = 0; });
     const u = m.pass.uniforms;
-    for (let k = 0; k < m.n; k++) {
-      u.tPrev.value = m.pp[src].texture;
+    for (let k = 0; k < m.n; k++) out.push(() => {
+      u.tPrev.value = m.pp[m.src].texture;
       // the outer map doesn't read itself (a bound target is a feedback loop even when unused)
       u.tOuter.value = m === this.outer ? this.core.out[this.core.cur].texture : this.outer.out[this.outer.cur].texture;
       u.tOld.value = m.out[1 - m.cur].texture;
       u.uLast.value = k === m.n - 1 ? 1 : 0;
       u.uS.value = m.step * (1 << k);
-      renderFS(r, m.pass, k === m.n - 1 ? m.out[m.cur] : m.pp[1 - src]);
-      src = 1 - src;
-    }
+      renderFS(r, m.pass, k === m.n - 1 ? m.out[m.cur] : m.pp[1 - m.src]);
+      m.src = 1 - m.src;
+    });
+    return out;
   }
+  // Slow tiers rebuild every few frames. The whole rebuild used to land on one of them, which made
+  // every third frame on the 890M miss its refresh; now each frame runs an even share of the passes,
+  // and the finished map is shown (and blended toward) once the last pass is done.
   update(force) {
-    // blend toward the newest map over the frames until the next rebuild, so a slow tier's shadows
-    // slide instead of jumping
+    // blend toward the newest map over the frames until the next one is ready, so a slow tier's
+    // shadows slide instead of jumping
     this.age++;
     U.uTerrBlend.value = Math.min(1, this.age / this.every);
-    if (!force && this.age < this.every) return;
-    // only rebuild when the light has moved a little
-    const L = U.uKeyDir.value;
-    if (!force && L.distanceToSquared(this.last) < 1e-8) return;
-    this.last.copy(L);
-    this.age = 0;
-    U.uTerrBlend.value = this.every > 1 && !force ? 0 : 1;
-    this.build(this.outer);
-    this.build(this.core);
-    this.publish();
+    if (!this.queue || !this.queue.length) {
+      // only rebuild when the light has moved a little
+      const L = U.uKeyDir.value;
+      if (!force && L.distanceToSquared(this.last) < 1e-8) return;
+      this.last.copy(L);
+      this.L.value.copy(L);
+      this.queue = [...this.steps(this.outer), ...this.steps(this.core)];
+      this.per = force ? this.queue.length : Math.ceil(this.queue.length / this.every);
+    }
+    G.tag('terrShadow');
+    for (let i = 0; i < this.per && this.queue.length; i++) this.queue.shift()();
+    if (!this.queue.length) {
+      this.publish();
+      this.age = 0;
+      U.uTerrBlend.value = this.every > 1 && !force ? 0 : 1;
+    }
   }
 }

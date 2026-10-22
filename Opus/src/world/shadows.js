@@ -53,7 +53,6 @@ export class Shadows {
     this._up = new THREE.Vector3();
     this._ax = new THREE.Vector3();
     this._ay = new THREE.Vector3();
-    this.frame = 0;
   }
 
   // Each view slice is covered by the bounding sphere of that slice of the camera frustum. Its radius
@@ -82,7 +81,8 @@ export class Shadows {
     U.uShadowEye.value.copy(camera.position);
   }
 
-  render(scene) {
+  // only: refresh just that cascade (lite spreads them one a frame), the others keep their last map
+  render(scene, only = -1) {
     const L = U.uKeyDir.value;
     const r = this.renderer;
     const mats = [U.uShadowM0.value, U.uShadowM1.value, U.uShadowM2.value, U.uShadowM3.value];
@@ -92,14 +92,13 @@ export class Shadows {
     // swap every caster to its depth material
     for (const m of casters) { m.userData._mat = m.material; m.material = m.material.userData.depthMat; }
     const oldBg = scene.background; scene.background = null;
-    this.frame++;
     const last = this.cascades.length - 1;
     for (let i = 0; i <= last; i++) {
+      if (only >= 0 && i !== only) continue;
       const c = this.cascades[i];
-      // everything refreshes every frame on high: on alternate frames a moving balloon's shadow
-      // stepped along at half rate, and the sun's sweep did too. Below high the far one, for distant
-      // balloons only, can skip.
-      if (!this.high && this.frame > 4 && i === last && (this.frame & 1)) continue;
+      // everything refreshes every frame: on alternate frames a moving balloon's shadow stepped along
+      // at half rate, and below high the far one skipping alternate frames (0.5 ms on the 890M) made
+      // frames alternate heavy and light
       const cam = c.cam, half = c.half, back = c.back, center = c.center;
       // The light's view sits on a line through a fixed anchor, so its texel grid is fixed in the
       // world and only the window over it moves; the centre is snapped to whole texels in that grid.

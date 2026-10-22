@@ -1,7 +1,7 @@
 // River: a ribbon of water with planar reflections (rendered from a mirrored camera),
 // ripples that run with the flow, the shallow bed showing through, and thin ice at the edges.
 import * as THREE from 'three';
-import { U, WORLD } from '../core/shared.js';
+import { U, G, WORLD } from '../core/shared.js';
 import { COMMON, VCOMMON, WIND } from '../glsl/common.js';
 import { makeRT } from '../core/fsq.js';
 import { RIVER } from './layout.js';
@@ -137,8 +137,8 @@ export class River {
   }
   setSize(W, H) {
     if (this.rt) this.rt.dispose();
-    this.rt = makeRT(Math.max(2, Math.floor(W / 2)), Math.max(2, Math.floor(H / 2)), { depth: true });
-    this.frame = 0;
+    // a third of the render size: the ripples break it up
+    this.rt = makeRT(Math.max(2, Math.floor(W / 3)), Math.max(2, Math.floor(H / 3)), { depth: true });
     this.mat.uniforms.tReflect.value = this.rt.texture;
   }
   // mirrored camera render; skipped when the river is out of view
@@ -151,9 +151,10 @@ export class River {
     this.mat.uniforms.uIce.value = Math.min(1, st.frost * 0.9 + st.snow * 0.6 + st.night * 0.5 + 0.15);
     this.mat.uniforms.uReflOn.value = this.reflect ? 1 : 0;
     if (!this.visible || !this.reflect) return;
-    // the reflection only needs refreshing every other frame
-    if ((this.frame++ & 1) && this.rendered) return;
-    this.rendered = true;
+    // Every frame, and cheap: heightmap shadows only and plain materials (uCheap), a third of the
+    // render size, and only the trees and houses near the water. It used to draw the whole scene in
+    // full every other frame, so frames alternated heavy and light whenever the river was in view.
+    G.tag('reflection');
     const y = WORLD.riverY;
     const cam = camera, rc = this.rcam;
     this._v.copy(cam.position); this._v.y = 2 * y - this._v.y;
@@ -171,11 +172,11 @@ export class River {
     tm.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
     tm.multiply(rc.projectionMatrix).multiply(rc.matrixWorldInverse);
     const r = this.renderer;
-    U.uClipY.value = y - 0.1;
+    U.uClipY.value = y - 0.1; U.uCheap.value = 1;
     r.setRenderTarget(this.rt);
     r.setClearColor(0x000000, 1);
     r.clear(true, true, false);
     r.render(scene, rc);
-    U.uClipY.value = -1e9;
+    U.uClipY.value = -1e9; U.uCheap.value = 0;
   }
 }

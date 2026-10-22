@@ -98,7 +98,7 @@ async function boot() {
   rocks.addCollider(landmarks.castle);
   const village = new Village(scene, data, rocks);
   G.village = village;
-  const river = new River(scene, renderer);
+  const river = G.river = new River(scene, renderer);
   const veg = new Vegetation(scene, data, rocks, village);
   G.veg = veg;
   const parts = new Particles(scene, data, village);
@@ -113,7 +113,7 @@ async function boot() {
   const tshadow = new TerrainShadow(renderer, tier);
   G.terrAO = new TerrainAO(renderer, tier);
   const bounce = G.bounce = new Bounce(renderer, tier);
-  const shadows = new Shadows(renderer, tier);
+  const shadows = G.shadows = new Shadows(renderer, tier);
   const wind = new Wind(U.uNoise2D.value);
   G.wind = wind;
   hero.flight.wind = wind;
@@ -162,7 +162,15 @@ async function boot() {
   const budget = { high: Infinity, medium: Infinity, lite: 0.22e6 }[tier] || Infinity;
   const floorScale = tier === 'lite' ? 0.2 : 0.67;
   const slowMs = tier === 'lite' ? 40 : 18.5, okMs = tier === 'lite' ? 23 : 16.9;
-  const gpuHi = 15.5, gpuLo = 12, gpuGoal = 14;
+  // GPU targets for a 60 Hz frame; scaled to the frame the pacer below aims for on other displays
+  let gpuHi = 15.5, gpuLo = 12, gpuGoal = 14;
+  // Frame pacing. A 120 Hz screen calls us every 8.3 ms; a frame that takes 13 lands on a mix of one
+  // and two refreshes, which judders however good the average looks, and the browser queues frames
+  // until the CPU blocks on the GPU. So when the GPU can't fit one refresh, render on every div-th
+  // call instead: an even 60 on 120 Hz. The refresh comes from the callbacks' own timestamps.
+  // Past 60 there's one more step for a GPU that can't make it even at the lowest render scale: an
+  // even 40 on 120 Hz reads smoother than frames that alternate between 60 and 40.
+  const pacer = { ivs: [], lastTs: null, lastRender: -1e9, n: 0, refresh: 0, div60: 1, maxDiv: 1, div: 1, up: 0, down: 0 };
   const fitScale = () => Math.max(floorScale, Math.min(1, Math.sqrt(budget / (window.innerWidth * window.innerHeight * pr * pr))));
   pipe.scale = fitScale();
   // test hook: res=0.5 pins the render scale
@@ -245,10 +253,35 @@ async function boot() {
   shimmer.movers = pipe.taa.movers;
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
   window.__dbg = { G, U, sky, shimmer: (n, crop, sky) => { shimmer.start(n, crop, 30, sky); if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, shimmerMap: () => shimmer.heatmap(), loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
-    extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), aeLog: aeLog === null ? null : +aeLog.toFixed(2), aeCorr: +aeCorr.toFixed(2), aeB: +Math.log2(Math.max(aeB, 1e-5)).toFixed(2), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
+    extra: () => ({ tier: G.tier, refresh: +pacer.refresh.toFixed(2), div: pacer.div, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), aeLog: aeLog === null ? null : +aeLog.toFixed(2), aeCorr: +aeCorr.toFixed(2), aeB: +Math.log2(Math.max(aeB, 1e-5)).toFixed(2), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
 
+  // Frame pacing log for tools/pacing.mjs: every frame's interval, CPU and GPU time, render scale, and
+  // which occasional passes ran in it (G.tag). Off unless a test starts it.
+  const pace = { rec: null, tags: [], gpu: new Map() };
+  G.tag = t => { if (pace.rec) pace.tags.push(t); };
+  ftimer.onSample = (f, ms) => { if (pace.rec) pace.gpu.set(f, ms); };
+  window.__dbg.paceStart = () => { pace.rec = []; pace.gpu.clear(); pace.tags = []; };
+  window.__dbg.paceStop = () => { const r = pace.rec; pace.rec = null; for (const e of r) e.gpu = pace.gpu.get(e.f) ?? null; return r; };
   const perf = { acc: 0, n: 0, fps: 60, t: 0, ms: 16, ema: 16, good: 0, slow: 0, warm: 0 };
-  function frame() {
+  function frame(ts) {
+    const pc = pacer;
+    if (pc.lastTs !== null) { pc.ivs.push(ts - pc.lastTs); if (pc.ivs.length > 90) pc.ivs.shift(); }
+    pc.lastTs = ts;
+    if (++pc.n % 60 === 0 && pc.ivs.length >= 60) {
+      // the shorter intervals are the refresh: a stall only ever adds to one
+      const s = [...pc.ivs].sort((a, b) => a - b), r = s[Math.floor(s.length * 0.25)];
+      if (Math.abs(r - pc.refresh) > 0.3) {
+        pc.refresh = r;
+        // as many refreshes a frame as still make 60 fps or better: 2 at 120 and 144 Hz, 4 at 240
+        pc.div60 = dbg.nopace ? 1 : Math.max(1, Math.floor(1000 / r / 60 + 0.2));
+        pc.maxDiv = dbg.nopace ? 1 : Math.max(pc.div60, Math.floor(1000 / r / 40 + 0.2));
+        pc.div = pc.div60;
+        const k = pc.div60 * r / 16.67;
+        gpuHi = 15.5 * k; gpuLo = 12 * k; gpuGoal = 14 * k;
+      }
+    }
+    if (pc.div > 1 && ts - pc.lastRender < (pc.div - 0.5) * pc.refresh) { requestAnimationFrame(frame); return; }
+    pc.lastRender = ts;
     const cpu0 = performance.now();
     const rawDt = clock.getDelta();
     // test hook: fixdt steps the world exactly one 60th of a second per frame, however slow the frame
@@ -291,6 +324,14 @@ async function boot() {
         // still too slow at the floor: drop volumetrics, reflections and grass
         if (pipe.scale <= floorScale + 1e-3 && ms > 55) perf.slow += perf.t; else perf.slow = 0;
         if (perf.slow > 2 && pipe.hooks.volumetrics) { pipe.hooks.volumetrics = null; pipe.ao.aoOn = pipe.ao.contactOn = pipe.taa.motionBlur = false; river.reflect = false; veg.noGrass = true; veg.grass.visible = false; G.tier = 'lite'; resize(); }
+      }
+      // fewer refreshes a frame once it fits in fewer with room to spare (3 s of it), more as soon as
+      // it doesn't (1 s); the resolution governor works to the slowest rate the pacer allows
+      if (ftimer.ok && pc.maxDiv > 1) {
+        const work = Math.max(ftimer.ms, perf.cpu || 0);
+        if (pc.div > 1 && work < 0.8 * (pc.div - 1) * pc.refresh) { pc.down += perf.t; pc.up = 0; if (pc.down > 3) { pc.div--; pc.down = 0; } }
+        else if (pc.div < pc.maxDiv && work > 0.9 * pc.div * pc.refresh && (pc.div < pc.div60 || pipe.scale <= floorScale + 1e-3)) { pc.up += perf.t; pc.down = 0; if (pc.up > 1) { pc.div++; pc.up = 0; } }
+        else pc.up = pc.down = 0;
       }
       perf.acc = 0; perf.n = 0; perf.t = 0; perf.max = 0;
     }
@@ -372,7 +413,7 @@ async function boot() {
     // lite mode spreads the slow-changing passes over several frames
     ftimer.begin();
     prof.begin('sky');
-    if (!lite || fN % 8 === 0 || fN < 3) { dome.update(sky, camera); probe.update(st.snow); }
+    if (!lite || fN % 8 === 0 || fN < 3) { dome.update(sky, camera); probe.update(st.snow); if (lite) G.tag('dome'); }
     dome.mesh.position.copy(camera.position);
     {
       // auto exposure from sky irradiance and the key light; nights stay darker than days
@@ -422,10 +463,11 @@ async function boot() {
     veg.update(camera);
     village.update(camera);
     landmarks.update(camera, lite);
-    // lite mode refreshes the shadow maps every third frame
+    // lite mode refreshes one shadow map a frame, in turn: all of them every third frame made every
+    // third frame slow, and the shadows stepped under the moving sun
     terrain.setShadowCenter(shadows.cascades[1].center, shadows.cascades[1].half, U.uKeyDir.value);
     prof.begin('shadows');
-    if (!sHold && ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3)) shadows.render(scene);
+    if (!sHold && !dbg.noshadow) shadows.render(scene, G.tier === 'lite' && window.__dbg.frames >= 3 ? window.__dbg.frames % shadows.cascades.length : -1);
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
@@ -439,6 +481,7 @@ async function boot() {
     ftimer.end();
     shimmer.grab(pipe.resolved.texture, pipe.main.depthTexture, camera, exposure);
     perf.cpu = (perf.cpu || 0) + (performance.now() - cpu0 - (perf.cpu || 0)) * 0.05;
+    if (pace.rec) { pace.rec.push({ f: ftimer.frame, dt: rawDt * 1000, cpu: performance.now() - cpu0, scale: pipe.scale, tags: pace.tags.join(' ') }); pace.tags = []; }
     window.__dbg.frames++;
     requestAnimationFrame(frame);
   }

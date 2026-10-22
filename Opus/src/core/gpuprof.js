@@ -57,11 +57,15 @@ export class FrameTimer {
     this.ext = gl.getExtension('EXT_disjoint_timer_query_webgl2');
     this.pending = []; this.cur = null;
     this.ms = 0; this.samples = 0;
+    // frame counter, and a callback for every raw sample with the frame it timed (the pacing log)
+    this.frame = 0; this.onSample = null;
   }
   get ok() { return !!this.ext && this.samples > 10; }
   begin() {
+    this.frame++;
     if (!this.ext || this.cur || this.pending.length > 6) return;
     this.cur = this.gl.createQuery();
+    this.cur.frame = this.frame;
     this.gl.beginQuery(this.ext.TIME_ELAPSED_EXT, this.cur);
   }
   end() {
@@ -75,6 +79,7 @@ export class FrameTimer {
       const ms = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6;
       gl.deleteQuery(q);
       if (disjoint || !(ms > 0)) continue;
+      if (this.onSample) this.onSample(q.frame, ms);
       this.ms = this.samples++ ? this.ms + (ms - this.ms) * 0.1 : ms;
     }
   }

@@ -27,6 +27,7 @@ uniform sampler2D uNoise2D;
 uniform highp sampler3D uNoise3D;
 uniform vec2 uCloudOffset;
 uniform float uCloudBase, uCloudTop;
+uniform float uCheap;
 uniform float uGlowComp, uDbgShadow, uSkyVis, uBounceOn, uTerrDisp, uPOM, uHazeLit;
 uniform float uClipY, uDipK, uExposure, uPillars, uDiamond, uSunDogs, uMoonVis, uSunVis;
 `;
@@ -196,10 +197,10 @@ vec3 envSpecular(vec3 R, float rough){
 // gHag is the height above the ground when the material knows it (the ground itself: 0), so the
 // lookups can skip the height fetch; below zero means work it out.
 float gHag = -1.;
-float hagAt(vec3 P){ return gHag >= 0. ? gHag : (uSkyVis + uBounceOn > 0.5 ? P.y - heightAt(P.xz) : 1e4); }
+float hagAt(vec3 P){ return gHag >= 0. ? gHag : (uSkyVis + uBounceOn > 0.5 && uCheap < 0.5 ? P.y - heightAt(P.xz) : 1e4); }
 vec4 skyVisAt(vec3 P, float hag){
   vec4 r = vec4(0., 0., 0., 1.);
-  if (uSkyVis > 0.5) {
+  if (uSkyVis > 0.5 && uCheap < 0.5) {
     vec4 a = texture(uTerrAO, coreUV(P.xz));
     float k = coreMask(P.xz) * (1. - sat(hag / 40.));
     r = vec4((a.rgb * 2. - 1.) * k, mix(1., a.a, k));
@@ -212,7 +213,7 @@ vec4 skyVisAt(vec3 P, float hag){
 vec3 groundBounce(vec3 P, vec3 n, float hag, float vis){
   vec3 r = vec3(0.);
   float m = coreMask(P.xz);
-  if (uBounceOn > 0.5 && m > 0.) {
+  if (uBounceOn > 0.5 && m > 0. && uCheap < 0.5) {
     vec2 uv = coreUV(P.xz);
     // the walls and floor that hide the sky can be a canyon's width away: half from 40 m, half 160 m
     r = (textureLod(uBounce, uv, 2.).rgb + textureLod(uBounce, uv, 4.).rgb) * 0.5 * (1. - vis);
@@ -364,8 +365,9 @@ float cascadeShadow(vec3 P, vec3 N){
 // The coarse terrain shadow is always in, even where the cascades cover: ridges outside the shadow
 // grid cast nowhere else, and fading it out under the cascade made big ridge shadows come and go as
 // the grid moved. It's nudged a metre toward lit so its soft edge sits inside the crisp one.
+// the river's reflection, rippled and small, makes do with the heightmap shadow
 float keyShadow(vec3 P, vec3 N){
-  return keyHorizon(P) * min(terrainShadowSoft(P), cascadeShadow(P, N)) * cloudShadow(P);
+  return keyHorizon(P) * min(terrainShadowSoft(P), uCheap > 0.5 ? 1. : cascadeShadow(P, N)) * cloudShadow(P);
 }
 `;
 
