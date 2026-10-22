@@ -65,7 +65,7 @@ async function boot() {
   G.tier = tier;
   const prof = G.prof = new GpuProf(glc, !!dbg.gpuprof);
   // timer queries can't nest, so the governor's frame timer stands down while profiling
-  const ftimer = dbg.gpuprof ? { ok: false, begin() {}, end() {} } : new FrameTimer(glc);
+  const ftimer = dbg.gpuprof ? { ok: false, ms: 0, frame: 0, begin() {}, end() {} } : new FrameTimer(glc);
   setProgress(0.02); await tick();
 
   U.uNoise2D.value = makeNoise2D(256);
