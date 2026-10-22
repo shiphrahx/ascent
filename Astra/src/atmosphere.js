@@ -9,6 +9,7 @@ import {AntiAlias as FXAAShader} from './fxaa.js';
 import {Sky} from 'three/addons/objects/Sky.js';
 import {createSunShadows} from './lighting.js';
 import {TemporalResolvePass} from './temporal.js';
+import {createAutoExposure} from './exposure.js';
 // Reuse Three's analytic Rayleigh/Mie atmosphere in the cached sky field.
 const physicalSky=Sky.SkyShader.fragmentShader.replace('void main() {','vec3 physicalSky(vec3 direction) {').replace('vec3 direction = normalize( vWorldPosition - cameraPosition );','').replace('L0 += ( vSunE * 19000.0 * Fex ) * sundisk;','').replace('vec3 retColor = pow( texColor, vec3( 1.0 / ( 1.2 + ( 1.2 * vSunfade ) ) ) );','vec3 retColor = texColor;').replace('gl_FragColor = vec4( retColor, 1.0 );','return retColor;').replace('#include <tonemapping_fragment>','').replace('#include <colorspace_fragment>','');
 const nr=rng(341),noiseData=new Uint8Array(256*256*4),noiseBase=Uint8Array.from({length:65536},()=>nr()*255);for(let y=0;y<256;y++)for(let x=0;x<256;x++){let i=(x+y*256)*4;noiseData[i]=noiseBase[x+y*256];noiseData[i+1]=noiseBase[((x+37)%256)+((y+17)%256)*256];noiseData[i+2]=noiseData[i];noiseData[i+3]=255;}const noiseTex=new THREE.DataTexture(noiseData,256,256);noiseTex.wrapS=noiseTex.wrapT=THREE.RepeatWrapping;noiseTex.magFilter=THREE.LinearFilter;noiseTex.minFilter=THREE.LinearMipmapLinearFilter;noiseTex.generateMipmaps=true;noiseTex.needsUpdate=true;const noiseUniform={value:noiseTex};
@@ -73,10 +74,10 @@ const skyDisplay=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,
  gl_FragColor=vec4(col,1.);}`});
 const sky=mesh(new THREE.SphereGeometry(18000,32,18),skyDisplay,scene);sky.castShadow=sky.receiveShadow=false;sky.renderOrder=-10;
 const fogColor=new THREE.Color('#8e9aa4');scene.fog=new THREE.FogExp2(fogColor,.00065);
-const hemi=new THREE.HemisphereLight('#a9c4df','#715c50',.3);scene.add(hemi);
 const shadows=createSunShadows(scene,camera,renderer),key=shadows.csm.lights[0];
 const sunColor=new THREE.Color();
 const target=new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,depthBuffer:false});const composer=new EffectComposer(renderer,target);const scenePass=new SceneRenderPass(scene,camera,renderer);composer.addPass(scenePass);
+const exposure=createAutoExposure(renderer,scenePass.target);
 const fogPass=new ShaderPass({uniforms:{uNoise:noiseUniform,tDiffuse:{value:null},tDepth:{value:null},invProjection:{value:new THREE.Matrix4()},camWorld:{value:new THREE.Matrix4()},uEye:{value:new THREE.Vector3()},uSun:uniforms.sun,uTime:uniforms.time,uNight:uniforms.night,uStorm:uniforms.storm,uFog:{value:1},uProjection:{value:new THREE.Vector2()},uColor:{value:new THREE.Color()},uWarm:skyU.uWarm,uHero:{value:new THREE.Vector3()},uFade:{value:0},uBurn:uniforms.flame},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`
 varying vec2 vUv;uniform sampler2D tDiffuse,tDepth;uniform mat4 invProjection,camWorld;uniform vec3 uEye,uSun,uColor,uWarm,uHero;uniform float uFog,uTime,uNight,uStorm,uFade,uBurn;uniform vec2 uProjection;
 ${noiseGLSL}
@@ -104,18 +105,18 @@ Object.assign(fogPass.uniforms,{uNoise:noiseUniform,uSun:uniforms.sun,uTime:unif
 fogPass.textureID='sceneColor';fogPass.uniforms.tDiffuse.value=scenePass.target.texture;fogPass.uniforms.tDepth.value=scenePass.target.depthTexture;composer.addPass(fogPass);
 const temporal=new TemporalResolvePass(camera,scenePass.target.depthTexture);composer.addPass(temporal);
 const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.3,.6,.9);composer.addPass(bloom);const fxaa=new ShaderPass(FXAAShader);composer.addPass(new OutputPass());composer.addPass(fxaa);
-return {composer,scenePass,sky,skyU,skyTarget,key,shadows,fogPass,bloom,temporal,render(){
+return {composer,scenePass,sky,skyU,skyTarget,key,shadows,fogPass,bloom,temporal,exposure,render(){
  temporal.beginFrame();fogPass.uniforms.invProjection.value.copy(camera.projectionMatrixInverse);
- try{composer.render();}finally{temporal.endFrame();}
+ exposure.update();try{composer.render();}finally{temporal.endFrame();}exposure.sample();
 },update(t,hour,hero,storm,fade,quality=1){
 temporal.updateState(hour,storm,fade);
 const angle=(hour-6)/24*TAU,sun=new THREE.Vector3(Math.cos(angle)*.75,Math.sin(angle),-.55).normalize();uniforms.sun.value.copy(sun);const day=smooth(sun.y,-.12,.2),night=1-smooth(sun.y,-.18,.03),warm=(1-smooth(Math.abs(sun.y),.02,.5))*(1-night*.8);uniforms.day.value=day;uniforms.night.value=night;uniforms.storm.value=storm;uniforms.snow.value=.32+.48*smooth(hour,10,12)*(1-smooth(hour,13,18));uniforms.frost.value=(1-smooth(hour,7,11))*.85;
 skyU.sunPosition.value.copy(sun).multiplyScalar(450000);skyU.turbidity.value=2.2+storm*6.;skyU.rayleigh.value=2.;skyU.mieCoefficient.value=.004;skyU.mieDirectionalG.value=.82;
 skyU.uTop.value.set('#376e9b').lerp(new THREE.Color(hour<12?'#213963':'#392e64'),warm*.9).lerp(new THREE.Color('#061329'),night);skyU.uHorizon.value.set('#c7bbad').lerp(new THREE.Color(hour<12?'#f5b974':'#f2a485'),warm).lerp(new THREE.Color('#52617b'),night).lerp(new THREE.Color('#8d9aa3'),storm);skyU.uWarm.value.setRGB(1.0,.52,.23).multiplyScalar(warm*(1-storm*.8)*(1-night));skyU.uEye.value.copy(camera.position);sky.position.copy(camera.position);
-fogColor.set('#8b9caf').lerp(skyU.uHorizon.value,.18).lerp(new THREE.Color('#344b70'),night*.65);scene.fog.color.copy(fogColor);scene.fog.density=lerp(.0003,.0028,storm)+night*.00014;hemi.intensity=lerp(.1,.14,day)*(1-storm*.23);hemi.color.set(night>.5?'#829fcf':'#b5cbd9');hemi.groundColor.set(night>.5?'#45475b':'#a28a72');const litDir=night>.55?sun.clone().negate():sun.clone();litDir.y=Math.max(litDir.y,.035);litDir.normalize();
-sunColor.set(night>.55?'#a4bbdf':'#fff3e3').lerp(new THREE.Color(hour<12?'#ffd09b':'#ffb49a'),night>.55?0:warm*.75);
-shadows.update(litDir,sunColor,(night>.55?.65:4.2*smooth(sun.y,-.08,.22))*(1-storm*.86));
-renderer.toneMappingExposure=night>.6?1.25:.88-storm*.04;bloom.strength=.1+warm*.07+night*.12;
+fogColor.set('#8b9caf').lerp(skyU.uHorizon.value,.18).lerp(new THREE.Color('#344b70'),night*.65);scene.fog.color.copy(fogColor);scene.fog.density=lerp(.0003,.0028,storm)+night*.00014;const litDir=night>.55?sun.clone().negate():sun.clone();litDir.y=Math.max(litDir.y,.035);litDir.normalize();
+sunColor.set(night>.55?'#a4bbdf':'#fff1db').lerp(new THREE.Color(hour<12?'#ffd09b':'#ffb49a'),night>.55?0:warm*.9);
+shadows.update(litDir,sunColor,(night>.55?.65:6.*smooth(sun.y,-.08,.22))*(1-storm*.86));
+bloom.strength=.1+warm*.07+night*.12;
 const fu=fogPass.uniforms;fu.uEye.value.copy(camera.position);fu.camWorld.value.copy(camera.matrixWorld);fu.invProjection.value.copy(camera.projectionMatrixInverse);fu.uProjection.value.set(camera.projectionMatrix.elements[0]*.5,camera.projectionMatrix.elements[5]*.5);fu.uHero.value.copy(hero);fu.uColor.value.copy(fogColor);fu.uFog.value=(.48*(1-smooth(hour,7,10))+.15*night+storm*.55);fu.uFade.value=fade;
 const forceSky=!Number.isFinite(skyUpdated)||Math.abs(hour-skyHour)>.15||Math.abs(storm-skyStorm)>.025;
 if(forceSky||skyTile>=0||t-skyUpdated>(quality>.6?.5:.9)){

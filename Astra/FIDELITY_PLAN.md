@@ -229,3 +229,19 @@ File: `src/lighting.js`
 
 - Scene flicker: whole RMS 0.00147737, cliff RMS 0.00089886, about 2% and 8% below Phase 1.3 respectively. These are scene proxies with changed materials, not proof that every source of temporal instability is resolved. The remaining long-tail stalls and recording-resolution budget are still open.
 - Validation: cavity-field unit tests, decoded material-channel checks, all three tier browser checks, gameplay, graphics and temporal suites passed. Personally inspected all four matched views: mineral beds and variation are visible, with the existing sky and scene layout preserved. Lighting remains too flat and is next.
+
+### Phase 3.1 - sun, sky and exposure
+
+- Removed the HemisphereLight fill; the procedural sky PMREM now supplies ambient illumination. Daylight sun intensity is 6.0, with warmer low-angle colour. Moon lighting remains separate from daytime sunlight.
+- Added a 64-bin weighted log-luminance histogram, trimming the darkest 10% and brightest 2%, targeting middle grey and clamping exposure to 0.45-1.8. Adaptation is smooth in stops, faster when entering bright light, and its time step is bounded after stalls. The meter samples 32 x 18 pixels on medium/high and 16 x 9 on lite at up to 2 Hz. GPU readback uses an asynchronous PBO/fence; it never reads the full-resolution framebuffer synchronously in production.
+- GPU tests render known HDR levels: 0.18 meters to about 0.975 exposure, dark 0.01 reaches the 1.8 clamp, and bright 4 reaches 0.45. Tests also exercise synchronous capture while the asynchronous fence is pending. No hemisphere lights remain and the environment map is present.
+- Matched reviews wait for exposure to settle. The scene-flicker harness meters its actual fixed view and then locks exposure, recording the value, so camera adaptation is not scored as flicker. The temporal presentation comparison similarly fixes exposure between its two renders; its original colour-error limits are unchanged.
+
+| Paired native flight, medium | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| Phase 2 build | 71.33 | 16.60 | 17.48 | 25.20 | 51/2140 |
+| Sun/sky and auto exposure | 77.94 | 8.60 | 24.42 | 25.26 | 55/2339 |
+
+- Pacing is mixed: average FPS improves while p95 worsens; the rate above 25 ms remains about 2.4%. This does not establish a sustained-60 result. The new meter adds at most two tiny draws/readbacks per second.
+- New lighting flicker baseline at locked exposure 0.7846: whole RMS 0.00155542, cliff RMS 0.00100941. The stronger lighting changes edge contrast, so these values are not an isolated shadow-filter comparison. Phase 4 will measure filtering against the updated lighting.
+- Validation: histogram/adaptation units, known-luminance GPU metering, gameplay, graphics and temporal suites passed. Personally inspected all four matched views: shadows and cloud contrast deepen without clipped terrain or missing colour. Canyon-scale ambient occlusion and bounce remain the next lighting tasks.

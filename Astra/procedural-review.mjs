@@ -22,7 +22,12 @@ try{
    if(!a.camera.reviewLook)a.camera.reviewLook=a.camera.lookAt;
    a.camera.lookAt=function(){this.position.set(...eye);this.reviewLook(...target);};
   },pose);
-  await page.waitForTimeout(1000);await page.screenshot({path:`captures/${tag}-${pose.name}.png`});
+  await page.waitForTimeout(1000);
+  if(await page.evaluate(()=>!!__ascent.atmo.exposure)){
+   const samples=await page.evaluate(()=>__ascent.atmo.exposure.stats.samples);
+   await page.waitForFunction(start=>{const s=__ascent.atmo.exposure.stats;return s.samples>=start+3&&Math.abs(s.value-s.target)<.02;},samples,{timeout:15000});
+  }
+  await page.screenshot({path:`captures/${tag}-${pose.name}.png`});
   const result=await page.evaluate(()=>{const a=__ascent,p=a.camera.position;return {state:__state,cameraClearance:p.y-a.surfaceHeight(p.x,p.z),plots:a.world.settlement?.plots.length,assets:Object.values(a.assets).map(t=>({name:t.name,width:t.image.naturalWidth,height:t.image.naturalHeight}))};});
   if(result.cameraClearance<2)throw Error(`${pose.name} review camera intersects the terrain`);
   report.push({pose:pose.name,...result});

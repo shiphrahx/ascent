@@ -94,11 +94,14 @@ try{
  checks.farShadowDetailCulling=shadowCasters.small[0]>0&&shadowCasters.small[1]===0&&shadowCasters.small[2]===0&&shadowCasters.large.every(n=>n>0)&&shadowCasters.viewLayersRestored;
  const presentation=await page.evaluate(()=>{
   const a=__ascent,gl=a.renderer.getContext(),t=a.atmo.temporal,w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;
+  // Compare the temporal toggle at an identical photographic exposure. The
+  // blocking readback itself otherwise gives automatic adaptation time to move.
+  a.atmo.exposure?.setFixed(a.renderer.toneMappingExposure);
   function sample(enabled){
    t.enabled=enabled;t.invalidate('presentation test');a.atmo.render();
    const pixels=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,pixels);return pixels;
   }
-  const before=sample(false),after=sample(true);let transparent=0,squareError=0,maxError=0;
+  let before,after;try{before=sample(false);after=sample(true);}finally{a.atmo.exposure?.setFixed(null);}let transparent=0,squareError=0,maxError=0;
   for(let i=0;i<after.length;i++){if(i%4===3){if(after[i]!==255||before[i]!==255)transparent++;}else{const d=Math.abs(after[i]-before[i]);squareError+=d*d;maxError=Math.max(maxError,d);}}
   return {transparent,rmse:Math.sqrt(squareError/(w*h*3))/255,maxError};
  });

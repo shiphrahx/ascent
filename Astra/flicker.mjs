@@ -20,6 +20,17 @@ try{
  });
  const url=pathToFileURL(path.resolve(source));url.searchParams.set('quality',tier);
  await page.goto(url.href);await page.waitForFunction(()=>window.__ready,null,{timeout:120000});await page.waitForTimeout(2000);
+ // Meter the actual test view, then lock it so exposure adaptation is not
+ // counted as flicker. Older comparison builds have no automatic exposure.
+ if(await page.evaluate(()=>!!__ascent.atmo.exposure)){
+  const samples=await page.evaluate(()=>{
+   const a=__ascent;a.pause();a.setHour(8.5);a.setStorm(0);a.hero.group.visible=false;a.fleet.forEach(b=>b.group.visible=false);a.scene.traverse(o=>{if(o.isPoints)o.visible=false;});
+   a.camera.__flickerLook=a.camera.lookAt;a.camera.lookAt=function(){this.position.set(-25,147,745);this.__flickerLook(90,88,300);};
+   return a.atmo.exposure.stats.samples;
+  });
+  await page.waitForFunction(start=>{const s=__ascent.atmo.exposure.stats;return s.samples>=start+4&&Math.abs(s.value-s.target)<.02;},samples,{timeout:15000});
+  await page.evaluate(()=>{const a=__ascent;a.atmo.exposure.setFixed(a.atmo.exposure.stats.value);a.camera.lookAt=a.camera.__flickerLook;});
+ }
  const result=await page.evaluate(({factory})=>{
   const a=__ascent,r=a.renderer,c=a.camera;cancelAnimationFrame(window.__flickerRAF);a.pause();a.setHour(8.5);a.setStorm(0);a.setCamera(0);
   a.hero.group.visible=false;a.fleet.forEach(b=>b.group.visible=false);a.scene.traverse(o=>{if(o.isPoints)o.visible=false;});
@@ -40,7 +51,7 @@ try{
    if(frame===0||frame===300)images[frame===0?'start':'end']=r.domElement.toDataURL('image/png').split(',')[1];
   }
   const extension=gl.getExtension('WEBGL_debug_renderer_info');
-  return {source:null,tier:a.tier.name,gpu:gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL??gl.RENDERER),width,height,hour:8.5,seconds:5,stepsPerSecond:60,slideMetres:6,crop,metric:'RMS of middle-frame linear-luminance residual L[t] - (L[t-1] + L[t+1])/2',...metric.result(),samples,images};
+  return {source:null,tier:a.tier.name,gpu:gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL??gl.RENDERER),exposure:a.atmo.exposure?.stats.value,width,height,hour:8.5,seconds:5,stepsPerSecond:60,slideMetres:6,crop,metric:'RMS of middle-frame linear-luminance residual L[t] - (L[t-1] + L[t+1])/2',...metric.result(),samples,images};
  },{factory:createFlickerScorer.toString()});
  const {images,...report}=result;report.source=source;report.errors=errors;
  for(const [name,data]of Object.entries(images))await writeFile(`captures/flicker-${tier}-${tag}-${name}.png`,Buffer.from(data,'base64'));
