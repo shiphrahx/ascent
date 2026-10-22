@@ -1,5 +1,6 @@
 ﻿import {chromium} from 'playwright';
-import {writeFile,access,mkdir} from 'node:fs/promises';
+import {writeFile,readFile,access,mkdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
 
@@ -15,6 +16,7 @@ await mkdir('captures',{recursive:true});
 try{
  for(const file of files.length?files:flight?['Ascent.html']:['captures/baseline.html','Ascent.html']){
   await access(file);
+  const buildSha256=createHash('sha256').update(await readFile(file)).digest('hex');
   const page=await browser.newPage({viewport,deviceScaleFactor:retina?2:1}),errors=[];
   page.on('pageerror',e=>errors.push(String(e)));
   const url=pathToFileURL(path.resolve(file));url.searchParams.set('quality',tier);
@@ -50,7 +52,7 @@ try{
   const mean=key=>samples.reduce((sum,s)=>sum+s[key],0)/samples.length,times=samples.map(s=>s.ms).sort((a,b)=>a-b);
   const percentile=q=>{const i=(times.length-1)*q,lo=Math.floor(i);return times[lo]+(times[Math.ceil(i)]-times[lo])*(i-lo);};
   const info=await page.evaluate(()=>{const r=__ascent.renderer,gl=r.getContext(),extension=gl.getExtension('WEBGL_debug_renderer_info');return {gpu:gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL??gl.RENDERER),tier:__ascent.tier?.name??'legacy',pixelRatio:r.getPixelRatio(),renderSize:[r.domElement.width,r.domElement.height],quality:__state.quality};});
-  results.push({file,...info,viewport,deviceScaleFactor:retina?2:1,flight,seconds:samples.at(-1).t/1000,frameCount:samples.length,hourRange:[samples[0].hour,samples.at(-1).hour],fps:1000/mean('ms'),meanFrameMs:mean('ms'),medianFrameMs:percentile(.5),p95FrameMs:percentile(.95),p99FrameMs:percentile(.99),framesOver25ms:samples.filter(s=>s.ms>25).length,observerFramesWithoutRender:samples.filter(s=>s.renderedFrames===0).length,meanDrawCalls:mean('calls'),meanTriangles:mean('triangles'),errors,samples});
+  results.push({file,buildSha256,...info,viewport,deviceScaleFactor:retina?2:1,flight,seconds:samples.at(-1).t/1000,frameCount:samples.length,hourRange:[samples[0].hour,samples.at(-1).hour],fps:1000/mean('ms'),meanFrameMs:mean('ms'),medianFrameMs:percentile(.5),p95FrameMs:percentile(.95),p99FrameMs:percentile(.99),framesOver25ms:samples.filter(s=>s.ms>25).length,observerFramesWithoutRender:samples.filter(s=>s.renderedFrames===0).length,meanDrawCalls:mean('calls'),meanTriangles:mean('triangles'),errors,samples});
   await page.screenshot({path:`captures/benchmark${suffix}-${results.length}.png`});await page.close();
  }
  await writeFile(`captures/benchmark${suffix}.json`,JSON.stringify(results,null,2));

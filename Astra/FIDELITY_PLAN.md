@@ -1,5 +1,7 @@
 # Astra — Visual Fidelity Plan (target: Unreal Engine 5 look)
 
+**Status - 22 October 2026:** implementation work for Phases 0-8 is committed. Final acceptance remains partial: the strict sustained-60-fps requirement and the AAA photorealism target are not met. See the final measurements and ranked gaps below before starting further work.
+
 Based on a code review plus a 13 s screen recording of the current build (hero balloon chase camera, valley, morning light).
 
 ## How to work
@@ -392,6 +394,53 @@ File: `src/lighting.js`
 | Phase 7 | 65.87 | 8.40 | 41.70 | 60.33 | 275/1976 | 861.5 | 2.551M |
 | Optimised rendering | 67.96 | 16.60 | 25.50 | 41.50 | 171/2040 | 669.9 | 2.600M |
 
-- This final pair improves throughput by 3.2% and p95 by 39%; the >25 ms share falls from 13.9% to 8.4%. The initial optimisation run had better absolute pacing, demonstrating session variability rather than a guaranteed rate. No application renders were skipped. **The strict sustained-60-fps gate remains open.** The final-check task will add per-tier measurements and the remaining visual acceptance limits.
+- This final pair improves throughput by 3.2% and p95 by 39%; the >25 ms share falls from 13.9% to 8.4%. The initial optimisation run had better absolute pacing, demonstrating session variability rather than a guaranteed rate. No application renders were skipped. **The strict sustained-60-fps gate remains open.** Final per-tier measurements and the remaining visual acceptance limits follow below.
 
 - Validation: geometry/transform and render-budget units, all three tier quality/shadow/batching fixtures, gameplay (17), graphics (23), temporal (11) and high-DPI controls (8) pass without errors or warnings. Personally inspected all four matched optimisation views: terrain, clouds, fabric designs and lighting are preserved. The final build hash is recorded in fidelity-8-validation.json.
+
+### Final check - matched lighting and acceptance
+
+- The six-view comparison page is captures/fidelity-final-comparison.html: sunrise, midday, snowstorm, golden hour, sunset and night. It compares the Phase 0 build with the final build at identical cameras and hours. Each build uses its own exposure pipeline; the reports record exposure, camera, tier and build hash. This is a complete-pipeline comparison, not an isolated material or tonemapper test.
+- Personally inspected all twelve images. Terraced landforms, distant silhouettes, layered colour, terrain shadows and sky-coloured haze improve depth. Winter vegetation, the variable-width river and distinct fabric patterns enrich the scene. Some nearby slopes and formations still look sculpted, and the village remains visibly procedural. The Phase 1 criterion that no slope reads as a smooth dome is not fully satisfied.
+
+All measurements below use the Radeon 890M with ANGLE/D3D11. Each flight lasts 30 seconds. High was forced on this integrated GPU; no discrete-GPU certification was possible. Render dimensions are the final framebuffer dimensions, not always the display size.
+
+| Tier / window | Final render size | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---|---:|---:|---:|---:|---:|
+| Medium native | 1440 x 900 | 72.73 | 16.60 | 25.00 | 33.30 | 52/2182 (2.4%) |
+| Lite native | 1440 x 900 | 97.17 | 8.40 | 16.70 | 24.99 | 10/2915 (0.3%) |
+| High native on 890M | 1440 x 900 | 43.05 | 25.00 | 41.60 | 50.01 | 333/1292 (25.8%) |
+| Medium oversized window | 2239 x 1250 | 46.83 | 24.80 | 33.40 | 49.58 | 253/1405 (18.0%) |
+| High DPR 2 on 890M | 2607 x 1629 | 21.53 | 41.70 | 91.67 | 108.36 | 559/646 (86.5%) |
+
+- Medium native averages above 60 fps but p95 is 25 ms, so the sustained-60 gate remains unmet. Lite reaches a 16.7 ms p95 with occasional longer frames. Medium oversized means a 2848 x 1590 CSS window upscaled from the fixed cap. High DPR 2 dynamically reaches quality 0.4 / pixel ratio 1.811; its result is not full native DPR 2.
+- Every run records zero observer callbacks without an application render. This checks application scheduling; it does not prove that a separate screen recorder never duplicates presentation frames.
+
+| Fixed-view paired rendering time | Phase 7 mean / p95 ms | Final mean / p95 ms |
+|---|---:|---:|
+| GPU elapsed | 11.23 / 15.74 | 11.06 / 14.39 |
+| CPU submission | 10.39 / 40.10 | 5.62 / 9.20 |
+
+The paired queries have no disjoint events or errors. GPU cost changes modestly; the CPU submission tail improves sharply after removing synchronous depth-copy queries. CPU and GPU durations overlap and must not be added as independent stages.
+
+| Tier, 1440 x 900 DPR 1 | Whole-frame flicker RMS | Cliff RMS | Locked exposure |
+|---|---:|---:|---:|
+| medium | 0.00179116 | 0.00079821 | 1.1563 |
+| lite | 0.00161840 | 0.00080912 | 1.0395 |
+| high | 0.00237342 | 0.00092946 | 1.2185 |
+
+- Each flicker run scores 299 middle-frame residuals from 301 frames. Warm-up spans at least a complete sky-cache cycle (34 frames on medium, 30 on the other tiers). The extended medium warm-up changes its whole-frame score by less than 0.01%.
+- High has the largest whole-frame score with its denser vegetation and different lighting. These measurements do not establish that grain/shimmer is eliminated. Content, exposure, disocclusion and contrast differ from Phase 0, so the scene scores cannot isolate temporal-filter quality. The dedicated supersampled-reference temporal tests still pass.
+- The combined metrics report checks that all final pacing, flicker, lighting and regression records belong to the same build: 7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10. All 59 core/high-DPI checks and the tier-specific fixtures passed without errors or warnings.
+
+
+### Ranked remaining gaps to the UE/AAA look
+
+1. **Landform geometry and erosion.** Medium still exposes coarse triangles, overly smooth near slopes and simplified cone/cap silhouettes. The next geometry pass needs irregular erosion across multiple scales, undercut ledges, believable talus and weathered openings, with stable transitions and collision matching. Higher sample density alone does not make the forms natural.
+2. **Material scale and filtering.** Procedural colour/relief improves the rock but repeated patterns and fine surface noise remain visible. Improve mineral-scale structure, weathering and directional roughness, then validate their filtering under motion and grazing light. Keep the assets procedural; no photo scans or AI-generated texture assets were added.
+3. **Object-aware indirect light.** Terrain horizons and blurred ground radiance approximate shelter and bounce. They do not model building occlusion, multiple bounces or complete volumetric transport. Bake visibility-aware lighting probes including structures and formations, with restrained exposure/colour calibration.
+4. **Asset anatomy and placement.** Buildings need irregular masonry, roof/door details, weathering and more convincing integration with rock. Trees, scrub, people and horses need better silhouettes and material variation. More instances alone do not close this gap.
+5. **Subpixel stability.** Fixed opaque tree geometry and native-resolution floors remove switching/disappearance causes, but fine branches and material detail can still shimmer. The conservative temporal filter preserves detail and avoids actor trails; it lacks per-object motion vectors and does not accumulate during faster pans. Improve coverage/motion handling against supersampled references before adding grain or motion blur.
+6. **Frame-budget certification.** The shadow-copy stall is removed and draw submissions are reduced, but the measured tails still miss a strict 60-fps budget. Further GPU work scheduling and visibility culling are needed. Validate the intended discrete GPU at high DPI and capture a real desktop flight with the original recorder; headless render counters alone cannot certify recorder output.
+
+The procedural rendering foundation and planned feature passes are implemented. These visual and performance acceptance gaps remain open; this build is not claimed to be photorealistic or equivalent to an Unreal Engine AAA production.

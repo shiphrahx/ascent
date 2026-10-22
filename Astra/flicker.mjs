@@ -1,5 +1,6 @@
 import {chromium} from 'playwright';
-import {writeFile,mkdir} from 'node:fs/promises';
+import {writeFile,readFile,mkdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
 import {createFlickerScorer} from './tests/flicker-metric.mjs';
@@ -7,6 +8,7 @@ import {createFlickerScorer} from './tests/flicker-metric.mjs';
 const args=process.argv.slice(2),option=(key,value)=>args.find(a=>a.startsWith('--'+key+'='))?.split('=')[1]??value;
 const source=args.find(a=>!a.startsWith('--'))??'Ascent.html',tier=option('tier','medium'),tag=option('tag','baseline');
 if(!['high','medium','lite'].includes(tier)||!/^[a-z0-9-]+$/i.test(tag))throw Error('Invalid tier or artifact tag');
+const buildSha256=createHash('sha256').update(await readFile(source)).digest('hex');
 const browser=await chromium.launch({channel:'chromium',headless:true});
 const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1}),errors=[];
 page.on('pageerror',e=>errors.push(String(e)));
@@ -39,7 +41,9 @@ try{
   if(width!==1440||height!==900)throw Error('Flicker comparisons require 1440×900 native resolution');
   const metric=(0,eval)('('+factory+')')(width,height,crop),gl=r.getContext(),rgba=new Uint8Array(width*height*4),samples=[],images={};
   const startClock=performance.now()+1000;
-  for(let frame=-30;frame<=300;frame++){
+  // Finish a complete sky-cache sweep before scoring; medium now uses 32 tiles.
+  const warmupFrames=Math.max(30,(a.atmo.skyCache?.columns??4)*(a.atmo.skyCache?.rows??4)+2);
+  for(let frame=-warmupFrames;frame<=300;frame++){
    window.__flickerClock=startClock+frame*1000/60;
    const shift=Math.max(0,frame)/60*1.2;
    c.position.set(-25+shift,147,745);c.lookAt(90+shift,88,300);c.updateMatrixWorld();
@@ -53,7 +57,7 @@ try{
   const extension=gl.getExtension('WEBGL_debug_renderer_info');
   return {source:null,tier:a.tier.name,gpu:gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL??gl.RENDERER),exposure:a.atmo.exposure?.stats.value,width,height,hour:8.5,seconds:5,stepsPerSecond:60,slideMetres:6,crop,metric:'RMS of middle-frame linear-luminance residual L[t] - (L[t-1] + L[t+1])/2',...metric.result(),samples,images};
  },{factory:createFlickerScorer.toString()});
- const {images,...report}=result;report.source=source;report.errors=errors;
+ const {images,...report}=result;report.source=source;report.buildSha256=buildSha256;report.errors=errors;
  for(const [name,data]of Object.entries(images))await writeFile(`captures/flicker-${tier}-${tag}-${name}.png`,Buffer.from(data,'base64'));
  await writeFile(`captures/flicker-${tier}-${tag}.json`,JSON.stringify(report,null,2));
  console.log(JSON.stringify({...report,samples:undefined},null,2));if(errors.length)process.exitCode=1;

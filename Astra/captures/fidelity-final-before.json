@@ -1,0 +1,86 @@
+{
+  "source": "captures/fidelity-phase-0.html",
+  "buildSha256": "e554324f9ac644adcd43bfb4c4b8fc77247c5dd5a6dae5867c58ebc9ee111a60",
+  "compare": false,
+  "report": [
+    {
+      "pose": "sunrise",
+      "hour": 6.55,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 0.88,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "midday",
+      "hour": 12,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 0.88,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "snowstorm",
+      "hour": 10.8,
+      "storm": 1,
+      "tone": "agx",
+      "exposure": 0.84,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "golden-hour",
+      "hour": 17.2,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 0.88,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "sunset",
+      "hour": 18.2,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 0.88,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "night",
+      "hour": 22,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 1.25,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    }
+  ],
+  "errors": []
+}

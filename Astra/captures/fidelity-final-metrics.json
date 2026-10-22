@@ -1,0 +1,277 @@
+{
+  "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+  "validation": "fidelity-8-validation.json",
+  "comparison": "fidelity-final-comparison.html",
+  "pacing": [
+    {
+      "label": "Medium native",
+      "report": "benchmark-flight-native-medium-final.json",
+      "file": "Ascent.html",
+      "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "tier": "medium",
+      "pixelRatio": 1,
+      "renderSize": [
+        1440,
+        900
+      ],
+      "quality": 1,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "flight": true,
+      "seconds": 30.0005,
+      "frameCount": 2182,
+      "hourRange": [
+        8.5,
+        8.5
+      ],
+      "fps": 72.73212113131449,
+      "meanFrameMs": 13.749083409715857,
+      "medianFrameMs": 16.599999999998545,
+      "p95FrameMs": 25,
+      "p99FrameMs": 33.29999999999927,
+      "framesOver25ms": 52,
+      "observerFramesWithoutRender": 0,
+      "meanDrawCalls": 664.37167736022,
+      "meanTriangles": 2569825.75756187,
+      "errors": [],
+      "framesOver16_8ms": 198
+    },
+    {
+      "label": "Lite native",
+      "report": "benchmark-flight-native-lite-final.json",
+      "file": "Ascent.html",
+      "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "tier": "lite",
+      "pixelRatio": 1,
+      "renderSize": [
+        1440,
+        900
+      ],
+      "quality": 1,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "flight": true,
+      "seconds": 30.000499999999995,
+      "frameCount": 2915,
+      "hourRange": [
+        8.5,
+        8.5
+      ],
+      "fps": 97.16504724921252,
+      "meanFrameMs": 10.291766723842194,
+      "medianFrameMs": 8.399999999997817,
+      "p95FrameMs": 16.700000000004366,
+      "p99FrameMs": 24.986000000000217,
+      "framesOver25ms": 10,
+      "observerFramesWithoutRender": 0,
+      "meanDrawCalls": 577.2271012006861,
+      "meanTriangles": 1700821.0408233276,
+      "errors": [],
+      "framesOver16_8ms": 60
+    },
+    {
+      "label": "High native on 890M",
+      "report": "benchmark-flight-native-high-final.json",
+      "file": "Ascent.html",
+      "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "tier": "high",
+      "pixelRatio": 1,
+      "renderSize": [
+        1440,
+        900
+      ],
+      "quality": 0.85,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "flight": true,
+      "seconds": 30.0089,
+      "frameCount": 1292,
+      "hourRange": [
+        8.5,
+        8.5
+      ],
+      "fps": 43.05389401144327,
+      "meanFrameMs": 23.22670278637771,
+      "medianFrameMs": 25,
+      "p95FrameMs": 41.599999999998545,
+      "p99FrameMs": 50.00899999999986,
+      "framesOver25ms": 333,
+      "observerFramesWithoutRender": 0,
+      "meanDrawCalls": 1190.593653250774,
+      "meanTriangles": 12401298.685758514,
+      "errors": [],
+      "framesOver16_8ms": 847
+    },
+    {
+      "label": "Medium oversized window",
+      "report": "benchmark-flight-recording-medium-final.json",
+      "file": "Ascent.html",
+      "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "tier": "medium",
+      "pixelRatio": 0.7863401681269331,
+      "renderSize": [
+        2239,
+        1250
+      ],
+      "quality": 1,
+      "viewport": {
+        "width": 2848,
+        "height": 1590
+      },
+      "deviceScaleFactor": 1,
+      "flight": true,
+      "seconds": 30.0006,
+      "frameCount": 1405,
+      "hourRange": [
+        8.5,
+        8.5
+      ],
+      "fps": 46.83239668539963,
+      "meanFrameMs": 21.35274021352313,
+      "medianFrameMs": 24.80000000000291,
+      "p95FrameMs": 33.39999999999418,
+      "p99FrameMs": 49.576000000001805,
+      "framesOver25ms": 253,
+      "observerFramesWithoutRender": 0,
+      "meanDrawCalls": 736.3879003558719,
+      "meanTriangles": 2908837.897508897,
+      "errors": [],
+      "framesOver16_8ms": 765
+    },
+    {
+      "label": "High DPR 2 on 890M",
+      "report": "benchmark-flight-native-high-final-retina.json",
+      "file": "Ascent.html",
+      "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "tier": "high",
+      "pixelRatio": 1.8110770276274832,
+      "renderSize": [
+        2607,
+        1629
+      ],
+      "quality": 0.4,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 2,
+      "flight": true,
+      "seconds": 30.00059999999999,
+      "frameCount": 646,
+      "hourRange": [
+        8.5,
+        8.5
+      ],
+      "fps": 21.532902675279832,
+      "meanFrameMs": 46.440557275541785,
+      "medianFrameMs": 41.700000000004366,
+      "p95FrameMs": 91.67499999999927,
+      "p99FrameMs": 108.35500000000211,
+      "framesOver25ms": 559,
+      "observerFramesWithoutRender": 0,
+      "meanDrawCalls": 1192.0510835913312,
+      "meanTriangles": 12435711.0123839,
+      "errors": [],
+      "framesOver16_8ms": 578
+    }
+  ],
+  "flicker": [
+    {
+      "report": "flicker-medium-final.json",
+      "source": "Ascent.html",
+      "tier": "medium",
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "exposure": 1.1562851123055462,
+      "width": 1440,
+      "height": 900,
+      "hour": 8.5,
+      "seconds": 5,
+      "stepsPerSecond": 60,
+      "slideMetres": 6,
+      "crop": {
+        "x": 1000,
+        "y": 300,
+        "width": 360,
+        "height": 240
+      },
+      "metric": "RMS of middle-frame linear-luminance residual L[t] - (L[t-1] + L[t+1])/2",
+      "frames": 301,
+      "scoredFrames": 299,
+      "wholeRms": 0.0017911640802420262,
+      "cliffRms": 0.000798207958192662,
+      "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+      "errors": []
+    },
+    {
+      "report": "flicker-lite-final.json",
+      "source": "Ascent.html",
+      "tier": "lite",
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "exposure": 1.03954604179017,
+      "width": 1440,
+      "height": 900,
+      "hour": 8.5,
+      "seconds": 5,
+      "stepsPerSecond": 60,
+      "slideMetres": 6,
+      "crop": {
+        "x": 1000,
+        "y": 300,
+        "width": 360,
+        "height": 240
+      },
+      "metric": "RMS of middle-frame linear-luminance residual L[t] - (L[t-1] + L[t+1])/2",
+      "frames": 301,
+      "scoredFrames": 299,
+      "wholeRms": 0.001618398815934709,
+      "cliffRms": 0.0008091213564670217,
+      "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+      "errors": []
+    },
+    {
+      "report": "flicker-high-final.json",
+      "source": "Ascent.html",
+      "tier": "high",
+      "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "exposure": 1.2185474097687126,
+      "width": 1440,
+      "height": 900,
+      "hour": 8.5,
+      "seconds": 5,
+      "stepsPerSecond": 60,
+      "slideMetres": 6,
+      "crop": {
+        "x": 1000,
+        "y": 300,
+        "width": 360,
+        "height": 240
+      },
+      "metric": "RMS of middle-frame linear-luminance residual L[t] - (L[t-1] + L[t+1])/2",
+      "frames": 301,
+      "scoredFrames": 299,
+      "wholeRms": 0.0023734207668459056,
+      "cliffRms": 0.0009294649900797893,
+      "buildSha256": "7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10",
+      "errors": []
+    }
+  ],
+  "limitations": [
+    "All measurements use the Radeon 890M; discrete-GPU high-tier performance has not been certified.",
+    "No skipped application render is not proof that a separate screen recorder never duplicates frames.",
+    "Scene flicker scores include geometry/disocclusion/contrast changes and are not ground-truth shimmer measurements."
+  ]
+}
