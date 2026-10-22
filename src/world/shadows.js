@@ -51,6 +51,8 @@ export class Shadows {
     this._v = new THREE.Vector3();
     this._d = new THREE.Vector3();
     this._up = new THREE.Vector3();
+    this._ax = new THREE.Vector3();
+    this._ay = new THREE.Vector3();
     this.frame = 0;
   }
 
@@ -105,15 +107,24 @@ export class Shadows {
       // frame: the snap did nothing and the grid slid by sub-texel amounts, so cliff edges crawled.)
       // The anchor isn't the origin: as the sun turns, the grid swings about the anchor, and far
       // from it that swing is a slide. So it sits on the centre and only jumps to catch up once the
-      // centre has wandered a quarter of the cascade away.
-      const a = c.anchor || (c.anchor = center.clone());
-      if (a.distanceToSquared(center) > half * half * 0.0625) a.copy(center);
+      // centre has wandered a quarter of the cascade away. The jump is whole texels across the light
+      // (and anything along it, which doesn't move the grid), so the grid doesn't shift as it lands:
+      // jumping to the exact centre moved it by a fraction of a texel and every edge ticked once.
       cam.up.copy(this._up);
-      cam.position.copy(L).multiplyScalar(this._v.subVectors(center, a).dot(L) + back).add(a);
-      this._v.copy(cam.position).sub(L);
-      cam.lookAt(this._v);
+      cam.position.set(0, 0, 0);
+      cam.lookAt(this._v.copy(L).negate());
       cam.updateMatrixWorld();
       const texel = (2 * half) / c.res;
+      const a = c.anchor || (c.anchor = center.clone());
+      if (a.distanceToSquared(center) > half * half * 0.0625) {
+        const ax = this._ax.setFromMatrixColumn(cam.matrixWorld, 0), ay = this._ay.setFromMatrixColumn(cam.matrixWorld, 1);
+        this._v.subVectors(center, a);
+        a.addScaledVector(ax, Math.round(this._v.dot(ax) / texel) * texel)
+          .addScaledVector(ay, Math.round(this._v.dot(ay) / texel) * texel)
+          .addScaledVector(L, this._v.dot(L));
+      }
+      cam.position.copy(L).multiplyScalar(this._v.subVectors(center, a).dot(L) + back).add(a);
+      cam.updateMatrixWorld();
       this._v.copy(center).applyMatrix4(cam.matrixWorldInverse);
       const cx = Math.round(this._v.x / texel) * texel, cy = Math.round(this._v.y / texel) * texel;
       cam.left = cx - half; cam.right = cx + half; cam.bottom = cy - half; cam.top = cy + half;
