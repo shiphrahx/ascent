@@ -64,7 +64,7 @@ uniform highp sampler2D tDepth;
 uniform vec2 uHalfRes, uRes;
 uniform mat4 uProj, uInvProj;
 uniform vec3 uLightV;
-uniform float uStrength, uAOOn, uContactOn, uFrame, uLightUp;
+uniform float uStrength, uAOOn, uContactOn, uFrame, uLightUp, uWide;
 float linZ(float d){ float z = d * 2. - 1.; return uProj[3][2] / (z * uProj[2][3] - uProj[2][2]); }
 vec3 viewPos(vec2 uv, float d){ vec4 v = uInvProj * vec4(uv * 2. - 1., d * 2. - 1., 1.); return v.xyz / v.w; }
 float contact(float d0){
@@ -93,9 +93,12 @@ void main(){
     float zc = linZ(d0);
     vec2 hp = vUv * uHalfRes - 0.5;
     vec2 b = floor(hp), f = hp - b;
+    // wide: each tap sits on a texel corner, so the filtering averages a 2x2 block and the four taps
+    // between them cover 4x4 half-res pixels: a blur for the price of the plain upsample
+    if (uWide > 0.5) f = (f + 0.5) * 0.5;
     float acc = 0., ws = 0.;
     for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) {
-      vec2 uv = (b + vec2(i, j) + 0.5) / uHalfRes;
+      vec2 uv = (uWide > 0.5 ? b + vec2(i, j) * 2. : b + vec2(i, j) + 0.5) / uHalfRes;
       float z = linZ(texture(tDepth, uv).r);
       float bw = (i == 0 ? 1. - f.x : f.x) * (j == 0 ? 1. - f.y : f.y);
       float w = bw * exp(-abs(z - zc) / (abs(zc) * 0.03 + 0.1)) + 1e-4 * bw;
@@ -128,16 +131,17 @@ export class AmbientOcclusion {
     this.apply = fsMaterial(APPLY, {
       tAO: { value: null }, tDepth: { value: null }, tScene: { value: null }, tNoise: U.uNoise2D,
       uHalfRes: { value: new THREE.Vector2() }, uRes: { value: new THREE.Vector2() }, uProj: { value: new THREE.Matrix4() }, uInvProj: { value: new THREE.Matrix4() },
-      uLightV: { value: new THREE.Vector3() }, uStrength: { value: 0.75 }, uAOOn: { value: 1 }, uContactOn: { value: 1 }, uFrame: U.uTAAFrame, uLightUp: { value: 1 },
+      uLightV: { value: new THREE.Vector3() }, uStrength: { value: 0.75 }, uAOOn: { value: 1 }, uContactOn: { value: 1 }, uFrame: U.uTAAFrame, uLightUp: { value: 1 }, uWide: { value: 0 },
     });
     this.aoOn = true; this.contactOn = true;
+    this.wide = true;
     // dst = dst * ao
     this.mul = fsMaterial(MUL, { tAO: { value: null } }, { blending: THREE.CustomBlending, extra: { blendEquation: THREE.AddEquation, blendSrc: THREE.ZeroFactor, blendDst: THREE.SrcColorFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor } });
     this.rt = null; this.full = null;
   }
   setSize(W, H) {
     if (this.rt) { this.rt.dispose(); this.full.dispose(); }
-    this.rt = makeRT(Math.ceil(W / 2), Math.ceil(H / 2), { type: THREE.UnsignedByteType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+    this.rt = makeRT(Math.ceil(W / 2), Math.ceil(H / 2), { type: THREE.UnsignedByteType });
     this.full = makeRT(W, H, { type: THREE.UnsignedByteType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
   }
   render(mainRT, camera) {
@@ -157,6 +161,7 @@ export class AmbientOcclusion {
     a.uProj.value.copy(camera.projectionMatrix); a.uInvProj.value.copy(camera.projectionMatrixInverse);
     a.uLightV.value.copy(U.uKeyDir.value).transformDirection(camera.matrixWorldInverse);
     a.uLightUp.value = U.uKeyDir.value.y > 0.02 ? 1 : 0;
+    a.uWide.value = this.wide ? 1 : 0;
     a.uAOOn.value = this.aoOn ? 1 : 0; a.uContactOn.value = this.contactOn ? 1 : 0;
     renderFS(this.renderer, this.apply, this.full);
     this.mul.uniforms.tAO.value = this.full.texture;

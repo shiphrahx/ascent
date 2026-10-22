@@ -140,8 +140,10 @@ async function boot() {
   pipe.hooks.volumetrics = dbg.novol || tier === 'lite' ? null : volHook;
   if (tier === 'lite' || dbg.noao) pipe.ao.aoOn = false;
   if (tier === 'lite' || dbg.nocontact) pipe.ao.contactOn = false;
+  if (dbg.noaowide) pipe.ao.wide = false;
   // the 890M can't spare the half millisecond: medium and lite go without
   if (tier !== 'high' || dbg.noblur) pipe.taa.motionBlur = false;
+  if (dbg.taaalpha) pipe.taa.mat.uniforms.uAlphaMin.value = +dbg.taaalpha;
   // and the haze's three looks for shaded air, which barely show from the balloon's height
   if (tier !== 'high') U.uHazeLit.value = 0;
   if (tier === 'lite') { river.reflect = false; veg.grass.visible = false; veg.noGrass = true; }
@@ -185,7 +187,7 @@ async function boot() {
   // test hook: u=uName:value,uOther:value sets shared uniforms after boot (feature switches for A/B shots)
   const setU = () => { if (dbg.u) for (const kv of dbg.u.split(',')) { const [k, v] = kv.split(':'); if (U[k]) { if (U[k].value && U[k].value.setScalar) U[k].value.setScalar(+v); else U[k].value = +v; } } };
   setU();
-  if (dbg.shadowview) U.uDbgShadow.value = dbg.shadowview === 'flat' ? 2 : 1;
+  if (dbg.shadowview) U.uDbgShadow.value = { flat: 2, terrain: 3 }[dbg.shadowview] || 1;
   if (dbg.snow !== undefined) sky.snowCover = parseFloat(dbg.snow);
   if (dbg.mode !== undefined) cams.setMode(+dbg.mode);
   if (dbg.fp) { const [a, b] = dbg.fp.split(',').map(Number); cams.fpYaw = a; cams.fpPitch = b; }
@@ -231,6 +233,16 @@ async function boot() {
   const look = {};
   const loop = { phase: null, fade: 0 };
   const shimmer = new ShimmerProbe(renderer);
+  // what the flight test splits its score by (everything else counts as other)
+  shimmer.sources = [
+    { name: 'hero balloon', objs: [hero.root, hero.cables] },
+    { name: 'fleet', objs: [...fleet.lods.map(l => l.m), fleet.baskets] },
+    { name: 'terrain+rocks', objs: [terrain.group, rocks.group, landmarks.group] },
+    { name: 'vegetation', objs: [veg.group, veg.grass] },
+    { name: 'village', objs: [village.group] },
+  ];
+  pipe.hooks.afterScene = (main, cam) => shimmer.mask(scene, cam, main);
+  shimmer.movers = pipe.taa.movers;
   const groups = { terrain: terrain.group, rocks: rocks.group, land: landmarks.group, village: village.group, veg: veg.group, grass: veg.grass, river: river.mesh, fleetEnv: fleet.lods[0].m.parent };
   window.__dbg = { G, U, sky, shimmer: (n, crop, sky) => { shimmer.start(n, crop, 30, sky); if (hold.on) { hold.on = false; hold.t = time; } }, shimmerResult: () => shimmer.result, shimmerMap: () => shimmer.heatmap(), loop: () => loop, groups, scene, pipe, setHour: h => { sky.cycleT = cycleForHour(h); }, frames: 0, gpu: () => prof.report(),
     extra: () => ({ tier: G.tier, gpu: gpuName, fps: +perf.fps.toFixed(1), ms: +perf.ms.toFixed(1), gpuMs: +ftimer.ms.toFixed(1), cpuMs: +(perf.cpu || 0).toFixed(1), scale: pipe.scale, W: pipe.W, H: pipe.H, exposure: +exposure.toFixed(3), aeLog: aeLog === null ? null : +aeLog.toFixed(2), aeCorr: +aeCorr.toFixed(2), aeB: +Math.log2(Math.max(aeB, 1e-5)).toFixed(2), up: probe.up.toArray().map(v => +v.toFixed(4)), key: sky.keyColor.toArray().map(v => +v.toFixed(3)), alt: +hero.flight.p.y.toFixed(1), mode: hero.flight.mode, wp: hero.flight.wp, pos: [Math.round(hero.flight.p.x), Math.round(hero.flight.p.z)], agl: Math.round(hero.flight.p.y - data.height(hero.flight.p.x, hero.flight.p.z)), clr: +hero.flight.clearance.toFixed(1), defl: +hero.deflate.toFixed(2) }) };
@@ -401,7 +413,11 @@ async function boot() {
       const [px, pz] = dbg.shadowpan.split(',').map(Number), t = time - hold.t;
       shift = viewC.set(px * t, 0, pz * t);
     }
-    shadows.fit(camera, focus, farC, shift);
+    // test hook: shadowhold stops the cascades where they are once a shimmer capture starts, so they're
+    // fixed in the world: the control for a moving camera (it scores the shadow edges sliding across
+    // the screen, which isn't flicker)
+    const sHold = dbg.shadowhold && !hold.on && shimmer.left > 0;
+    if (!sHold) shadows.fit(camera, focus, farC, shift);
     rocks.update(camera);
     veg.update(camera);
     village.update(camera);
@@ -409,7 +425,7 @@ async function boot() {
     // lite mode refreshes the shadow maps every third frame
     terrain.setShadowCenter(shadows.cascades[1].center, shadows.cascades[1].half, U.uKeyDir.value);
     prof.begin('shadows');
-    if ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3) shadows.render(scene);
+    if (!sHold && ((!dbg.noshadow && (G.tier !== 'lite' || window.__dbg.frames % 3 === 0)) || window.__dbg.frames < 3)) shadows.render(scene);
     terrain.update(camera, lite ? 0.22 : 1);
     prof.begin('reflection');
     if (!dbg.norefl) river.render(scene, camera, st);
