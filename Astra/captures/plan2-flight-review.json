@@ -1,0 +1,19 @@
+{
+  "frames": [
+    {
+      "time": 1,
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "time": 5,
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "time": 10,
+      "width": 1440,
+      "height": 900
+    }
+  ]
+}

@@ -1,0 +1,470 @@
+{
+  "buildSha256": "0c4c19a1d34bc7030ac55fe9a69761d73c3732c20b173a3b5c03a32b6efb7e55",
+  "recording": {
+    "mimeType": "video/webm;codecs=vp9",
+    "requestedFps": 60,
+    "bitsPerSecond": 3500000
+  },
+  "steps": [
+    {
+      "key": "ArrowRight",
+      "milliseconds": 1300,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 3.5937999999284744,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          43.20689598120665,
+          145,
+          604.6039281832491
+        ],
+        "camera": [
+          -8.251343305027918,
+          178.4640661881193,
+          669.6756129322838
+        ],
+        "thermal": 0.30737952078986924,
+        "velocity": [
+          8.186386622325767,
+          0,
+          5.371569127246085
+        ],
+        "input": {
+          "right": 1,
+          "forward": 0,
+          "vertical": 0,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": 0,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 60,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 338,
+        "triangles": 1281707,
+        "fps": 58.27505827505843,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.799999999999272
+      }
+    },
+    {
+      "key": null,
+      "milliseconds": 700,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 4.294499999928476,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          44.7688173394438,
+          145,
+          605.4765189408043
+        ],
+        "camera": [
+          -5.2699623364712425,
+          178.48170510112172,
+          671.5173999967715
+        ],
+        "thermal": 0.2727999249185131,
+        "velocity": [
+          0.3389811287939948,
+          0,
+          -0.062410171669024656
+        ],
+        "input": {
+          "right": 0,
+          "forward": 0,
+          "vertical": 0,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": 0,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 59.299299999999995,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 532,
+        "triangles": 2429080,
+        "fps": 53.79236148466921,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.799999999999272
+      }
+    },
+    {
+      "key": "Space",
+      "milliseconds": 1500,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 5.860599999928481,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          44.96439950301261,
+          150.28521874367433,
+          605.1465123669104
+        ],
+        "camera": [
+          -5.313159940256774,
+          182.75176793464806,
+          671.1495818954453
+        ],
+        "thermal": 0.7210146555943817,
+        "velocity": [
+          0.10392877237236597,
+          3.6752082023358787,
+          -0.2273349896569648
+        ],
+        "input": {
+          "right": 0,
+          "forward": 0,
+          "vertical": 0,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": 3.6752082023358787,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 59.9834,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 567,
+        "triangles": 2018229,
+        "fps": 59.958289885297226,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.599999999998545
+      }
+    },
+    {
+      "key": "KeyW",
+      "milliseconds": 1800,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 7.678699999928492,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          54.33210775641119,
+          150.97828180078835,
+          592.2520213364951
+        ],
+        "camera": [
+          2.946222890181419,
+          184.44388713469402,
+          659.5844224518581
+        ],
+        "thermal": 0.5290521312223855,
+        "velocity": [
+          5.413326477119259,
+          0.00041431242655049226,
+          -7.4501356060496
+        ],
+        "input": {
+          "right": 0,
+          "forward": 0,
+          "vertical": 0,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": 0.00041431242655049226,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 59.983200000000004,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 346,
+        "triangles": 1342497,
+        "fps": 57.93391491798302,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.799999999999272
+      }
+    },
+    {
+      "key": "KeyE",
+      "milliseconds": 1000,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 8.696299999928497,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          55.460031681603965,
+          150.9783607601255,
+          590.6493349439048
+        ],
+        "camera": [
+          79.34224765675589,
+          184.46606120098414,
+          667.7737711067123
+        ],
+        "thermal": 0.444896244020332,
+        "velocity": [
+          0.16126212451395253,
+          0.0000025564519566153692,
+          -0.2588768328938089
+        ],
+        "input": {
+          "right": 0,
+          "forward": 0,
+          "vertical": 0,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": 0.0000025564519566153692,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 59.9834,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 667,
+        "triangles": 2189429,
+        "fps": 58.19641289351556,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.599999999998545
+      }
+    },
+    {
+      "key": "KeyW",
+      "milliseconds": 1300,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 10.01409999992849,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          50.765117477906614,
+          150.9783612485737,
+          580.8287252890012
+        ],
+        "camera": [
+          98.24157231212547,
+          184.43961655036264,
+          650.8091514466687
+        ],
+        "thermal": 0.35548703314765123,
+        "velocity": [
+          -4.742151115266875,
+          3.516181577539804e-9,
+          -8.756728503190512
+        ],
+        "input": {
+          "right": 0,
+          "forward": 1,
+          "vertical": 0,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": 3.516181577539804e-9,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 60,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 622,
+        "triangles": 2098704,
+        "fps": 58.44314989725305,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.69999999999709
+      }
+    },
+    {
+      "key": "ArrowLeft",
+      "milliseconds": 1200,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 11.248399999928496,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          42.2113766270305,
+          150.97836124924575,
+          583.8713233184088
+        ],
+        "camera": [
+          90.2241235945894,
+          184.43983479208154,
+          651.575376664454
+        ],
+        "thermal": 0.28811028425071206,
+        "velocity": [
+          -6.8123641919457905,
+          7.34214401922678e-12,
+          4.58013294027512
+        ],
+        "input": {
+          "right": 0,
+          "forward": 0,
+          "vertical": 0,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": 7.34214401922678e-12,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 59.9833,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 395,
+        "triangles": 1425400,
+        "fps": 58.42229223381137,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.700000000000728
+      }
+    },
+    {
+      "key": "ShiftLeft",
+      "milliseconds": 1100,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 12.36589999992849,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          41.03163569858014,
+          147.42658203236155,
+          584.5497890749577
+        ],
+        "camera": [
+          87.95445287433307,
+          181.91575151595163,
+          653.1730027007148
+        ],
+        "thermal": 0,
+        "velocity": [
+          0.09016209653266138,
+          -3.9619918868796913,
+          -0.20331402382297367
+        ],
+        "input": {
+          "right": 0,
+          "forward": 0,
+          "vertical": -1,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": -3.9619918868796913,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 60,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 619,
+        "triangles": 2084931,
+        "fps": 58.64604694296033,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.599999999998545
+      }
+    },
+    {
+      "key": null,
+      "milliseconds": 1200,
+      "state": {
+        "hour": 6.55,
+        "elapsed": 13.583599999928483,
+        "mode": 0,
+        "storm": 0,
+        "hero": [
+          41.1585026185887,
+          146.6685014868707,
+          584.2788930689737
+        ],
+        "camera": [
+          88.2166298631249,
+          180.16922529578602,
+          652.7985374969301
+        ],
+        "thermal": 0,
+        "velocity": [
+          0.10699702801284407,
+          -0.008989005141094703,
+          -0.2258758811163013
+        ],
+        "input": {
+          "right": 0,
+          "forward": 0,
+          "vertical": 0,
+          "orbit": 0
+        },
+        "burnerCommand": false,
+        "burnerController": {
+          "on": true,
+          "changed": 0.012399999928474244,
+          "demand": 0.8081507003619861,
+          "switches": 1
+        },
+        "verticalSpeed": -0.008989005141094703,
+        "manual": true,
+        "autopilotWeight": 0,
+        "idleRemaining": 58.782300000000006,
+        "targetAltitude": 80,
+        "landing": 0,
+        "drawCalls": 588,
+        "triangles": 2482187,
+        "fps": 59.94927369149173,
+        "quality": 1,
+        "tier": "medium",
+        "frameMs": 16.599999999998545
+      }
+    }
+  ],
+  "errors": []
+}

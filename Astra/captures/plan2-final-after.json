@@ -1,0 +1,86 @@
+{
+  "source": "Ascent.html",
+  "buildSha256": "0c4c19a1d34bc7030ac55fe9a69761d73c3732c20b173a3b5c03a32b6efb7e55",
+  "compare": false,
+  "report": [
+    {
+      "pose": "sunrise",
+      "hour": 6.55,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 1.7803559526371833,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "midday",
+      "hour": 12,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 0.46969029078040114,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "snowstorm",
+      "hour": 10.8,
+      "storm": 1,
+      "tone": "agx",
+      "exposure": 1.7803668658407,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "golden-hour",
+      "hour": 17.2,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 1.7950449447217987,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "sunset",
+      "hour": 18.2,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 1.7994311688969344,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    },
+    {
+      "pose": "night",
+      "hour": 22,
+      "storm": 0,
+      "tone": "agx",
+      "exposure": 1.7999347527784357,
+      "camera": [
+        -25,
+        147,
+        745
+      ],
+      "tier": "medium"
+    }
+  ],
+  "errors": []
+}

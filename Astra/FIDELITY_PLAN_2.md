@@ -338,3 +338,10 @@ The snow fixture confirms north/south coverage 0.592 / 0.012, sheltered/open 1.0
 Morning sunlight is warmer and up to 12% stronger while ambient fill falls by up to 22%. Near-ground haze is reduced by up to 24% and its air colour follows the warm horizon more closely. These adjustments fade with the morning warmth and storm/night weights; exposure metering is unchanged.
 
 All 59 core checks pass without errors or warnings. Rebuilt and inspected the matched sunrise capture: lit rock is warmer and the foreground retains more separation, though the remaining broad haze and simple terrain still limit depth and realism. The six-lighting-condition review and final per-tier measurements follow on this frozen runtime build.
+
+
+### Final visual and interaction review
+
+Inspected all six matched lighting pairs (sunrise, midday, snowstorm, golden hour, sunset and night) and decoded frames at 1, 5 and 10 seconds of the scripted flight. The recording shows camera-relative translation, climbing, view rotation, braking and descent with the balloon centred. The eight high-DPI checks also pass without browser errors or warnings. The comparison page links the per-task captures and raw regression results.
+
+The recording is a compressed visual demonstration, not a frame-pacing measurement. Final pacing is measured independently without a recorder. Per-tier stability and timing traces are being collected against the final runtime hash.
