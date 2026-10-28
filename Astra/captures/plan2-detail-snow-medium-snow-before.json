@@ -1,0 +1,23 @@
+{
+  "source": "Ascent.html",
+  "buildSha256": "d80b517ccc27b44043d4f61ea6666c1292cb2a9c2146631ffe22611fc2b9627e",
+  "tier": "medium",
+  "gpu": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "width": 1440,
+  "height": 900,
+  "stepsPerSecond": 60,
+  "pose": {
+    "eye": [
+      -25,
+      100,
+      745
+    ],
+    "target": [
+      95,
+      35,
+      465
+    ],
+    "hour": 12
+  },
+  "errors": []
+}

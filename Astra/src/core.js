@@ -173,10 +173,10 @@ export function stoneMaterial(color='#c8a78d',type=0,soilDetail=true){
   s.fragmentShader=s.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
    ${masonry?'':`diffuseColor.rgb*=mineralTint(vWorld);`}
    ${masonry||type===2?'':`diffuseColor.rgb*=mix(vec3(1.),strataTint(vWorld),${terrain?'1.-soilBlend*.85':'.8'});`}
-   float drift=rn(vWorld.xz*.025)*.5+rn(vWorld.xz*.08+5.)*.32+rn(vWorld.xz*.27)*.18;
+   float drift=rn(vWorld.xz*.018)*.62+rn(vWorld.xz*.045+5.)*.28+rn(vWorld.xz*.12)*.1;
    float snowSky=1.;
    float cover=snowCoverage(normalize(vWN),snowSky,uSnow,drift,fwidth(drift));
-   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.76,.81,.85)*(.96+.04*surface.g),cover*.96);
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.72,.77,.81)*(.96+.04*surface.g),cover*.96);
    diffuseColor.rgb*=1.-(1.-uSnow)*.045;
    ${type===4?`float river=95.*sin(vWorld.z*.004)+55.*sin(vWorld.z*.008+1.)-62.+30.*sin(vWorld.z*.009);
    float wetBank=(1.-smoothstep(7.,28.,abs(vWorld.x-river)))*(1.-smoothstep(3.6,5.4+rn(vWorld.xz*.17)*.45,vWorld.y));
@@ -186,7 +186,7 @@ export function stoneMaterial(color='#c8a78d',type=0,soilDetail=true){
    float bumpFade=1.-smoothstep(.3,1.5,length(fwidth(vWorld)));
    normal=perturbNormalArb(-vViewPosition,normal,vec2(dFdx(stoneHeight),dFdy(stoneHeight))*bumpFade*(1.-cover*.85),faceDirection);`);
   s.fragmentShader=s.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
-   roughnessFactor=mix(surface.r,.88,cover);${type===4?'roughnessFactor=mix(roughnessFactor,.6,wetBank*(1.-cover));':''}`);
+   roughnessFactor=mix(surface.r,.94,cover);${type===4?'roughnessFactor=mix(roughnessFactor,.6,wetBank*(1.-cover));':''}`);
   s.fragmentShader=s.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
    reflectedLight.indirectDiffuse*=vSurfaceAO*surface.b;
    reflectedLight.indirectSpecular*=mix(1.,vSurfaceAO*surface.b,.7);`);

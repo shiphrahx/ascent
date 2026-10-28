@@ -324,3 +324,10 @@ Landform tests confirm substantial near-corridor cuts and fans, bounded depositi
 World-space ripples now combine several scales with noise-warped phases instead of two regular bands. Reflection filtering is broader, grazing reflections are less dominant, silty colour varies independently of the waves, and shore ice uses an irregular field. Wet soil transitions over a wider, uneven margin with a less abrupt colour/roughness change.
 
 All 59 core checks and the river depth/shoreline fixture pass, with finite HDR output and shoreline error below 0.003 m. Reflection sample counts and update frequency are unchanged. Rebuilt and compared the low river view and matched sunrise capture. The river reads less regularly striped, though its narrow channel and simplified reflection still fall short of a detailed water simulation.
+
+
+### Phase 5.3 ? broad, sheltered snow deposits
+
+Snow now accumulates in broader drifts, favours sheltered northern faces more strongly and recedes on steep slopes. A wider derivative-filtered edge replaces the small speckles, with slightly darker snow albedo and higher roughness. Coverage reuses the existing terrain visibility field.
+
+The snow fixture confirms north/south coverage 0.592 / 0.012, sheltered/open 1.000 / 0.318, no cliff or melted coverage and soft subpixel transitions. All 59 core checks pass. Rebuilt the game and inspected the close snow pair and sunrise capture: deposits form continuous patches with exposed rock between them. Fine wind-carved snow geometry remains outside this material treatment.
