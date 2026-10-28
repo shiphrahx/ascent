@@ -278,3 +278,9 @@ All 54 gameplay/graphics/temporal checks pass. Rebuilt the offline game and insp
 Flight keys refresh a 60-second manual window while held and on release. The initial journey still starts in attract mode. After the idle window, automatic burner demand and velocity response blend in over three seconds; a flight key immediately sets automatic contribution to zero.
 
 Browser tests exercise the real key handlers and flight integration: automatic weight is 0 at 59.9 s, 0.033 at 60.1 s, 0.500 at 61.5 s and 1 after 63 s. Immediate takeover and a key held for 61 s both retain weight 0. All 58 regression checks pass, including the existing 700-second landing/restart simulation. Rebuilt the game and inspected the matched sunrise capture; response traces are retained.
+
+### Phase 3.4 — soft obstacle approach
+
+An eight-metre approach field adjusts velocity normal to rock, building and fleet boundaries, preserving tangential movement so the balloon can slide around them. Manual descent slows near the ground. Existing terrain/envelope projections, fleet separation and landing guards remain in place; exact coincident centres now have a finite escape direction.
+
+Sustained input toward all three obstacle shapes settles outside the collision boundary at 30/60/144 Hz without positional teleportation. All 58 regression checks pass, including terrain clearance and the 700-second automatic landing/restart. Rebuilt and inspected the matched sunrise capture. Phase 3's response and handoff acceptance checks are complete.
