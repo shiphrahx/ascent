@@ -208,3 +208,10 @@ Baseline build hash: 7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac39628
 Removed the 19 rad/s modulation from the burner command. The hero light and envelope now use a frame-rate-independent 0.25 s attack / 0.6 s release. Only the point light receives a bounded 3.8% variation made from frequencies below 0.71 Hz. Visible flame shader flicker remains. Reduced point-light intensity from 22 to 12 and range from 38 m to 22 m.
 
 Burner tests verify timing at 30/60/144 Hz and the modulation bound. Rebuilt the standalone game; all 51 gameplay/graphics/temporal checks pass. Personally inspected the matched sunrise captures (plan2-0-3-sunrise.png / plan2-1-1-sunrise.png). Full sunrise acceptance will be remeasured after the remaining lighting fixes.
+
+
+### Phase 1.2 — deliberate autopilot burns
+
+Added proportional thermal demand with separate on/off thresholds and a 1.5-second minimum dwell in either state. Burn strength follows demand during a blast; the smoothed light remains continuous. Controller diagnostics are available in __state.burnerController.
+
+Synthetic rapid demand reversals obey the dwell bound. All 51 regression checks pass, including the full 700-second landing/restart simulation (maximum measured touchdown speed 0.266 m/s). Rebuilt Ascent.html and personally inspected the matched sunrise capture.
