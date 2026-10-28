@@ -215,3 +215,8 @@ Burner tests verify timing at 30/60/144 Hz and the modulation bound. Rebuilt the
 Added proportional thermal demand with separate on/off thresholds and a 1.5-second minimum dwell in either state. Burn strength follows demand during a blast; the smoothed light remains continuous. Controller diagnostics are available in __state.burnerController.
 
 Synthetic rapid demand reversals obey the dwell bound. All 51 regression checks pass, including the full 700-second landing/restart simulation (maximum measured touchdown speed 0.266 m/s). Rebuilt Ascent.html and personally inspected the matched sunrise capture.
+
+
+### Phase 1.3 — fleet and launch ramps
+
+All fleet burners now use the same 0.25 s attack / 0.6 s release as the hero, driven by simulation time rather than a frame-count lerp. Grounded launch balloons use the ramp too. Pausing stops burner animation consistently. Rebuilt the offline game; burner units and all 51 regression checks pass. Personally inspected the matched sunrise capture.
