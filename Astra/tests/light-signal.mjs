@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {analyseSignal} from '../tools/light-signal.mjs';
+const linear=Array.from({length:601},(_,i)=>40+i*.01);
+assert.ok(analyseSignal(linear).largestDetrendedJump<1e-12);
+const pulse=analyseSignal(linear.map((x,i)=>x+3*Math.sin(i/60*Math.PI*6)));
+assert.ok(Math.abs(pulse.peaks[0].hz-3)<.1);
+assert.ok(pulse.peaks[0].amplitude>2.8);
+const step=analyseSignal(linear.map((x,i)=>x+(i>300?4:0)));
+assert.ok(Math.abs(step.largestDetrendedJump-2)<1e-10);
+console.log('Light signal: linear trend, pulse frequency and step residual pass.');
