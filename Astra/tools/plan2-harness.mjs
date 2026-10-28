@@ -24,8 +24,8 @@ export async function openReview(){
   const a=__ascent,q=__review;q.clock=performance.now();q.manual=true;a.setStorm(0);a.setCamera(0);
   q.look=a.camera.lookAt;q.eye=[-25,180,745];q.target=[35,168,600];
   a.camera.lookAt=function(){this.position.fromArray(q.eye);return q.look.apply(this,q.target);};
-  q.step=(t,hour,ascending=true)=>{
-   a.position(35,130+(ascending?t:0),600);a.setHour(hour);a.pause(false);
+  q.step=(t,hour,ascending=true,frozen=false)=>{
+   a.position(35,130+(ascending?t:0),600);a.setHour(hour);a.pause(frozen);
    q.clock+=1000/60;q.callback(q.clock);
   };
  });

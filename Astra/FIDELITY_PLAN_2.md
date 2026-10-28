@@ -172,3 +172,17 @@ Implemented tools/light-stability.mjs: 1,801 frames at 60 Hz, normal-speed 6.0â€
 Medium baseline: envelope peak **3.032 Hz / 1.243 levels amplitude**; largest trend-subtracted jump **0.566** envelope, **1.205** whole frame, **7.689** ground, **1.387** far landscape (8-bit display luminance). The expected burner pulse is confirmed. See captures/plan2-light-medium-baseline.json. Personally inspected the matched 6.55-hour image.
 
 Gameplay (17), graphics (23), temporal (11) checks pass without errors/warnings. Runtime unchanged. Commit publication uses the GitHub connector against the existing main tree because this workspace has no Git metadata; all published paths remain under Astra/.
+
+
+### Phase 0.2 â€” isolated landscape baseline
+
+Added tools/landscape-stability.mjs: four ten-second, 601-frame cases, linear-luminance residuals over the whole frame and the same foreground crop. Frozen time freezes simulation as well as the sun. Exposure is held at 1.8 in every case, and moving actors/particles are excluded.
+
+| Case | Whole RMS | Foreground RMS |
+|---|---:|---:|
+| A: still / frozen | 0.00004816 | 0.00002614 |
+| B: still / running | 0.00166887 | 0.00082225 |
+| C: ascending / frozen | 0.00118831 | 0.00121097 |
+| D: ascending / running | 0.00219242 | 0.00171506 |
+
+Both light progression and camera movement contribute; motion dominates the foreground crop. Phase 4 targets for D are at most 0.00065773 whole / 0.00051452 foreground (70% reduction). Baseline captures and raw samples are retained.
