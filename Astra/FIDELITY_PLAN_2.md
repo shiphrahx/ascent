@@ -252,3 +252,9 @@ The 6.23 Hz envelope peak was caused by rounding its tracked crop to whole pixel
 Every crop is below the 0.5-level jump limit. The old 3.03 Hz envelope pulse falls from approximately 1.239 to 0.002 levels amplitude. The largest residual 1?10 Hz envelope maximum is 0.022 levels at 1.50 Hz; the full spectrum is retained rather than claiming a mathematically zero spectrum. No visible periodic burner pulse remains.
 
 All 51 regression checks and crop-tracking units pass; matched captures inspected. Pacing varies across the session: a fresh original-build run reaches 50.62 FPS and the new build 48.69 FPS, versus approximately 60 earlier. Paired fixed-view GPU means are 17.20 / 17.03 ms (baseline/current), with p99 34.64 / 24.77 ms; CPU submission means are 7.63 / 9.96 ms. These measurements do not establish a sustained-60 guarantee or certify every tier. The pacing gate remains open for Phase 4. Raw traces are retained.
+
+### Phase 2 — centred chase camera
+
+Chase view now aims at the rotated envelope centre, slightly above it for a lower-screen composition. An exact critically damped spring follows position without overshoot; released mouse orbit returns over approximately 1.5 s. Terrain, fleet and envelope exclusions remain active, and basket/cinematic views retain their previous paths.
+
+The 601-frame turning-flight capture moves from a maximum 16.98% horizontal offset to below 0.000001% (the camera always looks at the envelope centre), passing the ±5% limit. Inspected the turn and matched sunrise captures. Frame-independent spring checks and all 51 gameplay/graphics/temporal checks pass. Rebuilt the standalone game.
