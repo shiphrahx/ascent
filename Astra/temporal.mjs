@@ -18,7 +18,7 @@ try{
  await page.goto(pathToFileURL(path.resolve('captures/temporal-probe.html')).href);await page.waitForFunction(()=>window.__ready);
  const result=await page.evaluate(()=>runTemporalProbe());
  const cases=Object.values(result.cases);
- const checks={reducedFlicker:result.temporal.flicker<result.msaa.flicker*.9,
+ const checks={movingHistory:['medium','fast','rotation'].every(name=>result.cases[name].temporal.flicker<result.cases[name].msaa.flicker),reducedFlicker:result.temporal.flicker<result.msaa.flicker*.9,
   accurateCoverage:cases.every(c=>c.temporal.rmse<=c.msaa.rmse),
   noFlickerRegressions:cases.every(c=>c.temporal.flicker<=c.msaa.flicker+1e-7),
   preservesFineBranches:cases.every(c=>c.temporal.contrastRetention>.85&&c.temporal.contrastRetention<1.15),

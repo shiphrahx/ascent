@@ -1,0 +1,133 @@
+{
+  "checks": {
+    "movingHistory": true,
+    "reducedFlicker": true,
+    "accurateCoverage": true,
+    "noFlickerRegressions": true,
+    "preservesFineBranches": true,
+    "noActorTrails": true,
+    "cameraCutRejectsHistory": true,
+    "resizeRejectsHistory": true,
+    "lightingRejectsHistory": true,
+    "toggleRejectsHistory": true,
+    "projectionRejectsHistory": true,
+    "noErrors": true
+  },
+  "result": {
+    "cases": {
+      "slow": {
+        "msaa": {
+          "rmse": 0.03335838218043885,
+          "flicker": 0.052294594332556434,
+          "contrastRetention": 0.9982864001260061
+        },
+        "temporal": {
+          "rmse": 0.02945854637176857,
+          "flicker": 0.04436704992272006,
+          "contrastRetention": 0.9995957383370284
+        }
+      },
+      "medium": {
+        "msaa": {
+          "rmse": 0.03350113484528687,
+          "flicker": 0.05078337181762929,
+          "contrastRetention": 0.9987728670906547
+        },
+        "temporal": {
+          "rmse": 0.0319261214990778,
+          "flicker": 0.04734811980169027,
+          "contrastRetention": 1.0026730629651874
+        }
+      },
+      "fast": {
+        "msaa": {
+          "rmse": 0.029569827805325702,
+          "flicker": 0.0413809606742698,
+          "contrastRetention": 1.0013434729005797
+        },
+        "temporal": {
+          "rmse": 0.02907975672628686,
+          "flicker": 0.040743532874479474,
+          "contrastRetention": 1.0098898389344468
+        }
+      },
+      "rotation": {
+        "msaa": {
+          "rmse": 0.033544091431827856,
+          "flicker": 0.04500694537655624,
+          "contrastRetention": 0.9999881500943846
+        },
+        "temporal": {
+          "rmse": 0.03139867121216478,
+          "flicker": 0.03934580359819524,
+          "contrastRetention": 1.0072317921682732
+        }
+      },
+      "stationary": {
+        "msaa": {
+          "rmse": 0.034538913267637555,
+          "flicker": 1.1099786090181547e-9,
+          "contrastRetention": 1.0327766039070523
+        },
+        "temporal": {
+          "rmse": 0.03442650565970234,
+          "flicker": 1.0664218519983727e-9,
+          "contrastRetention": 1.034456213074574
+        }
+      },
+      "wind": {
+        "msaa": {
+          "rmse": 0.03318187278244502,
+          "flicker": 0.04321541058538797,
+          "contrastRetention": 0.9994406165139255
+        },
+        "temporal": {
+          "rmse": 0.029823991427140005,
+          "flicker": 0.03663293035086512,
+          "contrastRetention": 0.9972525402501162
+        }
+      }
+    },
+    "msaa": {
+      "rmse": 0.03335838218043885,
+      "flicker": 0.052294594332556434,
+      "contrastRetention": 0.9982864001260061
+    },
+    "temporal": {
+      "rmse": 0.02945854637176857,
+      "flicker": 0.04436704992272006,
+      "contrastRetention": 0.9995957383370284
+    },
+    "actors": [
+      {
+        "speed": 0.0014,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 3719
+      },
+      {
+        "speed": 0.0056,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 17646
+      },
+      {
+        "speed": 0.045,
+        "trailError": 0,
+        "maxTrailError": 0,
+        "pixels": 146065
+      }
+    ],
+    "cameraCut": {
+      "usedHistory": false,
+      "reason": "camera cut"
+    },
+    "lightingReset": true,
+    "weatherReset": true,
+    "toggleReset": true,
+    "projectionReset": true,
+    "resizeReset": true
+  },
+  "errors": [],
+  "warnings": []
+}

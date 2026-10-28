@@ -5,9 +5,9 @@ import {Pass,FullScreenQuad} from 'three/addons/postprocessing/Pass.js';
 // Playdead's GDC 2016 presentation: https://www.gdcvault.com/play/1022970/
 // Opaque moving actors mark scene alpha as reactive. They keep current-frame
 // detail; static terrain and wind-blown branches can accumulate subpixel coverage.
-// Four-sample MSAA supplies coverage without projection jitter. Reprojection is
-// deliberately limited to slow motion: retaining history during faster pans
-// erased thin branches in the supersampled-reference tests.
+// MSAA supplies coverage without projection jitter. Static surfaces retain
+// reprojected history at every ordinary camera speed; depth and variance clipping
+// reject disocclusion, while reactive alpha excludes moving actors.
 export function markTemporalReactive(roots){
  const visited=new Set();
  for(const root of roots)root.traverse(object=>{
@@ -82,13 +82,12 @@ void main(){
  vec4 previous=uPreviousViewProjection*world;
  vec2 previousUV=previous.xy/max(previous.w,.00001)*.5+.5;
  bool inside=previous.w>0.&&all(greaterThanEqual(previousUV,vec2(0.)))&&all(lessThanEqual(previousUV,vec2(1.)));
- float motion=length((previousUV-vUv)*uSize);
  float stable=step(.999,source.a)*(1.-step(1.001,source.a));
  float depthTolerance=max(.06,previous.w*.002)+min(fwidth(previous.w)*1.25,previous.w*.02);
  vec3 resolved=source.rgb;
  // Do not reproject a missing MSAA depth sample as sky. Thin branches may
  // contribute color while the particular resolved depth sample misses them.
- if(uHistoryValid>.5&&inside&&!sky&&stable>.5&&motion<.65){
+ if(uHistoryValid>.5&&inside&&!sky&&stable>.5){
  vec3 history=sampleHistory(clamp(previousUV,texel*.5,1.-texel*.5));
  ivec2 oldPixel=ivec2(clamp(previousUV*uSize,vec2(0.),uSize-1.));
  float historyDepth=texelFetch(tHistory,oldPixel,0).a;
@@ -105,10 +104,13 @@ void main(){
  vec3 center=(minimum+maximum)*.5,extent=max((maximum-minimum)*.5,vec3(.0001));
  vec3 delta=old-center;vec3 ratio=abs(delta/extent);
  old=center+delta/max(1.,max(ratio.x,max(ratio.y,ratio.z)));
- float feedback=.55*(1.-smoothstep(.05,.65,motion));
+ // High-contrast silhouettes need more current coverage; broad surfaces can
+ // accumulate strongly. Confidence depends on local contrast, not camera speed.
+ float edge=maximum.x-minimum.x;
+ float feedback=mix(.9,.25,smoothstep(.03,.16,edge));
  // Alpha below one marks moving opaque actors. Bright additive flames also
  // reject history. Depth and clipping reject newly exposed background pixels.
- feedback*=step(0.,historyDepth)*(sameSurface?1.:.8);
+ feedback*=step(0.,historyDepth)*(sameSurface?1.:0.);
  resolved=mix(source.rgb,expandColor(max(fromYCoCg(old),vec3(0.))),feedback);
  }
  gl_FragColor=vec4(resolved,(sky?uFar:linearDepth)*(stable>.5?1.:-1.));

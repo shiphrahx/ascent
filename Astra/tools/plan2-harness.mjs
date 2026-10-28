@@ -25,6 +25,14 @@ export async function openReview(){
   const a=__ascent,q=__review;q.clock=performance.now();q.manual=true;a.setStorm(0);a.setCamera(0);
   q.look=a.camera.lookAt;q.eye=[-25,180,745];q.target=[35,168,600];
   a.camera.lookAt=function(){this.position.fromArray(q.eye);return q.look.apply(this,q.target);};
+  // Seed simulation time through the review API shared by the archived and new
+  // builds. Finish with ordinary fixed-clock frames for exact fractional time.
+  q.setTime=seconds=>{
+   const steps=Math.max(0,Math.floor((seconds-__state.elapsed)*10)-1);
+   a.simulate(steps/10);q.callback(q.clock);a.pause(false);
+   while(__state.elapsed<seconds-1e-8){q.clock+=1000*Math.min(.05,seconds-__state.elapsed);q.callback(q.clock);}
+   a.pause(true);
+  };
   q.step=(t,hour,ascending=true,frozen=false)=>{
    a.position(35,130+(ascending?t:0),600);a.setHour(hour);a.pause(frozen);
    q.clock+=1000/60;q.callback(q.clock);

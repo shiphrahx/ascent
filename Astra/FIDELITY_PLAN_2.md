@@ -292,3 +292,11 @@ The isolated repeat after Phase 3 gives A/B/C/D whole RMS 0.000051 / 0.000777 / 
 Verified that high updates all three cascades every frame (40/40/40), while medium/lite interpolate their staggered distant depth maps (40/7/3 updates during ascent). Rendered shadow cameras remain texel-snapped within 2.1e-9 texels while both camera and sun move. The probe uses the cached map's actual rendering pose; comparing a queued light position to an older cached orientation was an invalid initial measurement. No synchronous unpack-state queries occur.
 
 Low sunlight now widens the existing fixed Poisson filter by up to 65%, with no additional taps or maps. All 58 core checks and the shadow fixtures on all three tiers pass. Rebuilt and inspected the matched sunrise capture.
+
+### Phase 4.2 — motion-independent static history
+
+Removed the 0.65-pixel motion cutoff. Static surfaces now retain depth-reprojected, variance-clipped history at every ordinary camera speed. Broad surfaces use 90% history; high-contrast silhouettes use 25% to preserve fine coverage. Depth mismatches now reject history completely, and moving actors/flames retain their reactive rejection. The closest-depth silhouette rule remains.
+
+All six supersampled-reference cases improve or preserve coverage and flicker, including fast translation and rotation. Branch contrast stays within 99.7–103.5% of the reference; actor trail error is zero. A new movingHistory assertion prevents restoring the old cutoff. The full 59-check regression suite passes; rebuilt and inspected the matched capture. A projection-jitter experiment failed reference accuracy and was discarded.
+
+The landscape harness now seeds simulation time identically through the API shared with the archived build; case D alone and case D in the full suite start at 193 seconds. The earlier per-pixel metric is unchanged, with optional regional diagnostics tested to preserve its value. The matched D pair measures 0.002146 ? 0.001749 whole and 0.001687 ? 0.001448 foreground: **18.5% / 14.2% reduction**, still below 70%. The temporal audit confirms approximately 85–90% history on broad foreground surfaces. The full four-case pair is being retained for further diagnosis; Phase 4 acceptance remains open.
