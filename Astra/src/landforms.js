@@ -19,10 +19,18 @@ export function valleyErosion(x,z,distance){
  const along=z/62+(landNoise(z*.004,side*19)-.5)*1.4+side*Math.abs(distance)*.0018;
  const cell=Math.floor(along);let cut=0;
  for(let i=cell-1;i<=cell+1;i++){
-  const center=i+.2+landHash(i,side*7)*.6,width=.06+(1-runoff)*.16;
+  const center=i+.2+landHash(i,side*7)*.6,width=.09+(1-runoff)*.17;
   const channel=Math.max(0,1-Math.abs(along-center)/width);
   const fork=Math.max(0,1-Math.abs(along-center-.22*(1-runoff))/(width*.5));
   cut+=channel+fork*.28*(1-runoff);
  }
- return cut*(5+runoff*12)*smooth(Math.abs(distance),35,95);
+ return cut*(4+runoff*13)*smooth(Math.abs(distance),18,85);
+}
+
+export function valleyTalus(x,z,distance){
+ // Low, broad depositional fans survive the eight-metre near-terrain grid.
+ // The river corridor stays clear; the field is baked once into geometry.
+ const d=Math.abs(distance),foot=smooth(d,18,42)*(1-smooth(d,95,160));
+ const fan=landNoise(x*.025+13,z*.018-7)*.7+landNoise(x*.055,z*.045)*.3;
+ return foot*smooth(fan,.3,.8)*3.5;
 }

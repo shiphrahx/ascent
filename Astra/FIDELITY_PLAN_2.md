@@ -312,3 +312,9 @@ The four-case harness now uses a fresh scene and the same 100-second simulation 
 Correctly isolated D: baseline **0.002188 whole / 0.001723 foreground**; current **0.001750 / 0.001434**, reductions **20.0% / 16.8%**. The **70% flicker gate remains open**. On 28 October the owner explicitly authorized proceeding with Phase 5 while retaining this shortfall in the results.
 
 All 59 core checks and medium/lite/high shadow fixtures pass. Rebuilt the standalone game and inspected the matched sunrise and near-terrain review captures.
+
+### Phase 5.1 — erosion in the near corridor
+
+Terracing now begins 24 m from the flight path and reaches full strength by 115 m, rather than 65–170 m. Gullies extend into the nearer slopes, with widths that survive the existing grid. Broad, low talus fans add deposited material at their feet while preserving the central channel. These fields are baked into the same terrain triangles used by collision; the grid size and runtime shader cost are unchanged.
+
+Landform tests confirm substantial near-corridor cuts and fans, bounded deposition and a clear central channel. All 59 core checks pass, including rendered-terrain/collision agreement and landing. Rebuilt and personally compared the near-terrain and sunrise captures. The lower slopes are more segmented, although the medium tier's eight-metre grid still limits fine erosion detail.

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {tuffAlbedo,soilAlbedo,tuffSurface,soilSurface,masonryAlbedo,masonrySurface} from './material-assets.js';
-import {terraceHeight,valleyErosion} from './landforms.js';
+import {terraceHeight,valleyErosion,valleyTalus} from './landforms.js';
 import {materialStrataGLSL} from './material-strata.js';
 import {snowCoverageGLSL} from './snow.js';
 export {THREE,mergeGeometries};
@@ -16,7 +16,8 @@ function rawGround(x,z){
  h-=25*Math.exp(-Math.pow((x+250+120*Math.sin(z*.004))/85,2));
  h+=Math.abs(Math.sin(x*.016+z*.008))*8*smooth(Math.abs(d),130,380);
  h-=valleyErosion(x,z,d);
- h=terraceHeight(h,x,z,.82*smooth(Math.abs(d),65,170));
+ h=terraceHeight(h,x,z,.82*smooth(Math.abs(d),24,115));
+ h+=valleyTalus(x,z,d);
  const bank=Math.abs(x-riverX(z)),width=7.7+Math.sin(z*.029)*2.1+Math.sin(z*.007+1.3)*1.4;
  const depth=1.15+.55*(.5+.5*Math.sin(z*.013));
  if(bank<width)return 3.55-depth*(1-Math.pow(bank/width,2.4));
