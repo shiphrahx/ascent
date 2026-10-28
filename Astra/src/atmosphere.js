@@ -45,23 +45,28 @@ col=mix(col,vec3(.37,.43,.51),uStorm*.28);gl_FragColor=vec4(col,cloudTransmissio
 skyMat.vertexShader='varying vec2 vSkyUv;'+Sky.SkyShader.vertexShader.replace('gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );','vSkyUv=uv;gl_Position=vec4(position.xy,0.,1.);');
 skyMat.fragmentShader=skyMat.fragmentShader.replace('varying vec3 vPos;', 'varying vec2 vSkyUv;').replace('vec3 d=normalize(vPos-uEye);','float longitude=(vSkyUv.x-.5)*6.2831853,latitude=(vSkyUv.y-.5)*3.14159265;vec3 d=vec3(cos(latitude)*cos(longitude),sin(latitude),cos(latitude)*sin(longitude));');
 skyMat.side=THREE.FrontSide;skyMat.depthTest=false;
-const skyTarget=new THREE.WebGLRenderTarget(tier.skyWidth,tier.skyWidth/2,{type:THREE.HalfFloatType,depthBuffer:false,wrapS:THREE.RepeatWrapping});
+let skyTarget=new THREE.WebGLRenderTarget(tier.skyWidth,tier.skyWidth/2,{type:THREE.HalfFloatType,depthBuffer:false,wrapS:THREE.RepeatWrapping});
 skyTarget.texture.mapping=THREE.EquirectangularReflectionMapping;
 const skyQuad=new FullScreenQuad(skyMat),pmrem=new THREE.PMREMGenerator(renderer);
 const environmentWidth=tier.name==='high'?512:256;
 const environmentInput=new THREE.WebGLRenderTarget(environmentWidth,environmentWidth/2,{type:THREE.HalfFloatType,depthBuffer:false});
 environmentInput.texture.mapping=THREE.EquirectangularReflectionMapping;
 const environmentCopy=new FullScreenQuad(new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{source:{value:skyTarget.texture}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',fragmentShader:'varying vec2 vUv;uniform sampler2D source;void main(){gl_FragColor=texture2D(source,vUv);}'}));
+let skyPrevious=skyTarget.clone();skyPrevious.texture.name='Previous visible sky tiles';
 const skyColumns=tier.name==='medium'?8:4,skyRows=4,skyCache={columns:skyColumns,rows:skyRows,fullUpdates:0,partialUpdates:0,maxPartialPixels:0};
+const skyTileTimes=new Float64Array(skyColumns*skyRows).fill(-Infinity),skyTileBlend=new Float32Array(skyColumns*skyRows).fill(1);
 let skyUpdated=-Infinity,skyHour=-1,skyStorm=-1,skyTile=-1,environment=null,environmentBlend=null,environmentHour=-1,environmentStorm=-1;
-const skyDisplay=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{...skyU,uSky:{value:skyTarget.texture}},
+const skyDisplay=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{...skyU,uSky:{value:skyTarget.texture},uSkyPrevious:{value:skyPrevious.texture},uSkyBlend:{value:skyTileBlend}},
  vertexShader:'varying vec3 vDirection;void main(){vDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
- fragmentShader:`varying vec3 vDirection;uniform sampler2D uSky;uniform vec3 uSun;uniform float uNight,uStorm,uTime;
+ fragmentShader:`varying vec3 vDirection;uniform sampler2D uSky,uSkyPrevious;uniform float uSkyBlend[${skyColumns*skyRows}];uniform vec3 uSun;uniform float uNight,uStorm,uTime;
  float starHash(vec3 p){p=fract(p*.3183099+vec3(.1,.2,.3));p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
- void main(){vec3 d=normalize(vDirection);vec2 uv=vec2(atan(d.z,d.x)/6.2831853+.5,asin(clamp(d.y,-1.,1.))/3.14159265+.5);vec4 skySample=texture2D(uSky,uv);vec3 col=skySample.rgb;
+ void main(){vec3 d=normalize(vDirection);vec2 uv=vec2(atan(d.z,d.x)/6.2831853+.5,asin(clamp(d.y,-1.,1.))/3.14159265+.5);int tile=int(clamp(floor(uv.x*${skyColumns}.),0.,${skyColumns-1}.)+clamp(floor(uv.y*${skyRows}.),0.,${skyRows-1}.)*${skyColumns}.);vec4 skySample=mix(texture2D(uSkyPrevious,uv),texture2D(uSky,uv),uSkyBlend[tile]);vec3 col=skySample.rgb;
  float mu=dot(d,uSun);float edge=max(fwidth(mu),.000002);float disc=smoothstep(.99996-edge,.99996+edge,mu);col+=disc*9.*vec3(1.,.76,.48)*(1.-uNight)*(1.-uStorm*.94)*skySample.a;
  vec3 starCell=floor(d*900.);float star=pow(starHash(starCell),320.)*pow(max(d.y,0.),.3);col+=vec3(.65,.78,1.)*star*uNight*(1.-uStorm)*skySample.a*.8;
  gl_FragColor=vec4(col,1.);}`});
+// Environment generation sees the same blended sky as the camera.
+Object.assign(environmentCopy.material.uniforms,{source:skyDisplay.uniforms.uSky,previousSky:skyDisplay.uniforms.uSkyPrevious,tileBlend:skyDisplay.uniforms.uSkyBlend});
+environmentCopy.material.fragmentShader=`varying vec2 vUv;uniform sampler2D source,previousSky;uniform float tileBlend[${skyColumns*skyRows}];void main(){int tile=int(clamp(floor(vUv.x*${skyColumns}.),0.,${skyColumns-1}.)+clamp(floor(vUv.y*${skyRows}.),0.,${skyRows-1}.)*${skyColumns}.);gl_FragColor=mix(texture2D(previousSky,vUv),texture2D(source,vUv),tileBlend[tile]);}`;
 const sky=mesh(new THREE.SphereGeometry(18000,32,18),skyDisplay,scene);sky.castShadow=sky.receiveShadow=false;sky.renderOrder=-10;
 const fogColor=new THREE.Color('#8e9aa4');scene.fog=null;
 const shadows=createSunShadows(scene,camera,renderer),key=shadows.csm.lights[0];
@@ -123,7 +128,7 @@ Object.assign(fogPass.uniforms,terrainLightUniforms,cloudShadowUniforms,{uNoise:
 fogPass.textureID='sceneColor';fogPass.uniforms.tDiffuse.value=scenePass.target.texture;fogPass.uniforms.tDepth.value=scenePass.target.depthTexture;composer.addPass(fogPass);
 const temporal=new TemporalResolvePass(camera,scenePass.target.depthTexture);composer.addPass(temporal);
 const bloom=createLensBloom(innerWidth,innerHeight);composer.addPass(bloom);const output=createOpaqueOutput();composer.addPass(output);
-return {get environmentBlend(){return environmentBlend;},composer,scenePass,sky,skyU,skyTarget,skyCache,key,shadows,cloudShadows,fogPass,bloom,output,temporal,exposure,render(){
+return {get environmentBlend(){return environmentBlend;},composer,scenePass,sky,skyU,get skyTarget(){return skyTarget;},skyCache,key,shadows,cloudShadows,fogPass,bloom,output,temporal,exposure,render(){
  this.beforeRender?.();temporal.beginFrame();fogPass.uniforms.invProjection.value.copy(camera.projectionMatrixInverse);
  exposure.update();try{composer.render();}finally{temporal.endFrame();}exposure.sample();
 },update(t,hour,hero,storm,fade,quality=1){
@@ -143,11 +148,16 @@ if(forceSky||skyTile>=0||t-skyUpdated>(quality>.6?.5:.9)){
  // across small tiles (32 on integrated GPUs). Time/weather jumps refresh the
  // entire sky immediately; resolution and ray-march detail are unchanged.
  const previous=renderer.getRenderTarget();
+ // Reuse completed caches: swapping once per sweep avoids a full-size texture
+ // dependency and copy for every tile. Unwritten tiles keep showing the old sky.
+ if(!forceSky&&skyTile<0){[skyTarget,skyPrevious]=[skyPrevious,skyTarget];skyTileTimes.fill(Infinity);skyDisplay.uniforms.uSky.value=skyTarget.texture;skyDisplay.uniforms.uSkyPrevious.value=skyPrevious.texture;}
  skyTarget.scissorTest=!forceSky;
  if(!forceSky){if(skyTile<0)skyTile=0;const w=tier.skyWidth/skyColumns,h=tier.skyWidth/(2*skyRows);skyTarget.scissor.set((skyTile%skyColumns)*w,Math.floor(skyTile/skyColumns)*h,w,h);skyCache.partialUpdates++;skyCache.maxPartialPixels=Math.max(skyCache.maxPartialPixels,w*h);}else skyCache.fullUpdates++;
  renderer.setRenderTarget(skyTarget);skyQuad.render(renderer);renderer.setRenderTarget(previous);
+ if(forceSky)skyTileTimes.fill(-Infinity);else skyTileTimes[skyTile]=lightingClock;
  if(forceSky||++skyTile===skyColumns*skyRows){skyUpdated=t;skyHour=hour;skyStorm=storm;skyTile=-1;}
 }
+for(let i=0;i<skyTileBlend.length;i++)skyTileBlend[i]=smooth(lightingClock-skyTileTimes[i],0,.4);
 environmentBlend?.update(lightingClock);
 if(!environment||Math.abs(hour-environmentHour)>.06||Math.abs(storm-environmentStorm)>.1){
  // Diffuse/rough reflections need far fewer texels than the visible cloud sky.

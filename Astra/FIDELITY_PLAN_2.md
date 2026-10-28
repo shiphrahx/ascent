@@ -234,3 +234,21 @@ GPU transition tests cover HDR preservation, interrupted fades, settled work and
 Metering now uses 256 bins (0.094 EV spacing), an asynchronous sample every 150 ms, and the same 1.3/s adaptation rate in both directions. Tests verify adjacent-bin spacing, symmetric adaptation, outlier rejection and async GPU readbacks; middle grey meters to 1.014x. All 51 regression checks pass; the standalone game is rebuilt and the matched capture inspected.
 
 The repeated sunrise test removes the dominant 3.03 Hz envelope pulse. Largest detrended jumps are now 0.171 envelope, 0.513 whole, 0.067 ground and 1.259 far crop, versus 0.566 / 1.205 / 7.689 / 1.387 initially. **Phase 1 acceptance remains open** because the visible sky cache still changes in tiles. A small 6.23 Hz envelope peak also needs checking for crop-tracking quantisation before it can be attributed to lighting. These remaining causes will be addressed before moving to Phase 2.
+
+
+### Phase 1.6 ? remaining sky-cache steps and measurement correction
+
+The visible sky changed abruptly once per cache sweep (about 61 frames). Tiles now fade over 0.4 s between two alternating caches. Cache swapping avoids a full-size copy on every update; environment generation samples the displayed blend.
+
+The 6.23 Hz envelope peak was caused by rounding its tracked crop to whole pixels during ascent. The light harness now samples the moving crop bilinearly; a synthetic moving-gradient test verifies that tracking adds no steps. Re-ran the original build and current build with the same corrected metric, retaining both reports.
+
+| Largest detrended jump (levels) | Corrected baseline | After Phase 1 |
+|---|---:|---:|
+| whole | 1.2674 | 0.0145 |
+| envelope | 0.5325 | 0.0402 |
+| ground | 7.7241 | 0.0720 |
+| far | 1.4730 | 0.0223 |
+
+Every crop is below the 0.5-level jump limit. The old 3.03 Hz envelope pulse falls from approximately 1.239 to 0.002 levels amplitude. The largest residual 1?10 Hz envelope maximum is 0.022 levels at 1.50 Hz; the full spectrum is retained rather than claiming a mathematically zero spectrum. No visible periodic burner pulse remains.
+
+All 51 regression checks and crop-tracking units pass; matched captures inspected. Pacing varies across the session: a fresh original-build run reaches 50.62 FPS and the new build 48.69 FPS, versus approximately 60 earlier. Paired fixed-view GPU means are 17.20 / 17.03 ms (baseline/current), with p99 34.64 / 24.77 ms; CPU submission means are 7.63 / 9.96 ms. These measurements do not establish a sustained-60 guarantee or certify every tier. The pacing gate remains open for Phase 4. Raw traces are retained.
