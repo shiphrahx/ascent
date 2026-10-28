@@ -14,9 +14,10 @@ try{
  const result=await page.evaluate(()=>{
   const a=__ascent,c=a.atmo.cloudShadows,r=a.renderer,u=a.atmo.fogPass.uniforms,dir=a.atmo.shadows.csm.lightDirection.clone().negate(),t=__state.elapsed;
   const half=n=>{const s=n&0x8000?-1:1,e=(n>>10)&31,m=n&1023;return e===0?s*m*2**-24:e===31?NaN:s*(1+m/1024)*2**(e-15);};
+  function settle(){c.transition?.update(performance.now()/1000+c.stats.interval);}
   function field(){const target=c.targets.find(v=>v.texture===u.uCloudShadow.value),data=new Uint16Array(target.width*target.height*4);r.readRenderTargetPixels(target,0,0,target.width,target.height,data);const values=Array.from({length:data.length/4},(_,i)=>half(data[i*4]));return {values,min:Math.min(...values),max:Math.max(...values),mean:values.reduce((s,v)=>s+v,0)/values.length,finite:values.every(Number.isFinite)};}
   c.update(t,dir,0);const before=field(),updates=c.stats.updates;c.update(t,dir,0);const cached=c.stats.updates===updates;
-  c.update(t+60,dir,0);const moved=field();let motion=0;for(let i=0;i<before.values.length;i++)motion+=(moved.values[i]-before.values[i])**2;
+  c.update(t+60,dir,0);settle();const moved=field();let motion=0;for(let i=0;i<before.values.length;i++)motion+=(moved.values[i]-before.values[i])**2;
   c.update(t+61,dir,1);const storm=field(),cutReset=u.uCloudShadow.value===u.uCloudPrevious.value;
   c.update(t+62,dir,0);a.atmo.exposure.setFixed(r.toneMappingExposure);
   const gl=r.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;

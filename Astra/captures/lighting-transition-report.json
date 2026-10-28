@@ -1,0 +1,27 @@
+{
+  "result": {
+    "initial": [
+      0,
+      0,
+      0
+    ],
+    "middle": [
+      1,
+      0.5,
+      0.25
+    ],
+    "interrupted": [
+      1,
+      0.5,
+      0.25
+    ],
+    "settled": [
+      0.5,
+      1,
+      2
+    ],
+    "skipsSettledWork": true,
+    "restoredTarget": true
+  },
+  "errors": []
+}

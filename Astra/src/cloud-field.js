@@ -1,3 +1,4 @@
+import {createTextureTransition} from './texture-transition.js';
 import {THREE,rng} from './core.js';
 import {FullScreenQuad} from 'three/addons/postprocessing/Pass.js';
 const nr=rng(341),noiseData=new Uint8Array(256*256*4),noiseBase=Uint8Array.from({length:65536},()=>nr()*255);for(let y=0;y<256;y++)for(let x=0;x<256;x++){let i=(x+y*256)*4;noiseData[i]=noiseBase[x+y*256];noiseData[i+1]=noiseBase[((x+37)%256)+((y+17)%256)*256];noiseData[i+2]=noiseData[i];noiseData[i+3]=255;}const noiseTex=new THREE.DataTexture(noiseData,256,256);noiseTex.wrapS=noiseTex.wrapT=THREE.RepeatWrapping;noiseTex.magFilter=THREE.LinearFilter;noiseTex.minFilter=THREE.LinearMipmapLinearFilter;noiseTex.generateMipmaps=true;noiseTex.needsUpdate=true;export const noiseUniform={value:noiseTex};
@@ -25,6 +26,7 @@ export const cloudShadowUniforms={uCloudShadow:{value:null},uCloudPrevious:{valu
 
 export function createCloudShadows(renderer){
  const tier=renderer.ascentQuality.name,size=tier==='high'?256:tier==='lite'?128:192,steps=tier==='high'?12:tier==='lite'?6:8,interval=tier==='high'?.25:tier==='lite'?1:.5;
+ const transition=createTextureTransition(renderer,size,size);
  const targets=Array.from({length:2},()=>new THREE.WebGLRenderTarget(size,size,{type:THREE.HalfFloatType,depthBuffer:false}));
  const sun={value:new THREE.Vector3(0,1,0)},time={value:0},storm={value:0};
  const quad=new FullScreenQuad(new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{uNoise:noiseUniform,uTime:time,uStorm:storm,uShadowSun:sun},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',fragmentShader:`
@@ -43,15 +45,17 @@ export function createCloudShadows(renderer){
  }`}));
  let index=0,lastTime=-Infinity,lastStorm=-1,initialized=false;const lastSun=new THREE.Vector3(),stats={size,steps,interval,updates:0};
  cloudShadowUniforms.uCloudShadow.value=targets[0].texture;cloudShadowUniforms.uCloudPrevious.value=targets[0].texture;
- return {targets,stats,setEnabled(enabled){cloudShadowUniforms.uCloudShadowEnabled.value=enabled?1:0;},update(t,direction,weather){
+ return {targets:[...targets,transition.output],transition,stats,setEnabled(enabled){cloudShadowUniforms.uCloudShadowEnabled.value=enabled?1:0;},update(t,direction,weather){
   cloudShadowUniforms.uCloudProjection.value.set(direction.x,direction.z).multiplyScalar(1/Math.max(direction.y,.08));
-  cloudShadowUniforms.uCloudBlend.value=tier==='high'?THREE.MathUtils.smoothstep(t-lastTime,0,interval):1;
+  const lightingClock=performance.now()/1000;transition.update(lightingClock);cloudShadowUniforms.uCloudBlend.value=1;
   const force=!initialized||lastSun.distanceToSquared(direction)>.001||Math.abs(weather-lastStorm)>.05;
   if(!force&&t-lastTime<interval)return;
+  transition.snapshot();
   const target=targets[index],previous=renderer.getRenderTarget();sun.value.copy(direction);time.value=t;storm.value=weather;
   try{renderer.setRenderTarget(target);quad.render(renderer);}finally{renderer.setRenderTarget(previous);}
-  cloudShadowUniforms.uCloudPrevious.value=force?target.texture:targets[1-index].texture;
-  cloudShadowUniforms.uCloudShadow.value=target.texture;cloudShadowUniforms.uCloudBlend.value=force?1:0;if(!initialized)cloudShadowUniforms.uCloudShadowEnabled.value=1;
+  transition.start(target.texture,lightingClock,interval,force);
+  cloudShadowUniforms.uCloudPrevious.value=transition.output.texture;
+  cloudShadowUniforms.uCloudShadow.value=transition.output.texture;cloudShadowUniforms.uCloudBlend.value=1;if(!initialized)cloudShadowUniforms.uCloudShadowEnabled.value=1;
   index=1-index;initialized=true;lastTime=t;lastStorm=weather;lastSun.copy(direction);stats.updates++;
  }};
 }
@@ -62,7 +66,7 @@ export function cloudShadowGLSL(high){return `uniform sampler2D uCloudShadow,uCl
   float edge=(1.-smoothstep(.43,.5,max(abs(uv.x-.5),abs(uv.y-.5))))*(1.-smoothstep(550.,1000.,world.y));
   if(uCloudShadowEnabled<.5||edge<=0.)return 1.;
   float shade=texture2D(uCloudShadow,uv).r;
-  ${high?'shade=mix(texture2D(uCloudPrevious,uv).r,shade,uCloudBlend);':''}
+  // Cached lighting is blended once before surfaces sample it.
   return mix(1.,shade,edge*.85);
  }
  `;}

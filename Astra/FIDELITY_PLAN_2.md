@@ -220,3 +220,10 @@ Synthetic rapid demand reversals obey the dwell bound. All 51 regression checks 
 ### Phase 1.3 — fleet and launch ramps
 
 All fleet burners now use the same 0.25 s attack / 0.6 s release as the hero, driven by simulation time rather than a frame-count lerp. Grounded launch balloons use the ramp too. Pausing stops burner animation consistently. Rebuilt the offline game; burner units and all 51 regression checks pass. Personally inspected the matched sunrise capture.
+
+
+### Phase 1.4 — continuous cached lighting
+
+PMREM refreshes now cross-fade in a small HDR atlas for 1.2 s. The input is 256 pixels wide on medium/lite and 512 on high, down from 1024; surfaces retain a single environment lookup. Interrupted fades start from the displayed result. Terrain bounce blends its mean on lower tiers and its field on high. Cloud-shadow fields also blend on every tier; their previously hard lower-tier refresh was another measured flicker source. Review-time lighting fades finish even when simulation is paused.
+
+GPU transition tests cover HDR preservation, interrupted fades, settled work and render-state restoration. All 51 core regression checks plus medium/high cloud and high terrain-lighting fixtures pass. Matched sunrise captures inspected. Medium native pacing: **59.95 FPS**, median **16.70 ms**, p95 **16.90 ms**, p99 **17.00 ms**, **0/1799** frames over 25 ms (baseline 5/1794).

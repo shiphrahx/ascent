@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createTextureTransition} from './texture-transition.js';
 import {bakeTerrainHorizons} from './terrain-horizons.js';
 
 const bounds=[-3000,-2400,3000,2400];
@@ -7,24 +8,28 @@ let staticField;
 function texture(data,size){const t=new THREE.DataTexture(data,size,size,THREE.RGBAFormat,THREE.HalfFloatType);t.minFilter=t.magFilter=THREE.LinearFilter;t.needsUpdate=true;return t;}
 const half=THREE.DataUtils.toHalfFloat;
 
-export function createTerrainLighting(heightAt,tier){
+export function createTerrainLighting(heightAt,tier,renderer){
  const size=tier.name==='lite'?129:257,directions=tier.name==='high'?16:8;
  const started=performance.now(),field=bakeTerrainHorizons({heightAt,bounds,size,directions}),encoded=new Uint16Array(size*size*4);
  for(let i=0;i<size*size;i++){encoded[i*4]=half(field.visibility[i]);encoded[i*4+1]=half(field.heights[i]);encoded[i*4+2]=half(1);encoded[i*4+3]=half(1);}
  staticField=field;
  const visibility=texture(encoded,size),bounceSize=tier.name==='high'?129:tier.name==='lite'?33:65;
  const bounceData=new Uint16Array(bounceSize*bounceSize*4),radiance=new Float32Array(bounceSize*bounceSize*3),scratch=radiance.slice(),blurred=radiance.slice(),bounce=texture(bounceData,bounceSize);
- terrainLightUniforms.uTerrainVisibility.value=visibility;terrainLightUniforms.uTerrainBounce.value=bounce;terrainLightUniforms.uTerrainTexel.value=1/size;terrainLightUniforms.uBounceTexel.value=1/bounceSize;terrainLightUniforms.uTerrainLightEnabled.value=1;
+ const interval=tier.name==='lite'?1:.5,transition=tier.name==='high'?createTextureTransition(renderer,bounceSize,bounceSize):null;
+ const fromMean=new THREE.Vector3(),targetMean=new THREE.Vector3();let meanStarted=-Infinity;
+ terrainLightUniforms.uTerrainVisibility.value=visibility;terrainLightUniforms.uTerrainBounce.value=transition?transition.output.texture:bounce;terrainLightUniforms.uTerrainTexel.value=1/size;terrainLightUniforms.uBounceTexel.value=1/bounceSize;terrainLightUniforms.uTerrainLightEnabled.value=1;
  let lastTime=-Infinity,lastIntensity=-1,lastSnow=-1;const lastDirection=new THREE.Vector3(0,-1,0),lastColor=new THREE.Color();
  const stats={size,directions,bounceSize,bakeMs:performance.now()-started,updates:0,lastUpdateMs:0};
- return {field,visibility,bounce,stats,setEnabled(value){terrainLightUniforms.uTerrainLightEnabled.value=value?1:0;},update(time,light){
+ return {field,visibility,bounce,transition,stats,setEnabled(value){terrainLightUniforms.uTerrainLightEnabled.value=value?1:0;},update(time,light){
   if(!light)return;
+  const lightingClock=performance.now()/1000;transition?.update(lightingClock);
+  terrainLightUniforms.uTerrainMeanBounce.value.lerpVectors(fromMean,targetMean,THREE.MathUtils.smoothstep(lightingClock-meanStarted,0,interval));
   const {direction,color,intensity,snow}=light,force=lastDirection.distanceToSquared(direction)>.01||Math.abs(lastIntensity-intensity)>.4||Math.abs(lastSnow-snow)>.1;
-  if(!force&&time-lastTime<(tier.name==='lite'?1:.5))return;
+  if(!force&&time-lastTime<interval)return;
   if(!force&&lastDirection.distanceToSquared(direction)<1e-8&&Math.abs(lastIntensity-intensity)<.001&&Math.abs(lastSnow-snow)<.001&&lastColor.equals(color))return;
   const start=performance.now(),elevation=Math.atan2(direction.y,Math.hypot(direction.x,direction.z));
   const azimuth=(Math.atan2(direction.z,direction.x)/(Math.PI*2)+1)%1*directions,d0=Math.floor(azimuth),d1=(d0+1)%directions,fraction=azimuth-d0;
-  const mean=terrainLightUniforms.uTerrainMeanBounce.value;mean.set(0,0,0);
+  fromMean.copy(terrainLightUniforms.uTerrainMeanBounce.value);const mean=targetMean;mean.set(0,0,0);
   for(let z=0;z<bounceSize;z++)for(let x=0;x<bounceSize;x++){
    const q=Math.round(z/(bounceSize-1)*(size-1))*size+Math.round(x/(bounceSize-1)*(size-1)),p=(z*bounceSize+x)*3;
    const horizon=field.angles[q*directions+d0]*(1-fraction)+field.angles[q*directions+d1]*fraction;
@@ -46,7 +51,9 @@ export function createTerrainLighting(heightAt,tier){
    const q=(z*bounceSize+x)*3+k,lo=(Math.max(0,z-1)*bounceSize+x)*3+k,hi=(Math.min(bounceSize-1,z+1)*bounceSize+x)*3+k;
    blurred[q]=scratch[lo]*.25+scratch[q]*.5+scratch[hi]*.25;bounceData[(z*bounceSize+x)*4+k]=half(blurred[q]);
   }
-  bounce.needsUpdate=true;lastTime=time;lastIntensity=intensity;lastSnow=snow;lastDirection.copy(direction);lastColor.copy(color);stats.updates++;stats.lastUpdateMs=performance.now()-start;
+  transition?.snapshot();bounce.needsUpdate=true;transition?.start(bounce,lightingClock,interval);
+  meanStarted=lightingClock;if(stats.updates===0){fromMean.copy(targetMean);terrainLightUniforms.uTerrainMeanBounce.value.copy(targetMean);}
+  lastTime=time;lastIntensity=intensity;lastSnow=snow;lastDirection.copy(direction);lastColor.copy(color);stats.updates++;stats.lastUpdateMs=performance.now()-start;
  }};
 }
 

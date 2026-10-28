@@ -1,3 +1,4 @@
+import {createTextureTransition} from './texture-transition.js';
 import {createLensBloom,createOpaqueOutput} from './lens-post.js';
 import {THREE,rand,rng,TAU,uniforms,lerp,clamp,smooth,mat,mesh,canvasTexture} from './core.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
@@ -47,11 +48,12 @@ skyMat.side=THREE.FrontSide;skyMat.depthTest=false;
 const skyTarget=new THREE.WebGLRenderTarget(tier.skyWidth,tier.skyWidth/2,{type:THREE.HalfFloatType,depthBuffer:false,wrapS:THREE.RepeatWrapping});
 skyTarget.texture.mapping=THREE.EquirectangularReflectionMapping;
 const skyQuad=new FullScreenQuad(skyMat),pmrem=new THREE.PMREMGenerator(renderer);
-const environmentInput=new THREE.WebGLRenderTarget(1024,512,{type:THREE.HalfFloatType,depthBuffer:false});
+const environmentWidth=tier.name==='high'?512:256;
+const environmentInput=new THREE.WebGLRenderTarget(environmentWidth,environmentWidth/2,{type:THREE.HalfFloatType,depthBuffer:false});
 environmentInput.texture.mapping=THREE.EquirectangularReflectionMapping;
 const environmentCopy=new FullScreenQuad(new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{source:{value:skyTarget.texture}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',fragmentShader:'varying vec2 vUv;uniform sampler2D source;void main(){gl_FragColor=texture2D(source,vUv);}'}));
 const skyColumns=tier.name==='medium'?8:4,skyRows=4,skyCache={columns:skyColumns,rows:skyRows,fullUpdates:0,partialUpdates:0,maxPartialPixels:0};
-let skyUpdated=-Infinity,skyHour=-1,skyStorm=-1,skyTile=-1,environment=null,environmentHour=-1,environmentStorm=-1;
+let skyUpdated=-Infinity,skyHour=-1,skyStorm=-1,skyTile=-1,environment=null,environmentBlend=null,environmentHour=-1,environmentStorm=-1;
 const skyDisplay=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{...skyU,uSky:{value:skyTarget.texture}},
  vertexShader:'varying vec3 vDirection;void main(){vDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
  fragmentShader:`varying vec3 vDirection;uniform sampler2D uSky;uniform vec3 uSun;uniform float uNight,uStorm,uTime;
@@ -121,10 +123,11 @@ Object.assign(fogPass.uniforms,terrainLightUniforms,cloudShadowUniforms,{uNoise:
 fogPass.textureID='sceneColor';fogPass.uniforms.tDiffuse.value=scenePass.target.texture;fogPass.uniforms.tDepth.value=scenePass.target.depthTexture;composer.addPass(fogPass);
 const temporal=new TemporalResolvePass(camera,scenePass.target.depthTexture);composer.addPass(temporal);
 const bloom=createLensBloom(innerWidth,innerHeight);composer.addPass(bloom);const output=createOpaqueOutput();composer.addPass(output);
-return {composer,scenePass,sky,skyU,skyTarget,skyCache,key,shadows,cloudShadows,fogPass,bloom,output,temporal,exposure,render(){
+return {get environmentBlend(){return environmentBlend;},composer,scenePass,sky,skyU,skyTarget,skyCache,key,shadows,cloudShadows,fogPass,bloom,output,temporal,exposure,render(){
  this.beforeRender?.();temporal.beginFrame();fogPass.uniforms.invProjection.value.copy(camera.projectionMatrixInverse);
  exposure.update();try{composer.render();}finally{temporal.endFrame();}exposure.sample();
 },update(t,hour,hero,storm,fade,quality=1){
+const lightingClock=performance.now()/1000;
 temporal.updateState(hour,storm,fade);
 const angle=(hour-6)/24*TAU,sun=new THREE.Vector3(Math.cos(angle)*.75,Math.sin(angle),-.55).normalize();uniforms.sun.value.copy(sun);const day=smooth(sun.y,-.12,.2),night=1-smooth(sun.y,-.18,.03),warm=(1-smooth(Math.abs(sun.y),.02,.5))*(1-night*.8);uniforms.day.value=day;uniforms.night.value=night;uniforms.storm.value=storm;uniforms.snow.value=.32+.48*smooth(hour,10,12)*(1-smooth(hour,13,18));uniforms.frost.value=(1-smooth(hour,7,11))*.85;
 skyU.sunPosition.value.copy(sun).multiplyScalar(450000);skyU.turbidity.value=2.2+storm*6.;skyU.rayleigh.value=2.;skyU.mieCoefficient.value=.004;skyU.mieDirectionalG.value=.82;
@@ -145,10 +148,15 @@ if(forceSky||skyTile>=0||t-skyUpdated>(quality>.6?.5:.9)){
  renderer.setRenderTarget(skyTarget);skyQuad.render(renderer);renderer.setRenderTarget(previous);
  if(forceSky||++skyTile===skyColumns*skyRows){skyUpdated=t;skyHour=hour;skyStorm=storm;skyTile=-1;}
 }
+environmentBlend?.update(lightingClock);
 if(!environment||Math.abs(hour-environmentHour)>.06||Math.abs(storm-environmentStorm)>.1){
  // Diffuse/rough reflections need far fewer texels than the visible cloud sky.
  const previous=renderer.getRenderTarget();renderer.setRenderTarget(environmentInput);environmentCopy.render(renderer);renderer.setRenderTarget(previous);
- environment=pmrem.fromEquirectangular(environmentInput.texture,environment);scene.environment=environment.texture;environmentHour=hour;environmentStorm=storm;
+ environmentBlend?.snapshot();
+ environment=pmrem.fromEquirectangular(environmentInput.texture,environment);
+ if(!environmentBlend)environmentBlend=createTextureTransition(renderer,environment.width,environment.height,{mapping:THREE.CubeUVReflectionMapping});
+ environmentBlend.start(environment.texture,lightingClock,1.2);
+ scene.environment=environmentBlend.output.texture;environmentHour=hour;environmentStorm=storm;
 }
 scene.environmentIntensity=.34*day+.22*night;
 return {day,night,warm,storm,fog:fu.uFog.value,quality,lighting:{direction:litDir,color:sunColor,intensity:sunIntensity,snow:uniforms.snow.value}};},resize(w,h){composer.setSize(w,h);}};

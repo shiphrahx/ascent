@@ -37,7 +37,7 @@ export function createWorld(scene,renderer,camera){
   const distant=lerp(lerp(d[q],d[q+1],fx),lerp(d[q+farSize],d[q+farSize+1],fx),fz);
   return Math.max(surfaceHeight(x,z),distant);
  }
- const terrainLighting=createTerrainLighting(lightingHeight,renderer.ascentQuality);
+ const terrainLighting=createTerrainLighting(lightingHeight,renderer.ascentQuality,renderer);
  const terrainShadows=createTerrainShadows(lightingHeight,renderer);
  const volcano=mesh(volcanicMassif(),stoneMaterial('#e6dfd6',3),scene,[-6000,100,-17000],[1.8,1.8,1.8]);volcano.castShadow=false;
  const variants=Array.from({length:12},(_,i)=>chimneyGeometry(i+10));const capVariants=Array.from({length:6},(_,i)=>chimneyGeometry(i+70,true));const batches=Array.from({length:12},()=>[]),caps=Array.from({length:6},()=>[]);const dummy=new THREE.Object3D();
