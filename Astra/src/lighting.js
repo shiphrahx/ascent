@@ -63,7 +63,8 @@ export function createSunShadows(scene,camera,renderer){
   filtering.advance(now,force);
   if(next!==projection){csm.updateFrustums();projection=next;}
   csm.lightDirection.copy(direction).negate();
-  for(const light of csm.lights){light.color.copy(color);light.intensity=intensity;}
+  const penumbra=1+.65*(1-THREE.MathUtils.smoothstep(direction.y,.04,.3));
+  csm.lights.forEach((light,i)=>{light.color.copy(color);light.intensity=intensity;light.shadow.radius=(i===0&&terrainPerFragment?3.5:2)*penumbra;});
   csm.update();
   csm.lights[0].shadow.needsUpdate=true;
   if(force||terrainPerFragment){csm.lights.forEach((light,i)=>{light.shadow.needsUpdate=true;lastUpdate[i]=now;lastFrame[i]=frame;});}

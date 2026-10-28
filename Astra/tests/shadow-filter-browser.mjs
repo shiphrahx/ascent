@@ -25,5 +25,19 @@ try{
   assert(result.updates[1]<=12&&result.updates[2]<=6);assert(result.copies>0);assert(result.history[1]&&result.history[2]);
   assert(result.blends.some(b=>b.some(n=>n>0&&n<1)),'Cached maps must interpolate, not jump');
  }
+ const moving=await page.evaluate(async()=>{
+  const a=__ascent,s=a.atmo.shadows,start=s.filtering.stats.updates.slice(),snap=[];let height=147;
+  const look=a.camera.lookAt;a.camera.lookAt=function(){look.call(this);this.position.y=height;this.updateMatrixWorld();};
+  for(let i=0;i<40;i++){
+   height+=4/60;a.setHour(6.55+i/1200);await new Promise(requestAnimationFrame);
+   // Cached cascades retain the camera pose that rendered their depth map.
+   snap.push(...s.csm.lights.map(l=>{const p=l.shadow.camera.position.clone().applyQuaternion(l.shadow.camera.quaternion.clone().invert()),texel=(l.shadow.camera.right-l.shadow.camera.left)/l.shadow.mapSize.x;return Math.max(Math.abs(p.x/texel-Math.round(p.x/texel)),Math.abs(p.y/texel-Math.round(p.y/texel)));}));
+  }
+  return {maxSnappingError:Math.max(...snap),updates:s.filtering.stats.updates.map((n,i)=>n-start[i]),radii:s.csm.lights.map(l=>l.shadow.radius)};
+ });
+ assert(moving.maxSnappingError<.0001,'CSM stays texel-snapped during ascent and sunrise');
+ assert(moving.radii[0]>(tier==='high'?3.5:2),'Low sunlight broadens the fixed filter without extra taps');
+ if(tier==='high')assert.equal(new Set(moving.updates).size,1,'High refreshes every cascade throughout ascent');
+ result.moving=moving;
  assert.deepEqual(errors,[]);await writeFile(`captures/shadow-filter-${tier}.json`,JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,blends:result.blends.length}));
 }finally{await browser.close();}

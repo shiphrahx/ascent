@@ -284,3 +284,11 @@ Browser tests exercise the real key handlers and flight integration: automatic w
 An eight-metre approach field adjusts velocity normal to rock, building and fleet boundaries, preserving tangential movement so the balloon can slide around them. Manual descent slows near the ground. Existing terrain/envelope projections, fleet separation and landing guards remain in place; exact coincident centres now have a finite escape direction.
 
 Sustained input toward all three obstacle shapes settles outside the collision boundary at 30/60/144 Hz without positional teleportation. All 58 regression checks pass, including terrain clearance and the 700-second automatic landing/restart. Rebuilt and inspected the matched sunrise capture. Phase 3's response and handoff acceptance checks are complete.
+
+### Phase 4.1 — stable shadow caches and low-angle filtering
+
+The isolated repeat after Phase 3 gives A/B/C/D whole RMS 0.000051 / 0.000777 / 0.001189 / 0.001667 and foreground RMS 0.000027 / 0.000280 / 0.001211 / 0.001458. Lighting fixes reduce the still-camera running case, but ascent still dominates; the 70% D target is not yet met.
+
+Verified that high updates all three cascades every frame (40/40/40), while medium/lite interpolate their staggered distant depth maps (40/7/3 updates during ascent). Rendered shadow cameras remain texel-snapped within 2.1e-9 texels while both camera and sun move. The probe uses the cached map's actual rendering pose; comparing a queued light position to an older cached orientation was an invalid initial measurement. No synchronous unpack-state queries occur.
+
+Low sunlight now widens the existing fixed Poisson filter by up to 65%, with no additional taps or maps. All 58 core checks and the shadow fixtures on all three tiers pass. Rebuilt and inspected the matched sunrise capture.
