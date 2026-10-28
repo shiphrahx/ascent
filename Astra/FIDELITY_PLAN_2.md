@@ -186,3 +186,18 @@ Added tools/landscape-stability.mjs: four ten-second, 601-frame cases, linear-lu
 | D: ascending / running | 0.00219242 | 0.00171506 |
 
 Both light progression and camera movement contribute; motion dominates the foreground crop. Phase 4 targets for D are at most 0.00065773 whole / 0.00051452 foreground (70% reduction). Baseline captures and raw samples are retained.
+
+
+### Phase 0.3 — frame pacing baseline
+
+Extended benchmark.mjs with --sunrise: a normal-speed 6.0–7.5 sunrise during the existing 30-second scripted flight. --recording also matches the reported 2538 x 1380 window. Every frame is logged, separately counting completed application renders.
+
+| Tier (1440 x 900, DPR 1) | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms |
+|---|---:|---:|---:|---:|---:|
+| medium | 59.78 | 16.70 | 16.90 | 17.10 | 5/1794 |
+| lite | 59.92 | 16.70 | 16.90 | 17.10 | 1/1798 |
+| high | 39.76 | 16.80 | 49.90 | 66.61 | 522/1193 |
+
+The recording-size medium run renders at the existing fixed 2269 x 1233 cap: 43.76 FPS, median 16.70 ms, p95 33.60 ms, p99 50.20 ms; 438/1314 frames exceed 25 ms. All four runs have zero observer frames without an application render. The reported 22% recorder duplication is not reproduced by application scheduling; these counters cannot certify an external recorder. High remains over budget on the 890M.
+
+Baseline build hash: 7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10. The original standalone build is preserved as captures/plan2-baseline.html.

@@ -6,10 +6,10 @@ import path from 'node:path';
 
 // Run sequentially: concurrent browsers would compete for the same GPU.
 const args=process.argv.slice(2),has=x=>args.includes('--'+x),option=(key,fallback)=>args.find(a=>a.startsWith('--'+key+'='))?.split('=')[1]??fallback;
-const retina=has('retina'),live=has('live'),spatial=has('no-temporal'),launch=has('launch'),flight=has('flight'),recording=has('recording');
+const retina=has('retina'),live=has('live'),spatial=has('no-temporal'),launch=has('launch'),flight=has('flight'),recording=has('recording'),sunrise=has('sunrise');
 const seconds=Number(option('seconds',30)),tier=option('tier','medium'),tag=option('tag','baseline');
 if(!Number.isFinite(seconds)||seconds<5||seconds>120||!['high','medium','lite'].includes(tier)||!/^[a-z0-9-]+$/i.test(tag))throw Error('Invalid seconds, tier or tag');
-const files=args.filter(a=>!a.startsWith('--')),viewport=recording?{width:2848,height:1590}:{width:1440,height:900};
+const files=args.filter(a=>!a.startsWith('--')),viewport=recording?(sunrise?{width:2538,height:1380}:{width:2848,height:1590}):{width:1440,height:900};
 const suffix=flight?`-flight-${recording?'recording':'native'}-${tier}-${tag}`:`${retina?'-retina':''}${live?'-live':''}${launch?'-launch':''}${spatial?'-spatial':''}`;
 const browser=await chromium.launch({channel:'chromium',headless:true}),results=[];
 await mkdir('captures',{recursive:true});
@@ -21,21 +21,22 @@ try{
   page.on('pageerror',e=>errors.push(String(e)));
   const url=pathToFileURL(path.resolve(file));url.searchParams.set('quality',tier);
   await page.goto(url.href);await page.waitForFunction(()=>window.__ready,null,{timeout:120000});
-  await page.evaluate(({flight,spatial,live,launch})=>{
+  await page.evaluate(({flight,spatial,live,launch,sunrise})=>{
    const a=__ascent;if(spatial)a.atmo.temporal.enabled=false;
    // Count completed application renders, independently of the observer's rAF.
    const render=a.atmo.render;a.benchmarkFrames=0;a.atmo.render=function(){const value=render.apply(this,arguments);a.benchmarkFrames++;return value;};
    if(flight){
-    a.setHour(8.5);a.setStorm(0);a.setCamera(0);
+    a.setHour(sunrise?6:8.5);a.setStorm(0);a.setCamera(0);
     const look=a.camera.lookAt;
     a.camera.lookAt=function(){
      const t=a.benchmarkStart===undefined?0:(performance.now()-a.benchmarkStart)/1000;
+     if(sunrise)a.setHour(6+t*.05);
      const z=950-t*32,x=95*Math.sin(z*.004)+55*Math.sin(z*.008+1),y=142+12*Math.sin(t*.23),angle=-.35+.55*Math.sin(t*.36);
      a.position(x,y,z);this.position.set(x+Math.sin(angle)*96,y+34,z+Math.cos(angle)*96);
      look.call(this,x-Math.cos(angle)*17,y+22,z+Math.sin(angle)*17);
     };
    }else if(!live){a.setHour(launch?7.1:6.55);a.setStorm(0);if(launch){a.position(-73.25,52,986);a.orbit(-.65,.2,83);}else{a.position(35,130,600);a.orbit(-.4,.2,96);}}
-  },{flight,spatial,live,launch});
+  },{flight,spatial,live,launch,sunrise});
   await page.waitForTimeout(live?12000:8000);
   const samples=await page.evaluate(({flight,seconds,count})=>new Promise(resolve=>{
    const frames=[];let previous,previousFrame,start;
