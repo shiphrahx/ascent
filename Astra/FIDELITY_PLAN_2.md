@@ -201,3 +201,10 @@ Extended benchmark.mjs with --sunrise: a normal-speed 6.0–7.5 sunrise during t
 The recording-size medium run renders at the existing fixed 2269 x 1233 cap: 43.76 FPS, median 16.70 ms, p95 33.60 ms, p99 50.20 ms; 438/1314 frames exceed 25 ms. All four runs have zero observer frames without an application render. The reported 22% recorder duplication is not reproduced by application scheduling; these counters cannot certify an external recorder. High remains over budget on the 890M.
 
 Baseline build hash: 7e713aee04644620f1f9ecd92181770fe2bb224f94cab10c345fac3962899f10. The original standalone build is preserved as captures/plan2-baseline.html.
+
+
+### Phase 1.1 — smooth hero burner light
+
+Removed the 19 rad/s modulation from the burner command. The hero light and envelope now use a frame-rate-independent 0.25 s attack / 0.6 s release. Only the point light receives a bounded 3.8% variation made from frequencies below 0.71 Hz. Visible flame shader flicker remains. Reduced point-light intensity from 22 to 12 and range from 38 m to 22 m.
+
+Burner tests verify timing at 30/60/144 Hz and the modulation bound. Rebuilt the standalone game; all 51 gameplay/graphics/temporal checks pass. Personally inspected the matched sunrise captures (plan2-0-3-sunrise.png / plan2-1-1-sunrise.png). Full sunrise acceptance will be remeasured after the remaining lighting fixes.
