@@ -331,3 +331,10 @@ All 59 core checks and the river depth/shoreline fixture pass, with finite HDR o
 Snow now accumulates in broader drifts, favours sheltered northern faces more strongly and recedes on steep slopes. A wider derivative-filtered edge replaces the small speckles, with slightly darker snow albedo and higher roughness. Coverage reuses the existing terrain visibility field.
 
 The snow fixture confirms north/south coverage 0.592 / 0.012, sheltered/open 1.000 / 0.318, no cliff or melted coverage and soft subpixel transitions. All 59 core checks pass. Rebuilt the game and inspected the close snow pair and sunrise capture: deposits form continuous patches with exposed rock between them. Fine wind-carved snow geometry remains outside this material treatment.
+
+
+### Phase 5.4 ? sunrise light balance
+
+Morning sunlight is warmer and up to 12% stronger while ambient fill falls by up to 22%. Near-ground haze is reduced by up to 24% and its air colour follows the warm horizon more closely. These adjustments fade with the morning warmth and storm/night weights; exposure metering is unchanged.
+
+All 59 core checks pass without errors or warnings. Rebuilt and inspected the matched sunrise capture: lit rock is warmer and the foreground retains more separation, though the remaining broad haze and simple terrain still limit depth and realism. The six-lighting-condition review and final per-tier measurements follow on this frozen runtime build.
