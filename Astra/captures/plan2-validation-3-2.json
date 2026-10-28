@@ -1,0 +1,75 @@
+{
+  "buildSha256": "3ec20cab38e81dcd10dd3b1573b8210db69c58e690e5ee12546443e23d11955b",
+  "verification": {
+    "checks": {
+      "noVisibleText": true,
+      "noExternalRequests": true,
+      "fleet": 34,
+      "burnerRaises": true,
+      "releaseBrakes": true,
+      "ventCools": true,
+      "basketCamera": true,
+      "lookResponds": true,
+      "cinematicCamera": true,
+      "chaseCamera": true,
+      "fastForward": true,
+      "audioNoErrors": true,
+      "rightResponds": true,
+      "releaseStops": true,
+      "climbResponds": true,
+      "autopilotResumes": true,
+      "landingAndRestart": true,
+      "terrainClearance": true,
+      "softLanding": true,
+      "standalone": true
+    },
+    "errors": [],
+    "warnings": []
+  },
+  "graphics-report": {
+    "checks": {
+      "finiteHDR": true,
+      "hardwareAntialiasing": true,
+      "nativeResolutionFloor": true,
+      "resolvedDepthDimensions": true,
+      "liveWeather": true,
+      "liveTime": true,
+      "stableTreeInstances": true,
+      "noContextLoss": true,
+      "temporalHistory": true,
+      "reactiveActors": true,
+      "embeddedMaterialTextures": true,
+      "linearSurfaceMaps": true,
+      "generatedVillage": true,
+      "terrainMatchesCollision": true,
+      "valleyShadowCoverage": true,
+      "farShadowDetailCulling": true,
+      "opaquePresentation": true,
+      "reactiveColorPreserved": true,
+      "boundedWorkOnSlowFrames": true,
+      "resize": true,
+      "capture": true,
+      "offline": true,
+      "noShaderErrors": true
+    },
+    "errors": [],
+    "warnings": []
+  },
+  "temporal-report": {
+    "checks": {
+      "reducedFlicker": true,
+      "accurateCoverage": true,
+      "noFlickerRegressions": true,
+      "preservesFineBranches": true,
+      "noActorTrails": true,
+      "cameraCutRejectsHistory": true,
+      "resizeRejectsHistory": true,
+      "lightingRejectsHistory": true,
+      "toggleRejectsHistory": true,
+      "projectionRejectsHistory": true,
+      "noErrors": true
+    },
+    "errors": [],
+    "warnings": []
+  }
+}

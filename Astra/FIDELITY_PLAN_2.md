@@ -264,3 +264,11 @@ The 601-frame turning-flight capture moves from a maximum 16.98% horizontal offs
 All bindings live in src/controls.js. Arrows/WASD translate relative to the view; Space climbs, Shift/V descends and Q/E orbits. Camera, sound, fullscreen and time bindings are preserved. The high-DPI rotation check now measures Q/E camera orbit instead of the removed A-key balloon yaw.
 
 Rebuilt the standalone game. All 51 core checks and eight high-DPI checks pass, with no browser errors. Inspected the matched sunrise capture. Response speed and the idle handoff are deliberately tuned in the next two commits.
+
+### Phase 3.2 — direct acceleration and braking
+
+Manual input now drives a camera-relative target velocity: 10 m/s horizontally and 4 m/s vertically, 0.24 s acceleration and 0.20 s braking constants. Wind is capped at 2 m/s during input and 0.25 m/s while braking; it cannot reverse a held direction. The envelope leans into travel and the basket follows with a gentler lag. The burner retains its smooth light ramp while climbing.
+
+The actual browser key handlers and flight code reach 7.10 m/s in camera-right after 0.3 s, slow to 0.345 m/s after 0.7 s release, and climb at 2.854 m/s after 0.3 s. Replaced the obsolete inertialLift expectation with releaseBrakes and added the requested response assertions. Unit checks also cover 30/60/144 Hz with opposing wind. Full response traces are retained in captures/plan2-response-3-2.json.
+
+All 54 gameplay/graphics/temporal checks pass. Rebuilt the offline game and inspected the matched capture.
