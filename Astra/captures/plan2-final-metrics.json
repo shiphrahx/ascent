@@ -1,0 +1,167 @@
+{
+  "buildSha256": "0c4c19a1d34bc7030ac55fe9a69761d73c3732c20b173a3b5c03a32b6efb7e55",
+  "rows": [
+    {
+      "tier": "lite",
+      "jumps": {
+        "whole": 0.012012184263568315,
+        "envelope": 0.034645910266476676,
+        "ground": 0.10026072321420543,
+        "far": 0.018469962962626596
+      },
+      "envelopePeak": {
+        "hz": 1.4658523042754026,
+        "amplitude": 0.015479711603514988
+      },
+      "cases": {
+        "A": {
+          "whole": 0.000045338617846741595,
+          "foreground": 0.000026484153909077763,
+          "simulationStart": 100
+        },
+        "B": {
+          "whole": 0.0008209383948647609,
+          "foreground": 0.0002776617958248377,
+          "simulationStart": 100
+        },
+        "C": {
+          "whole": 0.0016721195514422444,
+          "foreground": 0.0018922593614554932,
+          "simulationStart": 100
+        },
+        "D": {
+          "whole": 0.0020159383551309495,
+          "foreground": 0.0019302405279367906,
+          "simulationStart": 100
+        }
+      },
+      "baselineD": {
+        "whole": 0.0028889285491387933,
+        "foreground": 0.002100101866466925
+      },
+      "reductions": {
+        "whole": 0.30218476475234646,
+        "foreground": 0.08088242824901548
+      },
+      "pacing": {
+        "fps": 59.88243448588414,
+        "median": 16.69999999999709,
+        "p95": 16.899999999997817,
+        "p99": 17.003999999999937,
+        "over25": 1,
+        "frames": 1797
+      },
+      "lightJumpTargetMet": true,
+      "flickerTargetMet": false,
+      "pacingP99TargetMet": true
+    },
+    {
+      "tier": "medium",
+      "jumps": {
+        "whole": 0.013221335417327396,
+        "envelope": 0.031147234356694753,
+        "ground": 0.09714588615963748,
+        "far": 0.0240024518517572
+      },
+      "envelopePeak": {
+        "hz": 1.4658523042754026,
+        "amplitude": 0.0173934141786295
+      },
+      "cases": {
+        "A": {
+          "whole": 0.00004161833726094575,
+          "foreground": 0.00002802475343343372,
+          "simulationStart": 100
+        },
+        "B": {
+          "whole": 0.0007436674969884762,
+          "foreground": 0.0002729598977867109,
+          "simulationStart": 100
+        },
+        "C": {
+          "whole": 0.0012653885990507809,
+          "foreground": 0.0011409425689566058,
+          "simulationStart": 100
+        },
+        "D": {
+          "whole": 0.0017393521209381076,
+          "foreground": 0.001449946366809394,
+          "simulationStart": 100
+        }
+      },
+      "baselineD": {
+        "whole": 0.0021877562060024034,
+        "foreground": 0.0017229018480297111
+      },
+      "reductions": {
+        "whole": 0.20496071903900392,
+        "foreground": 0.15842776042783024
+      },
+      "pacing": {
+        "fps": 59.88283358770486,
+        "median": 16.69999999999709,
+        "p95": 16.80000000000291,
+        "p99": 17,
+        "over25": 2,
+        "frames": 1797
+      },
+      "lightJumpTargetMet": true,
+      "flickerTargetMet": false,
+      "pacingP99TargetMet": true
+    },
+    {
+      "tier": "high",
+      "jumps": {
+        "whole": 0.02176104806865453,
+        "envelope": 0.04093322694973267,
+        "ground": 0.1398098995525885,
+        "far": 0.017301609257827977
+      },
+      "envelopePeak": {
+        "hz": 1.4658523042754026,
+        "amplitude": 0.01582950125369234
+      },
+      "cases": {
+        "A": {
+          "whole": 0.000029128319931963937,
+          "foreground": 0.000021715357916252447,
+          "simulationStart": 100
+        },
+        "B": {
+          "whole": 0.0008051882972819821,
+          "foreground": 0.00026882182835864506,
+          "simulationStart": 100
+        },
+        "C": {
+          "whole": 0.001423271034381636,
+          "foreground": 0.0012747210184826576,
+          "simulationStart": 100
+        },
+        "D": {
+          "whole": 0.002029503522113158,
+          "foreground": 0.001511529205967862,
+          "simulationStart": 100
+        }
+      },
+      "baselineD": {
+        "whole": 0.0019285130203789249,
+        "foreground": 0.0015868730324979804
+      },
+      "reductions": {
+        "whole": -0.05236703131741893,
+        "foreground": 0.047479429662696804
+      },
+      "pacing": {
+        "fps": 41.298367382283,
+        "median": 16.700000000004366,
+        "p95": 50.099999999998545,
+        "p99": 66.69999999999709,
+        "over25": 393,
+        "frames": 1240
+      },
+      "lightJumpTargetMet": true,
+      "flickerTargetMet": false,
+      "pacingP99TargetMet": false
+    }
+  ]
+}

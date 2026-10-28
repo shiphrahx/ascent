@@ -236,7 +236,7 @@ Metering now uses 256 bins (0.094 EV spacing), an asynchronous sample every 150 
 The repeated sunrise test removes the dominant 3.03 Hz envelope pulse. Largest detrended jumps are now 0.171 envelope, 0.513 whole, 0.067 ground and 1.259 far crop, versus 0.566 / 1.205 / 7.689 / 1.387 initially. **Phase 1 acceptance remains open** because the visible sky cache still changes in tiles. A small 6.23 Hz envelope peak also needs checking for crop-tracking quantisation before it can be attributed to lighting. These remaining causes will be addressed before moving to Phase 2.
 
 
-### Phase 1.6 ? remaining sky-cache steps and measurement correction
+### Phase 1.6 - remaining sky-cache steps and measurement correction
 
 The visible sky changed abruptly once per cache sweep (about 61 frames). Tiles now fade over 0.4 s between two alternating caches. Cache swapping avoids a full-size copy on every update; environment generation samples the displayed blend.
 
@@ -249,23 +249,23 @@ The 6.23 Hz envelope peak was caused by rounding its tracked crop to whole pixel
 | ground | 7.7241 | 0.0720 |
 | far | 1.4730 | 0.0223 |
 
-Every crop is below the 0.5-level jump limit. The old 3.03 Hz envelope pulse falls from approximately 1.239 to 0.002 levels amplitude. The largest residual 1?10 Hz envelope maximum is 0.022 levels at 1.50 Hz; the full spectrum is retained rather than claiming a mathematically zero spectrum. No visible periodic burner pulse remains.
+Every crop is below the 0.5-level jump limit. The old 3.03 Hz envelope pulse falls from approximately 1.239 to 0.002 levels amplitude. The largest residual 1-10 Hz envelope maximum is 0.022 levels at 1.50 Hz; the full spectrum is retained rather than claiming a mathematically zero spectrum. No visible periodic burner pulse remains.
 
 All 51 regression checks and crop-tracking units pass; matched captures inspected. Pacing varies across the session: a fresh original-build run reaches 50.62 FPS and the new build 48.69 FPS, versus approximately 60 earlier. Paired fixed-view GPU means are 17.20 / 17.03 ms (baseline/current), with p99 34.64 / 24.77 ms; CPU submission means are 7.63 / 9.96 ms. These measurements do not establish a sustained-60 guarantee or certify every tier. The pacing gate remains open for Phase 4. Raw traces are retained.
 
-### Phase 2 — centred chase camera
+### Phase 2 - centred chase camera
 
 Chase view now aims at the rotated envelope centre, slightly above it for a lower-screen composition. An exact critically damped spring follows position without overshoot; released mouse orbit returns over approximately 1.5 s. Terrain, fleet and envelope exclusions remain active, and basket/cinematic views retain their previous paths.
 
-The 601-frame turning-flight capture moves from a maximum 16.98% horizontal offset to below 0.000001% (the camera always looks at the envelope centre), passing the ±5% limit. Inspected the turn and matched sunrise captures. Frame-independent spring checks and all 51 gameplay/graphics/temporal checks pass. Rebuilt the standalone game.
+The 601-frame turning-flight capture moves from a maximum 16.98% horizontal offset to below 0.000001% (the camera always looks at the envelope centre), passing the +/-5% limit. Inspected the turn and matched sunrise captures. Frame-independent spring checks and all 51 gameplay/graphics/temporal checks pass. Rebuilt the standalone game.
 
-### Phase 3.1 — camera-relative key map
+### Phase 3.1 - camera-relative key map
 
 All bindings live in src/controls.js. Arrows/WASD translate relative to the view; Space climbs, Shift/V descends and Q/E orbits. Camera, sound, fullscreen and time bindings are preserved. The high-DPI rotation check now measures Q/E camera orbit instead of the removed A-key balloon yaw.
 
 Rebuilt the standalone game. All 51 core checks and eight high-DPI checks pass, with no browser errors. Inspected the matched sunrise capture. Response speed and the idle handoff are deliberately tuned in the next two commits.
 
-### Phase 3.2 — direct acceleration and braking
+### Phase 3.2 - direct acceleration and braking
 
 Manual input now drives a camera-relative target velocity: 10 m/s horizontally and 4 m/s vertically, 0.24 s acceleration and 0.20 s braking constants. Wind is capped at 2 m/s during input and 0.25 m/s while braking; it cannot reverse a held direction. The envelope leans into travel and the basket follows with a gentler lag. The burner retains its smooth light ramp while climbing.
 
@@ -273,19 +273,19 @@ The actual browser key handlers and flight code reach 7.10 m/s in camera-right a
 
 All 54 gameplay/graphics/temporal checks pass. Rebuilt the offline game and inspected the matched capture.
 
-### Phase 3.3 — deliberate autopilot handoff
+### Phase 3.3 - deliberate autopilot handoff
 
 Flight keys refresh a 60-second manual window while held and on release. The initial journey still starts in attract mode. After the idle window, automatic burner demand and velocity response blend in over three seconds; a flight key immediately sets automatic contribution to zero.
 
 Browser tests exercise the real key handlers and flight integration: automatic weight is 0 at 59.9 s, 0.033 at 60.1 s, 0.500 at 61.5 s and 1 after 63 s. Immediate takeover and a key held for 61 s both retain weight 0. All 58 regression checks pass, including the existing 700-second landing/restart simulation. Rebuilt the game and inspected the matched sunrise capture; response traces are retained.
 
-### Phase 3.4 — soft obstacle approach
+### Phase 3.4 - soft obstacle approach
 
 An eight-metre approach field adjusts velocity normal to rock, building and fleet boundaries, preserving tangential movement so the balloon can slide around them. Manual descent slows near the ground. Existing terrain/envelope projections, fleet separation and landing guards remain in place; exact coincident centres now have a finite escape direction.
 
 Sustained input toward all three obstacle shapes settles outside the collision boundary at 30/60/144 Hz without positional teleportation. All 58 regression checks pass, including terrain clearance and the 700-second automatic landing/restart. Rebuilt and inspected the matched sunrise capture. Phase 3's response and handoff acceptance checks are complete.
 
-### Phase 4.1 — stable shadow caches and low-angle filtering
+### Phase 4.1 - stable shadow caches and low-angle filtering
 
 The isolated repeat after Phase 3 gives A/B/C/D whole RMS 0.000051 / 0.000777 / 0.001189 / 0.001667 and foreground RMS 0.000027 / 0.000280 / 0.001211 / 0.001458. Lighting fixes reduce the still-camera running case, but ascent still dominates; the 70% D target is not yet met.
 
@@ -293,15 +293,15 @@ Verified that high updates all three cascades every frame (40/40/40), while medi
 
 Low sunlight now widens the existing fixed Poisson filter by up to 65%, with no additional taps or maps. All 58 core checks and the shadow fixtures on all three tiers pass. Rebuilt and inspected the matched sunrise capture.
 
-### Phase 4.2 — motion-independent static history
+### Phase 4.2 - motion-independent static history
 
 Removed the 0.65-pixel motion cutoff. Static surfaces now retain depth-reprojected, variance-clipped history at every ordinary camera speed. Broad surfaces use 90% history; high-contrast silhouettes use 25% to preserve fine coverage. Depth mismatches now reject history completely, and moving actors/flames retain their reactive rejection. The closest-depth silhouette rule remains.
 
-All six supersampled-reference cases improve or preserve coverage and flicker, including fast translation and rotation. Branch contrast stays within 99.7–103.5% of the reference; actor trail error is zero. A new movingHistory assertion prevents restoring the old cutoff. The full 59-check regression suite passes; rebuilt and inspected the matched capture. A projection-jitter experiment failed reference accuracy and was discarded.
+All six supersampled-reference cases improve or preserve coverage and flicker, including fast translation and rotation. Branch contrast stays within 99.7-103.5% of the reference; actor trail error is zero. A new movingHistory assertion prevents restoring the old cutoff. The full 59-check regression suite passes; rebuilt and inspected the matched capture. A projection-jitter experiment failed reference accuracy and was discarded.
 
-The landscape harness now seeds simulation time identically through the API shared with the archived build; case D alone and case D in the full suite start at 193 seconds. The earlier per-pixel metric is unchanged, with optional regional diagnostics tested to preserve its value. The matched D pair measures 0.002146 ? 0.001749 whole and 0.001687 ? 0.001448 foreground: **18.5% / 14.2% reduction**, still below 70%. The temporal audit confirms approximately 85–90% history on broad foreground surfaces. The full four-case pair is being retained for further diagnosis; Phase 4 acceptance remains open.
+The landscape harness now seeds simulation time identically through the API shared with the archived build; case D alone and case D in the full suite start at 193 seconds. The earlier per-pixel metric is unchanged, with optional regional diagnostics tested to preserve its value. The matched D pair measures 0.002146 to 0.001749 whole and 0.001687 to 0.001448 foreground: **18.5% / 14.2% reduction**, still below 70%. The temporal audit confirms approximately 85-90% history on broad foreground surfaces. The full four-case pair is being retained for further diagnosis; Phase 4 acceptance remains open.
 
-### Phase 4.3 — bounded near-shadow work and pacing
+### Phase 4.3 - bounded near-shadow work and pacing
 
 Medium/lite now refresh at most one cascade per normal frame and cross-fade the near map as well as the two distant maps. Near updates are capped at 30 Hz, with minimum frame spacing to avoid expanding cached work on slow devices. High continues to render all three maps every frame. The first render is explicitly forced so cached scheduling cannot cancel initialization. Updated the slow-frame assertion to verify the new per-frame work bound, rather than demanding every-frame near updates on lower tiers.
 
@@ -313,27 +313,27 @@ Correctly isolated D: baseline **0.002188 whole / 0.001723 foreground**; current
 
 All 59 core checks and medium/lite/high shadow fixtures pass. Rebuilt the standalone game and inspected the matched sunrise and near-terrain review captures.
 
-### Phase 5.1 — erosion in the near corridor
+### Phase 5.1 - erosion in the near corridor
 
-Terracing now begins 24 m from the flight path and reaches full strength by 115 m, rather than 65–170 m. Gullies extend into the nearer slopes, with widths that survive the existing grid. Broad, low talus fans add deposited material at their feet while preserving the central channel. These fields are baked into the same terrain triangles used by collision; the grid size and runtime shader cost are unchanged.
+Terracing now begins 24 m from the flight path and reaches full strength by 115 m, rather than 65-170 m. Gullies extend into the nearer slopes, with widths that survive the existing grid. Broad, low talus fans add deposited material at their feet while preserving the central channel. These fields are baked into the same terrain triangles used by collision; the grid size and runtime shader cost are unchanged.
 
 Landform tests confirm substantial near-corridor cuts and fans, bounded deposition and a clear central channel. All 59 core checks pass, including rendered-terrain/collision agreement and landing. Rebuilt and personally compared the near-terrain and sunrise captures. The lower slopes are more segmented, although the medium tier's eight-metre grid still limits fine erosion detail.
 
-### Phase 5.2 — irregular river surface and wet margins
+### Phase 5.2 - irregular river surface and wet margins
 
 World-space ripples now combine several scales with noise-warped phases instead of two regular bands. Reflection filtering is broader, grazing reflections are less dominant, silty colour varies independently of the waves, and shore ice uses an irregular field. Wet soil transitions over a wider, uneven margin with a less abrupt colour/roughness change.
 
 All 59 core checks and the river depth/shoreline fixture pass, with finite HDR output and shoreline error below 0.003 m. Reflection sample counts and update frequency are unchanged. Rebuilt and compared the low river view and matched sunrise capture. The river reads less regularly striped, though its narrow channel and simplified reflection still fall short of a detailed water simulation.
 
 
-### Phase 5.3 ? broad, sheltered snow deposits
+### Phase 5.3 - broad, sheltered snow deposits
 
 Snow now accumulates in broader drifts, favours sheltered northern faces more strongly and recedes on steep slopes. A wider derivative-filtered edge replaces the small speckles, with slightly darker snow albedo and higher roughness. Coverage reuses the existing terrain visibility field.
 
 The snow fixture confirms north/south coverage 0.592 / 0.012, sheltered/open 1.000 / 0.318, no cliff or melted coverage and soft subpixel transitions. All 59 core checks pass. Rebuilt the game and inspected the close snow pair and sunrise capture: deposits form continuous patches with exposed rock between them. Fine wind-carved snow geometry remains outside this material treatment.
 
 
-### Phase 5.4 ? sunrise light balance
+### Phase 5.4 - sunrise light balance
 
 Morning sunlight is warmer and up to 12% stronger while ambient fill falls by up to 22%. Near-ground haze is reduced by up to 24% and its air colour follows the warm horizon more closely. These adjustments fade with the morning warmth and storm/night weights; exposure metering is unchanged.
 
@@ -344,4 +344,62 @@ All 59 core checks pass without errors or warnings. Rebuilt and inspected the ma
 
 Inspected all six matched lighting pairs (sunrise, midday, snowstorm, golden hour, sunset and night) and decoded frames at 1, 5 and 10 seconds of the scripted flight. The recording shows camera-relative translation, climbing, view rotation, braking and descent with the balloon centred. The eight high-DPI checks also pass without browser errors or warnings. The comparison page links the per-task captures and raw regression results.
 
-The recording is a compressed visual demonstration, not a frame-pacing measurement. Final pacing is measured independently without a recorder. Per-tier stability and timing traces are being collected against the final runtime hash.
+The recording is a compressed visual demonstration, not a frame-pacing measurement. Final pacing is measured independently without a recorder. Per-tier stability and timing traces are retained against the final runtime hash below.
+
+
+### Remaining gaps against the UE look, ranked
+
+1. **Clarity during ascent.** The measured landscape residual is still far above the 70% reduction target. Reprojection helps, but fine terrain, vegetation and changing shadows still crawl; more sampling work is needed within the integrated-GPU budget.
+2. **Terrain and rock detail.** Near-path erosion is present, but the medium tier's eight-metre grid exposes broad facets and smooth slopes. Repeated strata and tower shapes lack small fractures, rubble and varied silhouettes.
+3. **Lighting depth.** Sunrise separation is better, but broad haze and simplified indirect light still flatten the valley. Contact shadows, local occlusion and material-dependent bounce are less convincing than a detailed UE scene.
+4. **Scene and material variety.** Repeated buildings, sparse similar trees and limited ground clutter make scale and distance less believable. Rock and balloon surfaces still need richer variation at several viewing distances.
+5. **Water.** Ripples and banks are less regular, but the channel remains narrow and uniform, with simplified reflection, flow and shore interaction.
+6. **Snow volume.** Coverage now respects slope, aspect and shelter, but it is a surface blend; it does not build overhangs, rounded drifts or displaced accumulation around obstacles.
+
+These are remaining limitations, not completed realism claims. Larger geometry, shadow and reflection budgets remain explicit quality-tier choices.
+
+
+<!-- plan2-final-metrics:start -->
+### Final per-tier measurements
+
+All final traces use build `0c4c19a1d34bc7030ac55fe9a69761d73c3732c20b173a3b5c03a32b6efb7e55`, the Radeon 890M, 1440 x 900 and DPR 1. Light values are display-luminance levels; flicker values are linear-luminance RMS. Raw reports retain every frame.
+
+| Tier | Whole jump | Envelope jump | Ground jump | Far jump | Largest envelope 1â€“10 Hz maximum (amplitude / Hz) |
+|---|---:|---:|---:|---:|---:|
+| lite | 0.012 | 0.035 | 0.100 | 0.018 | 0.015 / 1.47 |
+| medium | 0.013 | 0.031 | 0.097 | 0.024 | 0.017 / 1.47 |
+| high | 0.022 | 0.041 | 0.140 | 0.017 | 0.016 / 1.47 |
+
+Nonzero spectral maxima are reported explicitly. The strong original 3 Hz burner modulation was removed; this is not a claim of a mathematically zero spectrum.
+
+| Tier | A whole / foreground | B whole / foreground | C whole / foreground | D whole / foreground |
+|---|---:|---:|---:|---:|
+| lite | 0.000045 / 0.000026 | 0.000821 / 0.000278 | 0.001672 / 0.001892 | 0.002016 / 0.001930 |
+| medium | 0.000042 / 0.000028 | 0.000744 / 0.000273 | 0.001265 / 0.001141 | 0.001739 / 0.001450 |
+| high | 0.000029 / 0.000022 | 0.000805 / 0.000269 | 0.001423 / 0.001275 | 0.002030 / 0.001512 |
+
+| Tier | Archived-build D whole / foreground | Final D whole / foreground | Reduction whole / foreground |
+|---|---:|---:|---:|
+| lite | 0.002889 / 0.002100 | 0.002016 / 0.001930 | 30.2% / 8.1% |
+| medium | 0.002188 / 0.001723 | 0.001739 / 0.001450 | 20.5% / 15.8% |
+| high | 0.001929 / 0.001587 | 0.002030 / 0.001512 | -5.2% / 4.7% |
+
+The 70% flicker requirement remains a separate acceptance gate; the owner authorized continuing visual work while reporting the shortfall. Baseline and final cases use fresh scenes, simulation time 100, identical cameras and exposure, and a completed opening fade.
+
+| Tier | FPS | Median ms | p95 ms | p99 ms | Frames >25 ms | p99 / median |
+|---|---:|---:|---:|---:|---:|---:|
+| lite | 59.88 | 16.70 | 16.90 | 17.00 | 1/1797 | 1.02 |
+| medium | 59.88 | 16.70 | 16.80 | 17.00 | 2/1797 | 1.02 |
+| high | 41.30 | 16.70 | 50.10 | 66.70 | 393/1240 | 3.99 |
+
+These are measured 30-second runs, not guarantees for every device, camera or long session. Medium is the default tier on this integrated GPU; high retains its larger rendering budget.
+<!-- plan2-final-metrics:end -->
+
+
+### Final acceptance status
+
+Phases 0-5 have implementation and review commits. The final offline build passes all 59 gameplay/graphics/temporal checks and all eight high-DPI checks. The camera-centering, input-response, braking and 60-second autopilot handoff checks pass. All tiers meet the 0.5-level light-jump limit; small residual spectral maxima remain explicitly reported above.
+
+**Acceptance is incomplete:** the 70% landscape-flicker reduction target remains open on every tier, as agreed with the owner. High's whole-frame D score is 5.2% worse than its original-build baseline, despite a 4.7% foreground reduction. Medium and lite meet the approximately 60 FPS / p99 pacing target in these runs; high, at 41.30 FPS and 66.7 ms p99, does not. No claim of UE-level fidelity or all-tier sustained 60 FPS is made.
+
+Open [the review page](captures/plan2-comparison.html) for matched before/after images, the scripted flight and final tables. The standalone game, source, tests and review artifacts remain under Astra; the sibling Opus tree is unchanged.

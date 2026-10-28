@@ -44,6 +44,16 @@ npm run preview
 
 Screenshots, validation reports, performance measurements, and historical comparison builds are in `captures/`. The latest phase-by-phase results, per-tier measurements and remaining realism work are recorded in [FIDELITY_PLAN_2.md](FIDELITY_PLAN_2.md). Open [the Plan 2 review](captures/plan2-comparison.html) for task comparisons, six matched lighting views, a flight recording and final stability/pacing tables. The 70% landscape-flicker reduction target remains open; visual work continued with the owner's approval. The earlier [fidelity plan](FIDELITY_PLAN.md) and its captures remain available. Run `node benchmark.mjs --flight --tier=medium` for a 30-second frame-pacing trace; add `--recording` for 2848×1590. Run `node flicker.mjs --tier=medium` for the fixed-step scene flicker metric. Use `--tag=name` to retain successive reports. Use `node gpu-budget.mjs --tier=medium --tag=name` for asynchronous GPU timing at a fixed view. For the Plan 2 metrics, run `node tools/light-stability.mjs --tier=medium --tag=review`, `node tools/landscape-stability.mjs --tier=medium --tag=review`, and `node benchmark.mjs --flight --sunrise --tier=medium --tag=review`. Use lite or high for the other tiers. Run GPU harnesses sequentially.
 
+Reproduce all three tiers and regenerate the final tables/review page with:
+
+```sh
+node tools/plan2-final-suite.mjs
+node tools/plan2-final-metrics.mjs
+node tools/plan2-report.mjs
+```
+
+The suite uses the archived original build for matched flicker baselines. Reports include the standalone build hash so the summary rejects stale measurements. Add `--sunrise --recording` to the flight benchmark to match the original 2538 x 1380 recording window.
+
 ## Repository scope
 
 Commit source, assets, scripts, the standalone game, and review artifacts under `Astra/`. Dependencies and local environment files are ignored. Use the shared repository root for Git operations; do not create a nested repository here or overwrite the Opus implementation.
