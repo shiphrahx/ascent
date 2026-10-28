@@ -9,6 +9,7 @@ try{
   const samples=[],images={};
   const mean=rect=>{let sum=0,n=0;for(let y=Math.max(0,rect.y);y<Math.min(h,rect.y+rect.height);y++)for(let x=Math.max(0,rect.x);x<Math.min(w,rect.x+rect.width);x++){const k=((h-y-1)*w+x)*4;sum+=.2126*pixels[k]+.7152*pixels[k+1]+.0722*pixels[k+2];n++;}return sum/n;};
   for(let frame=0;frame<=1800;frame++){
+   if(frame%600===0)console.info('plan2: sunrise frame '+frame+'/1800');
    const t=frame/60,hour=6+t*.05;q.step(t,hour);
    g.readPixels(0,0,w,h,g.RGBA,g.UNSIGNED_BYTE,pixels);
    const p=a.hero.group.position.clone();p.y+=18;p.project(a.camera);

@@ -227,3 +227,10 @@ All fleet burners now use the same 0.25 s attack / 0.6 s release as the hero, dr
 PMREM refreshes now cross-fade in a small HDR atlas for 1.2 s. The input is 256 pixels wide on medium/lite and 512 on high, down from 1024; surfaces retain a single environment lookup. Interrupted fades start from the displayed result. Terrain bounce blends its mean on lower tiers and its field on high. Cloud-shadow fields also blend on every tier; their previously hard lower-tier refresh was another measured flicker source. Review-time lighting fades finish even when simulation is paused.
 
 GPU transition tests cover HDR preservation, interrupted fades, settled work and render-state restoration. All 51 core regression checks plus medium/high cloud and high terrain-lighting fixtures pass. Matched sunrise captures inspected. Medium native pacing: **59.95 FPS**, median **16.70 ms**, p95 **16.90 ms**, p99 **17.00 ms**, **0/1799** frames over 25 ms (baseline 5/1794).
+
+
+### Phase 1.5 — finer, symmetric exposure metering
+
+Metering now uses 256 bins (0.094 EV spacing), an asynchronous sample every 150 ms, and the same 1.3/s adaptation rate in both directions. Tests verify adjacent-bin spacing, symmetric adaptation, outlier rejection and async GPU readbacks; middle grey meters to 1.014x. All 51 regression checks pass; the standalone game is rebuilt and the matched capture inspected.
+
+The repeated sunrise test removes the dominant 3.03 Hz envelope pulse. Largest detrended jumps are now 0.171 envelope, 0.513 whole, 0.067 ground and 1.259 far crop, versus 0.566 / 1.205 / 7.689 / 1.387 initially. **Phase 1 acceptance remains open** because the visible sky cache still changes in tiles. A small 6.23 Hz envelope peak also needs checking for crop-tracking quantisation before it can be attributed to lighting. These remaining causes will be addressed before moving to Phase 2.

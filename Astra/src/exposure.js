@@ -26,7 +26,7 @@ export function createAutoExposure(renderer,sceneTarget){
  return {stats,
   update(){const now=performance.now();if(fixed===null)value=adaptExposure(value,desired,(now-previous)/1000);else value=fixed;previous=now;renderer.toneMappingExposure=value;stats.value=value;},
   sample(){
-   const now=performance.now();if(disposed||fixed!==null||pending||stats.error||now-lastSample<500)return;
+   const now=performance.now();if(disposed||fixed!==null||pending||stats.error||now-lastSample<150)return;
    lastSample=now;const saved=renderer.getRenderTarget(),version=generation;
    renderer.setRenderTarget(target);quad.render(renderer);renderer.setRenderTarget(saved);
    pending=stats.pending=true;

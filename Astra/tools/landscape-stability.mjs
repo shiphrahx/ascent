@@ -9,6 +9,7 @@ try{
   q.eye=[-25,147,745];q.target=[90,88,300];
   const crop={x:1000,y:300,width:360,height:240},cases={},images={};
   for(const [name,moving,running]of [['A',false,false],['B',false,true],['C',true,false],['D',true,true]]){
+   console.info('plan2: landscape case '+name);
    a.atmo.exposure.setFixed(null);
    for(let i=0;i<180;i++){q.eye[1]=147;q.target[1]=88;q.step(0,6.55,false,!running);await new Promise(resolve=>setTimeout(resolve,0));}
    // Same photographic exposure in all four cases; B/D isolate lighting changes.

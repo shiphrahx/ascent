@@ -1,0 +1,72 @@
+{
+  "buildSha256": "baf3770673e7dd7761370420f17d1ec64371988ef33e47e248ec89958ed01365",
+  "verification": {
+    "checks": {
+      "noVisibleText": true,
+      "noExternalRequests": true,
+      "fleet": 34,
+      "burnerRaises": true,
+      "inertialLift": true,
+      "ventCools": true,
+      "basketCamera": true,
+      "lookResponds": true,
+      "cinematicCamera": true,
+      "chaseCamera": true,
+      "fastForward": true,
+      "audioNoErrors": true,
+      "autopilotResumes": true,
+      "landingAndRestart": true,
+      "terrainClearance": true,
+      "softLanding": true,
+      "standalone": true
+    },
+    "errors": [],
+    "warnings": []
+  },
+  "graphics-report": {
+    "checks": {
+      "finiteHDR": true,
+      "hardwareAntialiasing": true,
+      "nativeResolutionFloor": true,
+      "resolvedDepthDimensions": true,
+      "liveWeather": true,
+      "liveTime": true,
+      "stableTreeInstances": true,
+      "noContextLoss": true,
+      "temporalHistory": true,
+      "reactiveActors": true,
+      "embeddedMaterialTextures": true,
+      "linearSurfaceMaps": true,
+      "generatedVillage": true,
+      "terrainMatchesCollision": true,
+      "valleyShadowCoverage": true,
+      "farShadowDetailCulling": true,
+      "opaquePresentation": true,
+      "reactiveColorPreserved": true,
+      "boundedWorkOnSlowFrames": true,
+      "resize": true,
+      "capture": true,
+      "offline": true,
+      "noShaderErrors": true
+    },
+    "errors": [],
+    "warnings": []
+  },
+  "temporal-report": {
+    "checks": {
+      "reducedFlicker": true,
+      "accurateCoverage": true,
+      "noFlickerRegressions": true,
+      "preservesFineBranches": true,
+      "noActorTrails": true,
+      "cameraCutRejectsHistory": true,
+      "resizeRejectsHistory": true,
+      "lightingRejectsHistory": true,
+      "toggleRejectsHistory": true,
+      "projectionRejectsHistory": true,
+      "noErrors": true
+    },
+    "errors": [],
+    "warnings": []
+  }
+}

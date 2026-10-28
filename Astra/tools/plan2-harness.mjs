@@ -12,6 +12,7 @@ export async function openReview(){
  const browser=await chromium.launch({channel:'chromium',headless:true});
  const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1}),errors=[];
  page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(['warning','error'].includes(m.type()))errors.push(m.text());});
+ page.on('console',m=>{if(m.text().startsWith('plan2:'))console.log(m.text());});
  await page.addInitScript(()=>{
   const raf=requestAnimationFrame.bind(window),clock=performance.now.bind(performance);
   window.__review={manual:false,callback:null,clock:0};

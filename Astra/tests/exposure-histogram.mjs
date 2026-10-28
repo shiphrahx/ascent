@@ -14,4 +14,10 @@ assert.equal(adaptExposure(1,.45,0),1);
 let current=1;for(let i=0;i<600;i++){const next=adaptExposure(current,.45,1/60);assert(next<=current&&next>=.45);current=next;}
 assert(Math.abs(current-.45)<1e-6,'Adaptation converges without overshooting');
 assert.equal(adaptExposure(1,1.8,100),adaptExposure(1,1.8,.1),'Long stalls cannot cause an exposure jump');
+assert.equal(histogramExposure(pixels(.18)).bins.length,256);
+assert.ok(Math.abs(Math.log2(adaptExposure(1,2,.1))+Math.log2(adaptExposure(1,.5,.1)))<1e-12,'Bright and dark adaptation have the same speed in stops');
+for(let code=96;code<116;code++){
+ const a=new Uint8Array([code,255,0,255]),b=new Uint8Array([code+1,255,0,255]);
+ assert.ok(Math.abs(histogramExposure(a).meanEV-histogramExposure(b).meanEV)<.095,'Adjacent levels no longer jump by 0.375 EV');
+}
 console.log('Exposure histogram: grey reference, outlier rejection, clamps, empty samples and bounded adaptation passed.');
