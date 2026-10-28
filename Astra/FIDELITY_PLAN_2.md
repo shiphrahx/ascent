@@ -300,3 +300,15 @@ Removed the 0.65-pixel motion cutoff. Static surfaces now retain depth-reproject
 All six supersampled-reference cases improve or preserve coverage and flicker, including fast translation and rotation. Branch contrast stays within 99.7–103.5% of the reference; actor trail error is zero. A new movingHistory assertion prevents restoring the old cutoff. The full 59-check regression suite passes; rebuilt and inspected the matched capture. A projection-jitter experiment failed reference accuracy and was discarded.
 
 The landscape harness now seeds simulation time identically through the API shared with the archived build; case D alone and case D in the full suite start at 193 seconds. The earlier per-pixel metric is unchanged, with optional regional diagnostics tested to preserve its value. The matched D pair measures 0.002146 ? 0.001749 whole and 0.001687 ? 0.001448 foreground: **18.5% / 14.2% reduction**, still below 70%. The temporal audit confirms approximately 85–90% history on broad foreground surfaces. The full four-case pair is being retained for further diagnosis; Phase 4 acceptance remains open.
+
+### Phase 4.3 — bounded near-shadow work and pacing
+
+Medium/lite now refresh at most one cascade per normal frame and cross-fade the near map as well as the two distant maps. Near updates are capped at 30 Hz, with minimum frame spacing to avoid expanding cached work on slow devices. High continues to render all three maps every frame. The first render is explicitly forced so cached scheduling cannot cancel initialization. Updated the slow-frame assertion to verify the new per-frame work bound, rather than demanding every-frame near updates on lower tiers.
+
+Latest 30-second sunrise flight on the Radeon 890M at 1440 x 900, DPR 1: **59.78 FPS**, median **16.70 ms**, p95 **16.90 ms**, p99 **17.00 ms**, **5/1794** frames over 25 ms and no skipped application renders. This run meets the pacing target; earlier session variability remains documented. The instrumented scene-pass GPU mean falls from 11.57 to 10.82 ms; these diagnostic runs include query overhead and are not presentation benchmarks.
+
+The four-case harness now uses a fresh scene and the same 100-second simulation seed for each case. Seeding also advances ordinary frames long enough to finish the opening fade, and scoring asserts that fade is zero. This corrects the intermediate seeded A/C runs, which could retain part of that fade; the D pairs were running long enough to clear it. Retained earlier reports are historical diagnostics, not the final per-tier comparison.
+
+Correctly isolated D: baseline **0.002188 whole / 0.001723 foreground**; current **0.001750 / 0.001434**, reductions **20.0% / 16.8%**. The **70% flicker gate remains open**. On 28 October the owner explicitly authorized proceeding with Phase 5 while retaining this shortfall in the results.
+
+All 59 core checks and medium/lite/high shadow fixtures pass. Rebuilt the standalone game and inspected the matched sunrise and near-terrain review captures.

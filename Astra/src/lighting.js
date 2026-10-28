@@ -59,20 +59,19 @@ export function createSunShadows(scene,camera,renderer){
   const now=performance.now()/1000;
   const next=[camera.fov,camera.aspect,camera.near].join(',');
   const cameraCut=lastEye.distanceToSquared(camera.position)>36||lastRotation.angleTo(camera.quaternion)>.08;
-  const force=next!==projection||cameraCut||lastDirection.distanceToSquared(direction)>.00005;
+  const force=filtering.stats.updates.some(n=>n===0)||next!==projection||cameraCut||lastDirection.distanceToSquared(direction)>.00005;
   filtering.advance(now,force);
   if(next!==projection){csm.updateFrustums();projection=next;}
   csm.lightDirection.copy(direction).negate();
   const penumbra=1+.65*(1-THREE.MathUtils.smoothstep(direction.y,.04,.3));
   csm.lights.forEach((light,i)=>{light.color.copy(color);light.intensity=intensity;light.shadow.radius=(i===0&&terrainPerFragment?3.5:2)*penumbra;});
   csm.update();
-  csm.lights[0].shadow.needsUpdate=true;
   if(force||terrainPerFragment){csm.lights.forEach((light,i)=>{light.shadow.needsUpdate=true;lastUpdate[i]=now;lastFrame[i]=frame;});}
   else{
    // Spread the larger maps over different frames to avoid periodic GPU spikes.
-   const intervals=[0,.1,.22];let due=0,overdue=1;
-   for(let i=1;i<3;i++){const age=(now-lastUpdate[i])/intervals[i];if(age>overdue&&frame-lastFrame[i]>=[0,4,8][i]){overdue=age;due=i;}}
-   if(due){csm.lights[due].shadow.needsUpdate=true;lastUpdate[due]=now;lastFrame[due]=frame;}
+   const intervals=[1/30,.1,.22];let due=-1,overdue=1;
+   for(let i=0;i<3;i++){const age=(now-lastUpdate[i])/intervals[i];if(age>overdue&&frame-lastFrame[i]>=[2,4,8][i]){overdue=age;due=i;}}
+   if(due>=0){csm.lights[due].shadow.needsUpdate=true;lastUpdate[due]=now;lastFrame[due]=frame;}
   }
   lastEye.copy(camera.position);lastRotation.copy(camera.quaternion);lastDirection.copy(direction);
  }};

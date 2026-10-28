@@ -28,7 +28,7 @@ export async function openReview(){
   // Seed simulation time through the review API shared by the archived and new
   // builds. Finish with ordinary fixed-clock frames for exact fractional time.
   q.setTime=seconds=>{
-   const steps=Math.max(0,Math.floor((seconds-__state.elapsed)*10)-1);
+   const steps=Math.max(0,Math.floor((seconds-__state.elapsed)*10)-21);
    a.simulate(steps/10);q.callback(q.clock);a.pause(false);
    while(__state.elapsed<seconds-1e-8){q.clock+=1000*Math.min(.05,seconds-__state.elapsed);q.callback(q.clock);}
    a.pause(true);

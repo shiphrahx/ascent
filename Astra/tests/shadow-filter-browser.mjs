@@ -18,11 +18,11 @@ try{
   const snapping=s.csm.lights.map(l=>{const p=l.position.clone().applyQuaternion(l.shadow.camera.quaternion.clone().invert()),texel=(l.shadow.camera.right-l.shadow.camera.left)/l.shadow.mapSize.x;return Math.max(Math.abs(p.x/texel-Math.round(p.x/texel)),Math.abs(p.y/texel-Math.round(p.y/texel)));});
   return {tier:a.tier.name,unpackQueries,updates:f.stats.updates.map((n,i)=>n-start[i]),copies:f.stats.copies,blends,snapping,sizes:s.csm.lights.map(l=>l.shadow.mapSize.x),history:f.history.map(t=>t?[t.width,t.height]:null)};
  });
- assert.equal(result.unpackQueries,0,'Depth history must stay on GPU without synchronous unpack queries');assert(result.updates[0]>=39);assert(result.snapping.every(n=>n<.0001));
+ assert.equal(result.unpackQueries,0,'Depth history must stay on GPU without synchronous unpack queries');assert(result.snapping.every(n=>n<.0001));
  if(tier==='high'){
-  assert.deepEqual(result.updates,[result.updates[0],result.updates[0],result.updates[0]]);assert.equal(result.sizes[0],4096);assert.equal(result.copies,0);
+  assert(result.updates[0]>=39);assert.deepEqual(result.updates,[result.updates[0],result.updates[0],result.updates[0]]);assert.equal(result.sizes[0],4096);assert.equal(result.copies,0);
  }else{
-  assert(result.updates[1]<=12&&result.updates[2]<=6);assert(result.copies>0);assert(result.history[1]&&result.history[2]);
+  assert(result.updates[0]>=13&&result.updates[0]<=25);assert(result.updates[1]<=12&&result.updates[2]<=6);assert(result.copies>0);assert(result.history.every(Boolean));
   assert(result.blends.some(b=>b.some(n=>n>0&&n<1)),'Cached maps must interpolate, not jump');
  }
  const moving=await page.evaluate(async()=>{
