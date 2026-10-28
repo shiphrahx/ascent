@@ -258,3 +258,9 @@ All 51 regression checks and crop-tracking units pass; matched captures inspecte
 Chase view now aims at the rotated envelope centre, slightly above it for a lower-screen composition. An exact critically damped spring follows position without overshoot; released mouse orbit returns over approximately 1.5 s. Terrain, fleet and envelope exclusions remain active, and basket/cinematic views retain their previous paths.
 
 The 601-frame turning-flight capture moves from a maximum 16.98% horizontal offset to below 0.000001% (the camera always looks at the envelope centre), passing the ±5% limit. Inspected the turn and matched sunrise captures. Frame-independent spring checks and all 51 gameplay/graphics/temporal checks pass. Rebuilt the standalone game.
+
+### Phase 3.1 — camera-relative key map
+
+All bindings live in src/controls.js. Arrows/WASD translate relative to the view; Space climbs, Shift/V descends and Q/E orbits. Camera, sound, fullscreen and time bindings are preserved. The high-DPI rotation check now measures Q/E camera orbit instead of the removed A-key balloon yaw.
+
+Rebuilt the standalone game. All 51 core checks and eight high-DPI checks pass, with no browser errors. Inspected the matched sunrise capture. Response speed and the idle handoff are deliberately tuned in the next two commits.

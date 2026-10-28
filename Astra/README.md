@@ -8,7 +8,7 @@ Canonical repository: [shiphrahx/ascent](https://github.com/shiphrahx/ascent). T
 
 Open [`Ascent.html`](Ascent.html) in a browser. It includes its runtime assets and works offline.
 
-Controls: Space/W for the burner, V/S to vent, A/D to rotate, C to change camera, drag to look or orbit, wheel to zoom, T to accelerate time, M for sound, and F for fullscreen.
+Controls: arrows or WASD move relative to the camera; Space climbs; Shift or V descends; Q/E rotate the view. C changes camera, drag looks or orbits, the wheel zooms, T accelerates time, M toggles sound, and F toggles fullscreen. Remap keys in src/controls.js.
 
 Quality is selected from the reported GPU: discrete graphics use `high`, integrated or unknown adapters use `medium`, and software renderers use `lite`. Override detection by opening `Ascent.html?quality=high`, `?quality=medium`, or `?quality=lite`; reload to apply a different tier. The selected tier and GPU are available in `window.__ascent.tier` for diagnostics. Medium targets the integrated-GPU budget; lite further reduces shadows, reflections, cloud-cache and MSAA costs. High permits a larger pixel budget, reflection map, 4 m terrain grid, and 4096-pixel near shadows with every cascade refreshed each frame. Lower tiers blend their cached distant maps. Tiers retain stable geometry and native resolution at 1440 x 900. Oversized windows use the tier's fixed pixel budget; medium and lite may upscale there, without repeatedly changing scale as frame rate varies.
 

@@ -1,7 +1,7 @@
 {
   "checks": {
     "deviceScaleFactor2": true,
-    "rotation": true,
+    "viewRotation": true,
     "zoom": true,
     "cameraSafe": true,
     "resized": true,
@@ -12,61 +12,97 @@
   "initial": {
     "state": {
       "hour": 6.6,
-      "elapsed": 17.666999999982053,
+      "elapsed": 17.52820000004773,
       "mode": 0,
       "storm": 0,
       "hero": [
-        36.40711249774351,
-        129.59038858031823,
-        588.2623794068393
+        35.87461568105806,
+        129.58188190433683,
+        595.8809269059988
       ],
       "camera": [
-        1.7507468187575173,
-        163.70424802852068,
-        679.8754298705303
+        -1.8392875124047776,
+        165.7487373462783,
+        684.3934486288761
       ],
-      "thermal": 0.35838349187148744,
-      "verticalSpeed": -0.4360237693255815,
+      "thermal": 0.3579082541782131,
+      "velocity": [
+        0.3736324257125424,
+        -0.44019701360626107,
+        -0.8707878616736034
+      ],
+      "input": {
+        "right": 0,
+        "forward": 0,
+        "vertical": 0,
+        "orbit": 0
+      },
+      "burnerCommand": false,
+      "burnerController": {
+        "on": true,
+        "changed": 10.14420000004771,
+        "demand": 0.2164802438028388,
+        "switches": 3
+      },
+      "verticalSpeed": -0.44019701360626107,
       "manual": true,
       "targetAltitude": 80,
       "landing": 0,
-      "drawCalls": 890,
-      "triangles": 3526283,
-      "fps": 45.13054114471304,
-      "quality": 1,
+      "drawCalls": 1027,
+      "triangles": 4451189,
+      "fps": 32.95705203062152,
+      "quality": 0.7,
       "tier": "medium",
-      "frameMs": 25
+      "frameMs": 16.80000000000291
     },
-    "rotation": 0,
-    "distance": 103.71967076591648,
-    "pixelRatio": 1.469861839480328
+    "rotation": -0.4027897270167838,
+    "distance": 102.78543879551715,
+    "pixelRatio": 1.4021588293471068
   },
   "final": {
     "hour": 6.6,
-    "elapsed": 25.035299999981937,
+    "elapsed": 25.395100000047695,
     "mode": 1,
     "storm": 0,
     "hero": [
-      46.218716646712096,
-      118.1161032292309,
-      555.3178156918499
+      37.862135945633575,
+      116.8624670250329,
+      588.7762076598015
     ],
     "camera": [
-      46.284833110121816,
-      120.06876897041876,
-      554.5980760747261
+      37.99816871728542,
+      118.81439861806828,
+      588.064338190624
     ],
-    "thermal": 0.102123309409302,
+    "thermal": 0.09355492714020336,
+    "velocity": [
+      0.14672398209376333,
+      -2.4,
+      -0.9110882542659671
+    ],
+    "input": {
+      "right": 0,
+      "forward": 0,
+      "vertical": 0,
+      "orbit": 0
+    },
+    "burnerCommand": false,
+    "burnerController": {
+      "on": true,
+      "changed": 10.14420000004771,
+      "demand": 0.2164802438028388,
+      "switches": 3
+    },
     "verticalSpeed": -2.4,
     "manual": true,
     "targetAltitude": 80,
     "landing": 0,
-    "drawCalls": 854,
-    "triangles": 3531025,
-    "fps": 44.477717104104265,
-    "quality": 1,
+    "drawCalls": 870,
+    "triangles": 3653730,
+    "fps": 34.25663110502102,
+    "quality": 0.5499999999999999,
     "tier": "medium",
-    "frameMs": 16.700000000004366
+    "frameMs": 33.5
   },
   "errors": [],
   "warnings": []
