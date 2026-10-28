@@ -16,7 +16,12 @@ await page.keyboard.down('ArrowRight');response.accelerate=await page.evaluate((
 checks.rightResponds=response.accelerate.velocity.reduce((s,v,i)=>s+v*response.right[i],0)>=5;
 checks.releaseStops=Math.hypot(response.release.velocity[0],response.release.velocity[2])<1;
 await page.keyboard.down('Space');response.climb=await page.evaluate(()=>__ascent.advanceFlight(.3));await page.keyboard.up('Space');checks.climbResponds=response.climb.velocity[1]>1&&response.climb.burn>0;
-await page.evaluate(()=>__ascent.pause(false));
-await page.waitForTimeout(10200);checks.autopilotResumes=await page.evaluate(()=>!__state.manual);console.log('interactive',checks);
+response.idle=await page.evaluate(()=>__ascent.advanceFlight(59.9));checks.autopilotWaits=response.idle.manual&&response.idle.autopilotWeight===0;
+response.handoff=await page.evaluate(()=>__ascent.advanceFlight(.2));response.half=await page.evaluate(()=>__ascent.advanceFlight(1.4));response.automatic=await page.evaluate(()=>__ascent.advanceFlight(1.6));
+checks.autopilotBlends=response.handoff.autopilotWeight>0&&response.handoff.autopilotWeight<.05&&Math.abs(response.half.autopilotWeight-.5)<.01;
+checks.autopilotResumes=!response.automatic.manual&&response.automatic.autopilotWeight===1;
+await page.keyboard.down('KeyE');response.takeover=await page.evaluate(()=>__ascent.advanceFlight(1/60));response.held=await page.evaluate(()=>__ascent.advanceFlight(61));await page.keyboard.up('KeyE');
+checks.instantTakeover=response.takeover.manual&&response.takeover.autopilotWeight===0;checks.heldInputRetainsControl=response.held.manual&&response.held.autopilotWeight===0;
+await page.evaluate(()=>__ascent.pause(false));console.log('interactive',checks);
 const simulation=await page.evaluate(()=>__ascent.simulate(700));console.log('simulation',JSON.stringify(simulation));checks.landingAndRestart=simulation.loops>0;checks.terrainClearance=simulation.minClearance>=.29;checks.softLanding=simulation.maxLandingSpeed<.7;
 const html=await readFile('Ascent.html','utf8');checks.standalone=html.includes('<script>')&&!/<script[^>]+src=/i.test(html)&&!/<link[^>]+href="https?:/i.test(html);await writeFile('captures/verification.json',JSON.stringify({checks,errors,warnings,requests,response,simulation},null,2));console.log(JSON.stringify({checks,errors,warnings},null,2));await browser.close();if(errors.length||Object.values(checks).some(x=>x===false))process.exitCode=1;

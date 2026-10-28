@@ -272,3 +272,9 @@ Manual input now drives a camera-relative target velocity: 10 m/s horizontally a
 The actual browser key handlers and flight code reach 7.10 m/s in camera-right after 0.3 s, slow to 0.345 m/s after 0.7 s release, and climb at 2.854 m/s after 0.3 s. Replaced the obsolete inertialLift expectation with releaseBrakes and added the requested response assertions. Unit checks also cover 30/60/144 Hz with opposing wind. Full response traces are retained in captures/plan2-response-3-2.json.
 
 All 54 gameplay/graphics/temporal checks pass. Rebuilt the offline game and inspected the matched capture.
+
+### Phase 3.3 — deliberate autopilot handoff
+
+Flight keys refresh a 60-second manual window while held and on release. The initial journey still starts in attract mode. After the idle window, automatic burner demand and velocity response blend in over three seconds; a flight key immediately sets automatic contribution to zero.
+
+Browser tests exercise the real key handlers and flight integration: automatic weight is 0 at 59.9 s, 0.033 at 60.1 s, 0.500 at 61.5 s and 1 after 63 s. Immediate takeover and a key held for 61 s both retain weight 0. All 58 regression checks pass, including the existing 700-second landing/restart simulation. Rebuilt the game and inspected the matched sunrise capture; response traces are retained.
