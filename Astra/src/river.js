@@ -21,16 +21,19 @@ export function createRiver(scene,renderer){
  material.transparent=true;
  Object.assign(material.uniforms,{uTime:uniforms.time,uDay:uniforms.day,uFrost:uniforms.frost,uReflectionTexel:{value:1/renderer.ascentQuality.reflectionSize}});
  material.vertexShader=material.vertexShader.replace('varying vec4 vUv;','varying vec4 vUv;varying vec3 vWaterWorld;varying float vWaterDepth;attribute float aWaterDepth;').replace('vUv = textureMatrix','vWaterWorld=(modelMatrix*vec4(position,1.)).xyz;vWaterDepth=aWaterDepth;vUv = textureMatrix');
- material.fragmentShader=material.fragmentShader.replace('varying vec4 vUv;','varying vec4 vUv;varying vec3 vWaterWorld;varying float vWaterDepth;uniform float uTime,uDay,uFrost,uReflectionTexel;');
+ material.fragmentShader=material.fragmentShader.replace('varying vec4 vUv;','varying vec4 vUv;varying vec3 vWaterWorld;varying float vWaterDepth;uniform float uTime,uDay,uFrost,uReflectionTexel;\nfloat waterHash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}\nfloat waterNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(waterHash(i),waterHash(i+vec2(1,0)),f.x),mix(waterHash(i+vec2(0,1)),waterHash(i+vec2(1,1)),f.x),f.y);}');
  material.fragmentShader=material.fragmentShader.replace('vec4 base = texture2DProj( tDiffuse, vUv );',`
   vec2 flow=vWaterWorld.xz;
   float footprint=max(length(dFdx(flow)),length(dFdy(flow)));
   float rippleFade=1.-smoothstep(.5,3.,footprint);
-  vec2 slope=vec2(cos(flow.x*1.3+flow.y*.48-uTime*1.3),sin(flow.y*.7-flow.x*.35-uTime*.8))*.035*rippleFade;
-  slope+=vec2(sin(flow.y*.16-uTime*.5),cos(flow.x*.22+flow.y*.09-uTime*.3))*.018;
+  float swell=waterNoise(flow*.045),crossFlow=waterNoise(flow*.11+vec2(13.,37.));
+  vec2 phase=vec2(flow.x*.93+flow.y*.37,flow.y*.77-flow.x*.51)+vec2(swell*8.,crossFlow*9.);
+  vec2 slope=vec2(cos(phase.x-uTime*.82),sin(phase.y+uTime*.67))*.023*rippleFade;
+  slope+=vec2(swell-.5,crossFlow-.5)*.035;
+  slope+=vec2(waterNoise(flow*.7+vec2(0.,-uTime*.12))-.5,waterNoise(flow*.63+vec2(uTime*.08,17.))-.5)*.009*rippleFade;
   vec2 reflectionUv=vUv.xy/vUv.w+slope*.035;
   vec3 reflected=texture2D(tDiffuse,reflectionUv).rgb;
-  ${lite?'':`vec2 blur=vec2(uReflectionTexel*(1.5+2.*(1.-rippleFade)),0.);
+  ${lite?'':`vec2 blur=vec2(uReflectionTexel*(4.+5.*(1.-rippleFade)),0.);
   reflected=reflected*.5+(texture2D(tDiffuse,reflectionUv+blur).rgb+texture2D(tDiffuse,reflectionUv-blur).rgb)*.25;`}
   ${high?'reflected=reflected*.6+(texture2D(tDiffuse,reflectionUv+blur.yx).rgb+texture2D(tDiffuse,reflectionUv-blur.yx).rgb)*.2;':''}
   vec4 base=vec4(reflected,1.);`);
@@ -39,11 +42,11 @@ export function createRiver(scene,renderer){
   float fresnel=.02+.98*pow(1.-max(dot(eye,normal),0.),5.);
   float depth=max(0.,vWaterDepth),opticalDepth=depth/max(eye.y,.15);
   vec3 transmission=exp(-vec3(1.15,.72,1.85)*opticalDepth);
-  float silt=.92+.08*sin(flow.x*.19+sin(flow.y*.13));
-  vec3 bed=vec3(.16,.125,.068)*silt,body=vec3(.043,.052,.025);
+  float silt=.82+.18*waterNoise(flow*.055);
+  vec3 bed=vec3(.17,.13,.075)*silt,body=vec3(.063,.055,.032);
   vec3 colour=mix(body,bed,transmission)*(.04+.96*uDay);
-  colour=mix(colour,base.rgb,clamp(fresnel,.02,.82));
-  float ice=(1.-smoothstep(.015,.22,depth))*(.5+.5*sin(flow.y*.43+sin(flow.y*.17)))*uFrost*.45;
+  colour=mix(colour,base.rgb,clamp(fresnel*.72,.02,.65));
+  float ice=(1.-smoothstep(.015,.22,depth))*(.5+.5*waterNoise(flow*.35))*uFrost*.45;
   colour=mix(colour,vec3(.34,.39,.4)*(.08+.92*uDay),ice);
   gl_FragColor=vec4(colour,smoothstep(.015,.16,depth));`);
  // Preserve the bounded reflection schedule and the coarse reflection layer.

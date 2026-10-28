@@ -318,3 +318,9 @@ All 59 core checks and medium/lite/high shadow fixtures pass. Rebuilt the standa
 Terracing now begins 24 m from the flight path and reaches full strength by 115 m, rather than 65–170 m. Gullies extend into the nearer slopes, with widths that survive the existing grid. Broad, low talus fans add deposited material at their feet while preserving the central channel. These fields are baked into the same terrain triangles used by collision; the grid size and runtime shader cost are unchanged.
 
 Landform tests confirm substantial near-corridor cuts and fans, bounded deposition and a clear central channel. All 59 core checks pass, including rendered-terrain/collision agreement and landing. Rebuilt and personally compared the near-terrain and sunrise captures. The lower slopes are more segmented, although the medium tier's eight-metre grid still limits fine erosion detail.
+
+### Phase 5.2 — irregular river surface and wet margins
+
+World-space ripples now combine several scales with noise-warped phases instead of two regular bands. Reflection filtering is broader, grazing reflections are less dominant, silty colour varies independently of the waves, and shore ice uses an irregular field. Wet soil transitions over a wider, uneven margin with a less abrupt colour/roughness change.
+
+All 59 core checks and the river depth/shoreline fixture pass, with finite HDR output and shoreline error below 0.003 m. Reflection sample counts and update frequency are unchanged. Rebuilt and compared the low river view and matched sunrise capture. The river reads less regularly striped, though its narrow channel and simplified reflection still fall short of a detailed water simulation.

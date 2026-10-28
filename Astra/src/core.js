@@ -179,14 +179,14 @@ export function stoneMaterial(color='#c8a78d',type=0,soilDetail=true){
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.76,.81,.85)*(.96+.04*surface.g),cover*.96);
    diffuseColor.rgb*=1.-(1.-uSnow)*.045;
    ${type===4?`float river=95.*sin(vWorld.z*.004)+55.*sin(vWorld.z*.008+1.)-62.+30.*sin(vWorld.z*.009);
-   float wetBank=(1.-smoothstep(10.,25.,abs(vWorld.x-river)))*(1.-smoothstep(3.6,5.,vWorld.y));
-   diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.52,.48,.4),wetBank);`:''}
+   float wetBank=(1.-smoothstep(7.,28.,abs(vWorld.x-river)))*(1.-smoothstep(3.6,5.4+rn(vWorld.xz*.17)*.45,vWorld.y));
+   diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.62,.57,.46),wetBank);`:''}
    `);
   s.fragmentShader=s.fragmentShader.replace('#include <normal_fragment_maps>',`
    float bumpFade=1.-smoothstep(.3,1.5,length(fwidth(vWorld)));
    normal=perturbNormalArb(-vViewPosition,normal,vec2(dFdx(stoneHeight),dFdy(stoneHeight))*bumpFade*(1.-cover*.85),faceDirection);`);
   s.fragmentShader=s.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
-   roughnessFactor=mix(surface.r,.88,cover);${type===4?'roughnessFactor=mix(roughnessFactor,.48,wetBank*(1.-cover));':''}`);
+   roughnessFactor=mix(surface.r,.88,cover);${type===4?'roughnessFactor=mix(roughnessFactor,.6,wetBank*(1.-cover));':''}`);
   s.fragmentShader=s.fragmentShader.replace('#include <aomap_fragment>',`#include <aomap_fragment>
    reflectedLight.indirectDiffuse*=vSurfaceAO*surface.b;
    reflectedLight.indirectSpecular*=mix(1.,vSurfaceAO*surface.b,.7);`);
