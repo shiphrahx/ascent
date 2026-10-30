@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ascent</title>
+<style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#f3ece3;
+    background:radial-gradient(120% 90% at 50% 0%,#3a2a4a 0%,#1a1424 55%,#0d0a14 100%)}
+  main{width:100%;max-width:760px;text-align:center}
+  h1{font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:clamp(28px,6vw,44px);margin:0 0 8px}
+  p.sub{margin:0 0 36px;color:#bfae9c;font-size:17px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  a.card{display:block;padding:28px 24px;border-radius:16px;text-decoration:none;color:inherit;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+    transition:transform .15s,background .15s,border-color .15s}
+  a.card:hover,a.card:focus-visible{transform:translateY(-3px);background:rgba(255,255,255,.09);border-color:#ffb36b;outline:none}
+  .name{font-size:24px;font-weight:600;margin-bottom:6px}
+  .desc{color:#bfae9c;font-size:15px;line-height:1.4}
+</style>
+</head>
+<body>
+<main>
+  <h1>Ascent</h1>
+  <p class="sub">Choose your version</p>
+  <div class="grid">
+    <a class="card" href="Astra/"><div class="name">Astra</div><div class="desc">The Astra build</div></a>
+    <a class="card" href="Opus/"><div class="name">Opus</div><div class="desc">The Opus build, over Cappadocia</div></a>
+  </div>
+</main>
+</body>
+</html>
